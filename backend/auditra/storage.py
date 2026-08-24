@@ -57,6 +57,28 @@ class AuditraStore:
         self.latest_evaluation_id = evaluation.evaluation_run_id
         return evaluation
 
+    def compare_controllers(self, dataset_id: str) -> Dict[str, object]:
+        dataset = self.get_dataset(dataset_id)
+        rows = []
+        for label, enable_ai in (("deterministic_only", False), ("ai_assisted", True)):
+            run = ReconciliationEngine(enable_ai=enable_ai).run(dataset)
+            evaluation = self.evaluator.evaluate(dataset, run)
+            self.controller_runs[run.run_id] = run
+            self.evaluation_runs[evaluation.evaluation_run_id] = evaluation
+            rows.append(
+                {
+                    "mode": label,
+                    "controller_run_id": run.run_id,
+                    "evaluation_run_id": evaluation.evaluation_run_id,
+                    "metrics": evaluation.metrics.model_dump(mode="json"),
+                    "controller_metrics": run.metrics.model_dump(mode="json"),
+                    "failures": len(evaluation.failures),
+                }
+            )
+        self.latest_run_id = rows[-1]["controller_run_id"]  # type: ignore[index]
+        self.latest_evaluation_id = rows[-1]["evaluation_run_id"]  # type: ignore[index]
+        return {"dataset_id": dataset_id, "comparison": rows}
+
     def get_evaluation_run(self, evaluation_run_id: str) -> EvaluationRun:
         if evaluation_run_id not in self.evaluation_runs:
             raise KeyError(f"evaluation run not found: {evaluation_run_id}")

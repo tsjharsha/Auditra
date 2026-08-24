@@ -1,6 +1,6 @@
 # Auditra Architecture
 
-Auditra is a bounded AI finance controller for multi-source payment reconciliation. The first implementation is a modular monolith with deterministic finance logic, a bounded investigation tool layer, verification, human-review states, and independent evaluation.
+Auditra is a bounded AI finance controller for multi-source payment reconciliation. The implementation is a modular monolith with deterministic finance logic, a bounded investigation tool layer, financial invariants, an AI-assisted hypothesis layer, verification, human-review states, and independent evaluation.
 
 ## System Architecture
 
@@ -16,11 +16,20 @@ Dataset index + evidence store
         |
         v
 Bounded investigation tools
-find_payment | find_order | find_settlement | find_refunds | compare_amounts
+find_payment | find_order | find_merchant | find_settlement | find_refunds
+compare_amounts | check_duplicate | get_graph_neighborhood | verify_hypothesis
         |
         v
 Deterministic reconciliation engine
 Decimal arithmetic | fee calculation | duplicate checks | timing windows
+        |
+        v
+Financial invariant engine
+rule_id -> passed / failed / not_applicable -> evidence IDs
+        |
+        v
+AI-assisted hypothesis layer
+dynamic tools | hypotheses | self-challenge | evidence-linked recommendation
         |
         v
 Verification layer
@@ -42,12 +51,14 @@ hidden ground truth -> metrics -> failures -> break-the-controller report
 3. The controller builds indexes over source records and reconciles every payment.
 4. Each investigation uses allowlisted tools with a tool-call budget.
 5. Financial arithmetic uses `Decimal` and deterministic code.
-6. A verification pass challenges every decision before final status is emitted.
-7. Evaluation compares controller output with hidden ground truth after the run.
+6. Financial invariants emit rule-level pass/fail/not-applicable outputs.
+7. Exception and low-confidence cases run the AI-assisted hypothesis layer.
+8. A verification pass challenges every decision before final status is emitted.
+9. Evaluation compares controller output with hidden ground truth after the run.
 
 ## Agent Loop
 
-The current investigation agent is deterministic and tool-using. It is intentionally bounded:
+The base investigation is deterministic and tool-using. Exception and low-confidence cases then run an AI-assisted hypothesis layer that is intentionally bounded:
 
 ```text
 INVESTIGATE
@@ -57,6 +68,11 @@ INVESTIGATE
   locate refunds
   locate fee rule
   inspect related records
+  evaluate financial invariants
+HYPOTHESIZE
+  propose candidate explanations
+  choose tools based on case shape
+  attach supporting and contradicting evidence IDs
 DECIDE
   classify by deterministic rules
 CHALLENGE
@@ -66,12 +82,16 @@ VERIFY
 RESOLVE / ESCALATE
 ```
 
-LLM availability is not required. Future LLM use should be limited to explanation, hypothesis generation, and exception summarization. It must not perform authoritative arithmetic or mutate source records.
+LLM availability is not required. The default provider is offline and structured. Future LLM use should be limited to explanation, hypothesis generation, and exception summarization. It must not perform authoritative arithmetic or mutate source records.
 
 ## Evidence Graph
 
 Each reconciliation case creates graph nodes for:
 
+- transaction
+- investigation
+- decision
+- evidence
 - merchant
 - customer
 - order
@@ -80,7 +100,7 @@ Each reconciliation case creates graph nodes for:
 - refund
 - fee rule
 
-Edges capture relationships such as `creates`, `settles_through`, `adjusted_by`, `governed_by`, `receives`, and `pays`. Every important node/edge has an evidence id that points back to a source record or rule.
+Edges capture relationships such as `CREATED`, `PAID`, `SETTLED`, `REFUNDED`, `GOVERNED_BY`, `BELONGS_TO`, `RELATED_TO`, `SUPPORTED_BY`, `CONTRADICTED_BY`, `INVESTIGATED_BY`, and `RESULTED_IN`. Edges carry confidence, evidence IDs, source-system metadata, and timestamps where source records provide them.
 
 ## Evaluation Architecture
 
@@ -92,7 +112,7 @@ Scenario generator
   hidden ground truth -> evaluator <---- controller output
 ```
 
-The controller never sees scenario labels, expected statuses, failure metadata, or evaluator outputs. Metrics are computed across the entire batch.
+The controller never sees scenario labels, expected statuses, failure metadata, or evaluator outputs. `DatasetIndex` strips `ground_truth` before any tool receives data. Metrics are computed across the entire batch.
 
 ## Trust Boundaries
 
@@ -100,6 +120,7 @@ The controller never sees scenario labels, expected statuses, failure metadata, 
 - Ground truth is hidden from controller endpoints.
 - Tool calls are allowlisted and logged.
 - No tool can initiate payments, refunds, payouts, or database mutation.
+- AI output is explanatory and cannot override deterministic arithmetic.
 - Human review is an explicit state, not a failure of the app.
 
 ## Failure Handling
@@ -114,7 +135,7 @@ Auditra escalates or marks unresolved when:
 - evidence cannot establish a relationship
 - the tool budget is exhausted
 
-Malformed uploads and persistent database storage are planned for the next implementation phase. The first slice uses generated/API-shaped records and in-memory storage so the demo has no manual database setup.
+Malformed uploads and persistent database storage are planned for the next implementation phase. The current slice uses generated/API-shaped records and in-memory storage so the demo has no manual database setup.
 
 ## Database Target Schema
 

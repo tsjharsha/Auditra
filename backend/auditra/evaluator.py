@@ -32,6 +32,7 @@ class IndependentEvaluator:
         correct = 0
         total = 0
         failures: List[FailureRecord] = []
+        failure_taxonomy: Dict[str, int] = {}
         correct_amount = Decimal("0.00")
         incorrect_amount = Decimal("0.00")
         error_impact = Decimal("0.00")
@@ -86,6 +87,8 @@ class IndependentEvaluator:
                         financial_impact=impact,
                     )
                 )
+                category = self._failure_category(expected, predicted)
+                failure_taxonomy[category] = failure_taxonomy.get(category, 0) + 1
 
         precision, recall, f1 = self._macro_scores(confusion)
         accuracy = correct / max(total, 1)
@@ -106,10 +109,15 @@ class IndependentEvaluator:
             throughput_records_per_sec=controller_run.metrics.throughput_records_per_sec,
             median_latency_ms=controller_run.metrics.median_latency_ms,
             p95_latency_ms=controller_run.metrics.p95_latency_ms,
+            p99_latency_ms=controller_run.metrics.p99_latency_ms,
+            llm_calls=controller_run.metrics.llm_calls,
+            agent_tool_calls=controller_run.metrics.agent_tool_calls,
+            estimated_ai_cost_usd=controller_run.metrics.estimated_ai_cost_usd,
             financial_amount_correctly_reconciled=money(correct_amount),
             financial_amount_incorrectly_classified=money(incorrect_amount),
             financial_impact_of_errors=money(error_impact),
             confusion_matrix=confusion,
+            failure_taxonomy=failure_taxonomy,
         )
 
         return EvaluationRun(

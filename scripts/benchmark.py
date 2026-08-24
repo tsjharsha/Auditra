@@ -37,11 +37,15 @@ def main() -> int:
                 "throughput_records_per_sec": run.metrics.throughput_records_per_sec,
                 "median_latency_ms": run.metrics.median_latency_ms,
                 "p95_latency_ms": run.metrics.p95_latency_ms,
+                "p99_latency_ms": run.metrics.p99_latency_ms,
                 "accuracy": evaluation.metrics.accuracy,
                 "failures": len(evaluation.failures),
-                "llm_calls": 0,
-                "agent_tool_calls": sum(len(case.tool_calls) for case in run.cases),
-                "cost_estimate_usd": 0.0,
+                "ai_investigations": run.metrics.ai_investigation_count,
+                "llm_calls": run.metrics.llm_calls,
+                "agent_tool_calls": run.metrics.agent_tool_calls,
+                "cost_estimate_usd": str(run.metrics.estimated_ai_cost_usd),
+                "average_risk_score": run.metrics.average_risk_score,
+                "failure_taxonomy": evaluation.metrics.failure_taxonomy,
             }
         )
 

@@ -1,38 +1,60 @@
 [
   {
     "records": 100,
-    "duration_ms": 47.63,
-    "throughput_records_per_sec": 2099.47,
-    "median_latency_ms": 0.4217,
-    "p95_latency_ms": 0.6529,
+    "duration_ms": 104.16,
+    "throughput_records_per_sec": 960.04,
+    "median_latency_ms": 1.002,
+    "p95_latency_ms": 2.0162,
+    "p99_latency_ms": 2.3759,
     "accuracy": 0.96,
     "failures": 4,
+    "ai_investigations": 27,
     "llm_calls": 0,
-    "agent_tool_calls": 982,
-    "cost_estimate_usd": 0.0
+    "agent_tool_calls": 1293,
+    "cost_estimate_usd": "0.00",
+    "average_risk_score": 12.2411,
+    "failure_taxonomy": {
+      "CLASSIFICATION_ERROR": 3,
+      "FALSE_EXCEPTION": 1
+    }
   },
   {
     "records": 500,
-    "duration_ms": 436.28,
-    "throughput_records_per_sec": 1146.04,
-    "median_latency_ms": 0.7506,
-    "p95_latency_ms": 1.362,
+    "duration_ms": 574.88,
+    "throughput_records_per_sec": 869.75,
+    "median_latency_ms": 0.752,
+    "p95_latency_ms": 2.0054,
+    "p99_latency_ms": 3.669,
     "accuracy": 0.948,
     "failures": 26,
+    "ai_investigations": 132,
     "llm_calls": 0,
-    "agent_tool_calls": 4902,
-    "cost_estimate_usd": 0.0
+    "agent_tool_calls": 6287,
+    "cost_estimate_usd": "0.00",
+    "average_risk_score": 12.5149,
+    "failure_taxonomy": {
+      "CLASSIFICATION_ERROR": 14,
+      "FALSE_EXCEPTION": 12
+    }
   },
   {
     "records": 1000,
-    "duration_ms": 803.42,
-    "throughput_records_per_sec": 1244.68,
-    "median_latency_ms": 0.4648,
-    "p95_latency_ms": 1.1751,
+    "duration_ms": 1473.02,
+    "throughput_records_per_sec": 678.88,
+    "median_latency_ms": 0.6441,
+    "p95_latency_ms": 2.2141,
+    "p99_latency_ms": 3.5336,
     "accuracy": 0.979,
     "failures": 21,
+    "ai_investigations": 246,
     "llm_calls": 0,
-    "agent_tool_calls": 9838,
-    "cost_estimate_usd": 0.0
+    "agent_tool_calls": 12650,
+    "cost_estimate_usd": "0.00",
+    "average_risk_score": 10.9383,
+    "failure_taxonomy": {
+      "CLASSIFICATION_ERROR": 11,
+      "FALSE_EXCEPTION": 9,
+      "OVER_ESCALATION": 1
+    }
   }
 ]

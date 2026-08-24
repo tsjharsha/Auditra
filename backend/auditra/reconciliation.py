@@ -7,14 +7,18 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 from .agent_tools import DatasetIndex, InvestigationTools, ToolBudgetExceeded
+from .ai_investigator import AIInvestigationAgent
+from .ai_provider import StructuredInvestigationProvider
 from .audit import AuditLog
 from .evidence_graph import build_evidence_items, build_graph
+from .invariants import FinancialInvariantEngine
 from .models import (
     ConfidenceBand,
     ControllerDecision,
     ControllerRun,
     DatasetBundle,
     FeeRule,
+    InvariantResult,
     Payment,
     ReconciliationCase,
     ReconciliationStatus,
@@ -40,8 +44,16 @@ TERMINAL_REVIEW_VALUES = {item.value for item in TERMINAL_REVIEW_STATUSES}
 
 
 class ReconciliationEngine:
-    def __init__(self, amount_tolerance: Decimal = Decimal("1.00")):
+    def __init__(
+        self,
+        amount_tolerance: Decimal = Decimal("1.00"),
+        enable_ai: bool = True,
+        ai_provider: Optional[StructuredInvestigationProvider] = None,
+    ):
         self.amount_tolerance = money(amount_tolerance)
+        self.enable_ai = enable_ai
+        self.invariants = FinancialInvariantEngine(amount_tolerance=self.amount_tolerance)
+        self.ai_agent = AIInvestigationAgent(provider=ai_provider)
 
     def run(self, dataset: DatasetBundle) -> ControllerRun:
         run_id = f"RUN_{uuid.uuid4().hex[:12]}"
@@ -270,8 +282,78 @@ class ReconciliationEngine:
             )
 
         evidence = build_evidence_items(payment, order, settlements, refunds, fee_rule)
-        graph = build_graph(payment, order, settlements, refunds, fee_rule)
         evidence_ids = [item.evidence_id for item in evidence]
+        invariants = self.invariants.evaluate(
+            payment=payment,
+            order=order,
+            settlements=settlements,
+            refunds=refunds,
+            fee_rule=fee_rule,
+            expected_settlement=expected_settlement,
+            actual_settlement=actual_settlement,
+            duplicate_info=duplicate_info,
+        )
+        confidence_factors = self._confidence_factors(
+            order_exists=order is not None,
+            settlements_present=bool(settlements),
+            fee_rule_exists=fee_rule is not None,
+            amount_checked=actual_settlement is not None and expected_settlement is not None,
+            amount_within_tolerance=bool(amount_result.get("within_tolerance")),
+            temporal_checked=bool(settlements),
+            temporal_valid=bool(temporal_result.get("valid")),
+            verification_passed=verification.passed,
+            failed_invariant_count=sum(1 for item in invariants if str(item.status) == "FAILED"),
+        )
+        risk_score, risk_factors = self._risk_score(
+            payment=payment,
+            index=index,
+            status=status,
+            impact=impact,
+            confidence=confidence,
+            invariants=invariants,
+            settlements_present=bool(settlements),
+            is_duplicate=is_duplicate,
+            contradictions=len(contradicting),
+        )
+        ai_investigation = None
+        if self.enable_ai and self._should_run_ai(status, confidence, invariants):
+            ai_investigation = self.ai_agent.investigate(
+                payment=payment,
+                tools=tools,
+                status=status,
+                reason_codes=reason_codes,
+                evidence_ids=evidence_ids,
+                supporting_evidence=supporting,
+                contradicting_evidence=[str(item) for item in contradicting],
+                invariants=invariants,
+                fee_rule=fee_rule,
+                settlements_present=bool(settlements),
+                refunds_present=bool(refunds),
+                amount_within_tolerance=bool(amount_result.get("within_tolerance")),
+                temporal_valid=bool(temporal_result.get("valid")),
+                is_duplicate=is_duplicate,
+                verification_passed=verification.passed,
+            )
+            timeline.append(f"AI investigation considered {len(ai_investigation.hypotheses)} hypothesis path(s)")
+            supporting.extend(ai_investigation.supporting_evidence_ids)
+            contradicting.extend(ai_investigation.contradicting_evidence_ids)
+            confidence = self._blend_ai_confidence(confidence, ai_investigation.confidence_factors, ai_investigation.negative_factors)
+            band = self._confidence_band(confidence)
+
+        graph = build_graph(
+            payment,
+            order,
+            settlements,
+            refunds,
+            fee_rule,
+            case_id=case_id,
+            status=status,
+            evidence_items=evidence,
+            supporting_evidence=sorted(set(supporting)),
+            contradicting_evidence=sorted(set(str(item) for item in contradicting)),
+            ai_investigation=ai_investigation,
+            risk_score=risk_score,
+        )
 
         decision = ControllerDecision(
             case_id=case_id,
@@ -289,6 +371,11 @@ class ReconciliationEngine:
             evidence_ids=evidence_ids,
             supporting_evidence=sorted(set(supporting)),
             contradicting_evidence=sorted(set(str(item) for item in contradicting)),
+            confidence_factors=confidence_factors,
+            risk_score=risk_score,
+            risk_factors=risk_factors,
+            invariants=invariants,
+            ai_investigation=ai_investigation,
             verification=verification,
         )
 
@@ -312,6 +399,10 @@ class ReconciliationEngine:
             graph=graph,
             evidence=evidence,
             tool_calls=tools.calls,
+            invariants=invariants,
+            ai_investigation=ai_investigation,
+            risk_score=risk_score,
+            risk_factors=risk_factors,
             investigation_timeline=timeline,
         )
 
@@ -467,6 +558,91 @@ class ReconciliationEngine:
         base -= min(0.35, contradictions * 0.18)
         return max(0.0, min(0.995, base))
 
+    def _confidence_factors(
+        self,
+        order_exists: bool,
+        settlements_present: bool,
+        fee_rule_exists: bool,
+        amount_checked: bool,
+        amount_within_tolerance: bool,
+        temporal_checked: bool,
+        temporal_valid: bool,
+        verification_passed: bool,
+        failed_invariant_count: int,
+    ) -> Dict[str, float]:
+        return {
+            "order_link": 1.0 if order_exists else 0.0,
+            "settlement_link": 1.0 if settlements_present else 0.0,
+            "fee_rule": 1.0 if fee_rule_exists else 0.0,
+            "amount_check": 1.0 if amount_checked else 0.0,
+            "amount_within_tolerance": 1.0 if amount_within_tolerance else 0.0,
+            "temporal_check": 1.0 if temporal_checked else 0.0,
+            "temporal_valid": 1.0 if temporal_valid else 0.0,
+            "verification_passed": 1.0 if verification_passed else 0.0,
+            "failed_invariant_penalty": float(failed_invariant_count),
+        }
+
+    def _should_run_ai(self, status: ReconciliationStatus, confidence: float, invariants: List[InvariantResult]) -> bool:
+        status_text = status.value if isinstance(status, ReconciliationStatus) else str(status)
+        if status_text not in MATCH_STATUS_VALUES:
+            return True
+        if confidence < 0.75:
+            return True
+        return any(str(item.status) == "FAILED" for item in invariants)
+
+    def _blend_ai_confidence(self, confidence: float, ai_factors: Dict[str, float], negative_factors: Dict[str, float]) -> float:
+        selected = ai_factors.get("selected_hypothesis_confidence", 0.0)
+        verification = ai_factors.get("deterministic_verification", 0.0)
+        penalty = min(0.08, negative_factors.get("failed_invariants", 0.0) * 0.01)
+        lift = 0.03 if selected >= 0.75 and verification >= 1.0 else 0.0
+        return max(0.0, min(0.995, confidence + lift - penalty))
+
+    def _risk_score(
+        self,
+        payment: Payment,
+        index: DatasetIndex,
+        status: ReconciliationStatus,
+        impact: Decimal,
+        confidence: float,
+        invariants: List[InvariantResult],
+        settlements_present: bool,
+        is_duplicate: bool,
+        contradictions: int,
+    ) -> Tuple[float, List[str]]:
+        factors: List[str] = []
+        score = 0.0
+        status_text = status.value if isinstance(status, ReconciliationStatus) else str(status)
+        if status_text not in MATCH_STATUS_VALUES:
+            score += 18.0
+            factors.append(f"exception_status:{status_text}")
+        if status_text in {ReconciliationStatus.HUMAN_REVIEW.value, ReconciliationStatus.UNRESOLVED.value}:
+            score += 12.0
+            factors.append("manual_resolution_required")
+        if is_duplicate:
+            score += 20.0
+            factors.append("duplicate_pattern")
+        if not settlements_present:
+            score += 14.0
+            factors.append("settlement_missing")
+        failed_invariants = [item for item in invariants if str(item.status) == "FAILED"]
+        if failed_invariants:
+            score += min(30.0, len(failed_invariants) * 8.0)
+            factors.extend(f"invariant_failed:{item.rule_id}" for item in failed_invariants[:4])
+        if impact > 0:
+            score += min(20.0, float(impact) / 1000.0)
+            factors.append("financial_impact")
+        if confidence < 0.70:
+            score += 10.0
+            factors.append("low_confidence")
+        if contradictions:
+            score += min(12.0, contradictions * 4.0)
+            factors.append("contradicting_evidence")
+        merchant = index.merchants_by_id.get(payment.merchant_id)
+        if merchant and merchant.risk_tier != "standard":
+            score += 8.0
+            factors.append(f"merchant_risk:{merchant.risk_tier}")
+        return round(min(100.0, score), 2), sorted(set(factors))
+
     def _confidence_band(self, score: float) -> ConfidenceBand:
         if score >= 0.90:
             return ConfidenceBand.HIGH
@@ -510,6 +686,18 @@ class ReconciliationEngine:
         throughput = total / max(duration_ms / 1000, 0.001)
         sorted_latencies = sorted(latencies or [0.0])
         p95_idx = min(len(sorted_latencies) - 1, int(len(sorted_latencies) * 0.95))
+        p99_idx = min(len(sorted_latencies) - 1, int(len(sorted_latencies) * 0.99))
+        ai_cases = [case for case in cases if case.ai_investigation is not None]
+        ai_cost = money(
+            sum(
+                (
+                    case.ai_investigation.estimated_cost_usd
+                    for case in ai_cases
+                    if case.ai_investigation is not None
+                ),
+                Decimal("0.00"),
+            )
+        )
 
         return RunMetrics(
             transactions_processed=total,
@@ -523,4 +711,10 @@ class ReconciliationEngine:
             throughput_records_per_sec=round(throughput, 2),
             median_latency_ms=round(statistics.median(sorted_latencies), 4),
             p95_latency_ms=round(sorted_latencies[p95_idx], 4),
+            p99_latency_ms=round(sorted_latencies[p99_idx], 4),
+            ai_investigation_count=len(ai_cases),
+            llm_calls=sum(case.ai_investigation.llm_calls for case in ai_cases if case.ai_investigation is not None),
+            agent_tool_calls=sum(len(case.tool_calls) for case in cases),
+            estimated_ai_cost_usd=ai_cost,
+            average_risk_score=round(sum(case.risk_score for case in cases) / max(total, 1), 4),
         )

@@ -32,6 +32,7 @@ def main() -> int:
     parser.add_argument("--mode", choices=[item.value for item in ScenarioMode], default=ScenarioMode.MIXED.value)
     parser.add_argument("--records", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--write-full-run", action="store_true", help="Write full case graph/tool-call JSON for debugging.")
     args = parser.parse_args()
 
     request = ScenarioRequest(mode=ScenarioMode(args.mode), record_count=args.records, seed=args.seed)
@@ -48,10 +49,20 @@ def main() -> int:
     write_csv(out_dir / "refunds.csv", [item.model_dump(mode="json") for item in dataset.refunds])
     write_csv(out_dir / "fees.csv", [item.model_dump(mode="json") for item in dataset.fee_rules])
 
-    (out_dir / "controller_run.json").write_text(
-        json.dumps(controller_run.model_dump(mode="json"), indent=2),
-        encoding="utf-8",
-    )
+    controller_payload = controller_run.model_dump(mode="json")
+    if not args.write_full_run:
+        controller_payload = {
+            "run_id": controller_run.run_id,
+            "dataset_id": controller_run.dataset_id,
+            "started_at": controller_payload["started_at"],
+            "finished_at": controller_payload["finished_at"],
+            "duration_ms": controller_run.duration_ms,
+            "metrics": controller_run.metrics.model_dump(mode="json"),
+            "sample_cases": [case.model_dump(mode="json") for case in controller_run.cases[:25]],
+            "full_run_omitted": True,
+            "full_run_hint": "Run scripts/demo_run.py with --write-full-run to emit every case graph and tool call.",
+        }
+    (out_dir / "controller_run.json").write_text(json.dumps(controller_payload, indent=2), encoding="utf-8")
     (out_dir / "evaluation_report.json").write_text(
         json.dumps(evaluation.model_dump(mode="json"), indent=2),
         encoding="utf-8",
@@ -71,6 +82,12 @@ def main() -> int:
         "false_positive_rate": evaluation.metrics.false_positive_rate,
         "false_negative_rate": evaluation.metrics.false_negative_rate,
         "throughput_records_per_sec": evaluation.metrics.throughput_records_per_sec,
+        "p99_latency_ms": evaluation.metrics.p99_latency_ms,
+        "ai_investigations": controller_run.metrics.ai_investigation_count,
+        "llm_calls": evaluation.metrics.llm_calls,
+        "agent_tool_calls": evaluation.metrics.agent_tool_calls,
+        "estimated_ai_cost_usd": str(evaluation.metrics.estimated_ai_cost_usd),
+        "failure_taxonomy": evaluation.metrics.failure_taxonomy,
         "failures": len(evaluation.failures),
         "output_dir": str(out_dir),
     }

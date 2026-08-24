@@ -248,6 +248,31 @@
         gap: 10px;
       }
 
+      .detail-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .detail-row {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 12px;
+        background: #fffdf9;
+      }
+
+      .detail-row strong {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 5px;
+      }
+
+      .meta {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
       .failure {
         border: 1px solid #fecdd3;
         background: #fff7f8;
@@ -328,6 +353,8 @@
                   <th>Order</th>
                   <th>Status</th>
                   <th>Confidence</th>
+                  <th>Risk</th>
+                  <th>AI</th>
                   <th>Expected</th>
                   <th>Actual</th>
                   <th>Difference</th>
@@ -348,6 +375,10 @@
             <svg id="graph" class="graph" viewBox="0 0 720 320" role="img"></svg>
             <div class="section-head"><h2>Timeline</h2></div>
             <ul id="timeline" class="timeline"></ul>
+            <div class="section-head"><h2>Hypotheses</h2></div>
+            <div id="hypotheses" class="detail-list"></div>
+            <div class="section-head"><h2>Invariants</h2></div>
+            <div id="invariants" class="detail-list"></div>
           </div>
 
           <div class="section-head">
@@ -371,6 +402,9 @@
         ["Auto resolved", data => pct(data.controller_run.metrics.automatic_resolution_rate)],
         ["Accuracy", data => pct(data.evaluation.metrics.accuracy)],
         ["Throughput", data => data.evaluation.metrics.throughput_records_per_sec + "/sec"],
+        ["P99 latency", data => data.controller_run.metrics.p99_latency_ms + "ms"],
+        ["AI cases", data => data.controller_run.metrics.ai_investigation_count],
+        ["Avg risk", data => Number(data.controller_run.metrics.average_risk_score || 0).toFixed(1)],
       ];
 
       function pct(value) {
@@ -399,9 +433,7 @@
           return;
         }
         latest = await response.json();
-        selectedCase = latest.evaluation.failures.length
-          ? latest.controller_run_id
-          : null;
+        selectedCase = null;
         document.getElementById("status").textContent = latest.dataset.dataset_id + " / " + latest.controller_run.run_id;
         render();
       }
@@ -442,6 +474,8 @@
             <td class="mono">${item.order_id || ""}</td>
             <td><span class="pill ${badgeClass(item.status)}">${item.status}</span></td>
             <td>${Number(item.decision.confidence_score * 100).toFixed(1)}% / ${item.decision.confidence_band}</td>
+            <td>${Number(item.risk_score || 0).toFixed(1)}</td>
+            <td>${item.ai_investigation ? item.ai_investigation.hypotheses.length : 0}</td>
             <td>${item.decision.expected_settlement || ""}</td>
             <td>${item.decision.actual_settlement || ""}</td>
             <td>${item.decision.difference || ""}</td>
@@ -461,7 +495,35 @@
         if (!selectedCase) return;
         document.getElementById("selected").textContent = selectedCase.payment_id;
         document.getElementById("timeline").innerHTML = selectedCase.investigation_timeline.map(item => `<li>${item}</li>`).join("");
+        renderHypotheses(selectedCase.ai_investigation);
+        renderInvariants(selectedCase.invariants || []);
         drawGraph(selectedCase.graph);
+      }
+
+      function renderHypotheses(ai) {
+        const container = document.getElementById("hypotheses");
+        if (!ai) {
+          container.innerHTML = `<div class="meta">No AI investigation was needed for this case.</div>`;
+          return;
+        }
+        container.innerHTML = ai.hypotheses.map(item => `
+          <div class="detail-row">
+            <strong>${item.label}</strong>
+            <div>${item.status} / ${(Number(item.confidence) * 100).toFixed(1)}%</div>
+            <div class="meta">${item.rationale}</div>
+          </div>
+        `).join("");
+      }
+
+      function renderInvariants(invariants) {
+        const rows = invariants.filter(item => item.status !== "PASSED").slice(0, 8);
+        document.getElementById("invariants").innerHTML = rows.length ? rows.map(item => `
+          <div class="detail-row">
+            <strong>${item.rule_id}</strong>
+            <div><span class="pill ${item.status === "FAILED" ? "bad" : "warn"}">${item.status}</span></div>
+            <div class="meta">${item.reason}</div>
+          </div>
+        `).join("") : `<div class="meta">All applicable invariant checks passed.</div>`;
       }
 
       function drawGraph(graph) {
@@ -482,7 +544,8 @@
         }).join("");
         const nodeMarkup = nodes.map(node => {
           const p = positions[node.id];
-          const fill = node.type === "payment" ? "#0f766e" : node.type === "settlement" ? "#a16207" : node.type === "refund" ? "#be123c" : "#171717";
+          const type = String(node.type || "").toLowerCase();
+          const fill = type === "payment" ? "#0f766e" : type === "settlement" ? "#a16207" : type === "refund" ? "#be123c" : type === "decision" ? "#6d28d9" : "#171717";
           return `
             <g>
               <circle cx="${p.x}" cy="${p.y}" r="18" fill="${fill}"></circle>

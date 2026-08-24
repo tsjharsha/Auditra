@@ -9,6 +9,7 @@ from .models import (
     AgentToolCall,
     DatasetBundle,
     FeeRule,
+    Merchant,
     Order,
     Payment,
     Refund,
@@ -24,22 +25,23 @@ class ToolBudgetExceeded(RuntimeError):
 
 class DatasetIndex:
     def __init__(self, dataset: DatasetBundle):
-        self.dataset = dataset
-        self.orders_by_id = {order.order_id: order for order in dataset.orders}
-        self.payments_by_id = {payment.payment_id: payment for payment in dataset.payments}
+        self.dataset = dataset.model_copy(update={"ground_truth": {}})
+        self.merchants_by_id = {merchant.merchant_id: merchant for merchant in self.dataset.merchants}
+        self.orders_by_id = {order.order_id: order for order in self.dataset.orders}
+        self.payments_by_id = {payment.payment_id: payment for payment in self.dataset.payments}
         self.settlements_by_payment: Dict[str, List[Settlement]] = {}
         self.refunds_by_payment: Dict[str, List[Refund]] = {}
         self.fee_rules_by_merchant: Dict[str, List[FeeRule]] = {}
 
-        for settlement in dataset.settlements:
+        for settlement in self.dataset.settlements:
             self.settlements_by_payment.setdefault(settlement.payment_id, []).append(settlement)
-        for refund in dataset.refunds:
+        for refund in self.dataset.refunds:
             self.refunds_by_payment.setdefault(refund.payment_id, []).append(refund)
-        for rule in dataset.fee_rules:
+        for rule in self.dataset.fee_rules:
             self.fee_rules_by_merchant.setdefault(rule.merchant_id, []).append(rule)
 
         self.payments_by_composite: Dict[tuple, List[Payment]] = {}
-        for payment in dataset.payments:
+        for payment in self.dataset.payments:
             key = (
                 payment.merchant_id,
                 payment.order_id,
@@ -56,6 +58,7 @@ class InvestigationTools:
     allowlist = {
         "find_payment",
         "find_order",
+        "find_merchant",
         "find_settlement",
         "find_refunds",
         "find_fee_rules",
@@ -63,12 +66,18 @@ class InvestigationTools:
         "compare_amounts",
         "check_temporal_relationship",
         "find_related_records",
+        "find_related_transactions",
+        "check_fee_applicability",
+        "check_duplicate",
+        "get_graph_neighborhood",
         "get_evidence",
+        "create_hypothesis",
+        "verify_hypothesis",
         "create_reconciliation_case",
         "request_human_review",
     }
 
-    def __init__(self, index: DatasetIndex, run_id: str, case_id: str, max_calls: int = 24):
+    def __init__(self, index: DatasetIndex, run_id: str, case_id: str, max_calls: int = 64):
         self.index = index
         self.run_id = run_id
         self.case_id = case_id
@@ -123,6 +132,19 @@ class InvestigationTools:
             {"order_id": order_id},
             lambda: self.index.orders_by_id.get(order_id or ""),
             lambda order: {"found": order is not None, "order_id": getattr(order, "order_id", None)},
+        )
+
+    def find_merchant(self, merchant_id: str) -> Optional[Merchant]:
+        return self._record(
+            "find_merchant",
+            {"merchant_id": merchant_id},
+            lambda: self.index.merchants_by_id.get(merchant_id),
+            lambda merchant: {
+                "found": merchant is not None,
+                "merchant_id": getattr(merchant, "merchant_id", None),
+                "risk_tier": getattr(merchant, "risk_tier", None),
+                "settlement_cycle_days": getattr(merchant, "settlement_cycle_days", None),
+            },
         )
 
     def find_settlement(self, payment_id: str) -> List[Settlement]:
@@ -226,6 +248,119 @@ class InvestigationTools:
             lambda result: result,
         )
 
+    def find_related_transactions(self, payment: Payment, window_minutes: int = 10) -> Dict[str, Any]:
+        def related() -> Dict[str, Any]:
+            start = payment.captured_at - timedelta(minutes=window_minutes)
+            end = payment.captured_at + timedelta(minutes=window_minutes)
+            same_order = []
+            same_reference = []
+            nearby_same_amount = []
+            for candidate in self.index.dataset.payments:
+                if candidate.payment_id == payment.payment_id:
+                    continue
+                if candidate.order_id and candidate.order_id == payment.order_id:
+                    same_order.append(candidate.payment_id)
+                if candidate.reference_id and candidate.reference_id == payment.reference_id:
+                    same_reference.append(candidate.payment_id)
+                if (
+                    candidate.merchant_id == payment.merchant_id
+                    and candidate.customer_id == payment.customer_id
+                    and candidate.currency == payment.currency
+                    and candidate.amount == payment.amount
+                    and start <= candidate.captured_at <= end
+                ):
+                    nearby_same_amount.append(candidate.payment_id)
+            return {
+                "payment_id": payment.payment_id,
+                "same_order_payment_ids": sorted(set(same_order)),
+                "same_reference_payment_ids": sorted(set(same_reference)),
+                "nearby_same_amount_payment_ids": sorted(set(nearby_same_amount)),
+                "window_minutes": window_minutes,
+            }
+
+        return self._record(
+            "find_related_transactions",
+            {"payment_id": payment.payment_id, "window_minutes": window_minutes},
+            related,
+            lambda result: result,
+        )
+
+    def check_fee_applicability(self, fee_rule: Optional[FeeRule], payment: Payment) -> Dict[str, Any]:
+        def check() -> Dict[str, Any]:
+            if fee_rule is None:
+                return {"applicable": False, "reason": "fee rule missing"}
+            applies_at = fee_rule.applies_at(payment.captured_at)
+            currency_matches = fee_rule.currency == payment.currency
+            expected_fee = fee_rule.calculate_fee(payment.amount)
+            return {
+                "applicable": applies_at and currency_matches,
+                "applies_at_capture": applies_at,
+                "currency_matches": currency_matches,
+                "fee_rule_id": fee_rule.fee_rule_id,
+                "expected_fee": str(expected_fee),
+            }
+
+        return self._record(
+            "check_fee_applicability",
+            {"payment_id": payment.payment_id, "fee_rule_id": getattr(fee_rule, "fee_rule_id", None)},
+            check,
+            lambda result: result,
+        )
+
+    def check_duplicate(self, payment: Payment) -> Dict[str, Any]:
+        def check() -> Dict[str, Any]:
+            key = (payment.merchant_id, payment.order_id, payment.customer_id, payment.currency, str(payment.amount))
+            duplicates = self.index.payments_by_composite.get(key, [])
+            duplicate_ids = [item.payment_id for item in duplicates if item.payment_id != payment.payment_id]
+            canonical = duplicates[0].payment_id if duplicates else payment.payment_id
+            return {
+                "is_duplicate": canonical != payment.payment_id,
+                "canonical_payment_id": canonical,
+                "duplicate_payment_ids": duplicate_ids,
+                "duplicate_count": len(duplicate_ids),
+            }
+
+        return self._record(
+            "check_duplicate",
+            {"payment_id": payment.payment_id},
+            check,
+            lambda result: result,
+        )
+
+    def get_graph_neighborhood(self, payment_id: str) -> Dict[str, Any]:
+        def neighborhood() -> Dict[str, Any]:
+            payment = self.index.payments_by_id[payment_id]
+            settlements = self.index.settlements_by_payment.get(payment_id, [])
+            refunds = self.index.refunds_by_payment.get(payment_id, [])
+            order_id = payment.order_id if payment.order_id in self.index.orders_by_id else None
+            related = self.find_related_records(payment)
+            return {
+                "center": f"PAYMENT:{payment.payment_id}",
+                "nodes": [
+                    f"PAYMENT:{payment.payment_id}",
+                    f"MERCHANT:{payment.merchant_id}",
+                    f"CUSTOMER:{payment.customer_id}",
+                    *([f"ORDER:{order_id}"] if order_id else []),
+                    *[f"SETTLEMENT:{item.settlement_id}" for item in settlements],
+                    *[f"REFUND:{item.refund_id}" for item in refunds],
+                    *[f"PAYMENT:{item}" for item in related.get("duplicate_payment_ids", [])],
+                ],
+                "relationships": [
+                    "BELONGS_TO",
+                    *(['CREATED'] if order_id else []),
+                    *(['SETTLED'] if settlements else []),
+                    *(['REFUNDED'] if refunds else []),
+                    *(['RELATED_TO'] if related.get("duplicate_payment_ids") else []),
+                ],
+            }
+
+        return self._record(
+            "get_graph_neighborhood",
+            {"payment_id": payment_id},
+            neighborhood,
+            lambda result: result,
+        )
+
     def get_evidence(self, entity_type: str, entity_id: str) -> Dict[str, Any]:
         def evidence() -> Dict[str, Any]:
             return {"entity_type": entity_type, "entity_id": entity_id, "available": True}
@@ -234,6 +369,39 @@ class InvestigationTools:
             "get_evidence",
             {"entity_type": entity_type, "entity_id": entity_id},
             evidence,
+            lambda result: result,
+        )
+
+    def create_hypothesis(self, label: str, evidence_ids: List[str]) -> Dict[str, Any]:
+        def create() -> Dict[str, Any]:
+            return {
+                "hypothesis_id": f"HYP_{uuid.uuid4().hex[:10]}",
+                "label": label,
+                "evidence_ids": evidence_ids,
+                "created": True,
+            }
+
+        return self._record(
+            "create_hypothesis",
+            {"label": label, "evidence_ids": evidence_ids},
+            create,
+            lambda result: result,
+        )
+
+    def verify_hypothesis(self, hypothesis_id: str, checks: List[Dict[str, Any]]) -> Dict[str, Any]:
+        def verify() -> Dict[str, Any]:
+            failed = [item for item in checks if not bool(item.get("passed"))]
+            return {
+                "hypothesis_id": hypothesis_id,
+                "passed": len(failed) == 0,
+                "failed_checks": failed,
+                "check_count": len(checks),
+            }
+
+        return self._record(
+            "verify_hypothesis",
+            {"hypothesis_id": hypothesis_id, "checks": checks},
+            verify,
             lambda result: result,
         )
 

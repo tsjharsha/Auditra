@@ -1,8 +1,20 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Optional
+from typing import Any, Iterable, List, Optional
 
-from .models import EvidenceGraph, EvidenceItem, FeeRule, GraphEdge, GraphNode, Order, Payment, Refund, Settlement
+from .models import (
+    AIInvestigationResult,
+    EvidenceGraph,
+    EvidenceItem,
+    FeeRule,
+    GraphEdge,
+    GraphNode,
+    Order,
+    Payment,
+    Refund,
+    ReconciliationStatus,
+    Settlement,
+)
 
 
 def build_evidence_items(
@@ -75,124 +87,264 @@ def build_graph(
     settlements: List[Settlement],
     refunds: List[Refund],
     fee_rule: Optional[FeeRule],
+    case_id: Optional[str] = None,
+    status: Optional[ReconciliationStatus | str] = None,
+    evidence_items: Optional[List[EvidenceItem]] = None,
+    supporting_evidence: Optional[List[str]] = None,
+    contradicting_evidence: Optional[List[str]] = None,
+    ai_investigation: Optional[AIInvestigationResult] = None,
+    risk_score: float = 0.0,
 ) -> EvidenceGraph:
+    def edge(
+        id: str,
+        source: str,
+        target: str,
+        relationship: str,
+        confidence: float,
+        evidence_id: Optional[str] = None,
+        record_source: str = "auditra",
+        timestamp: Optional[str] = None,
+        extra: Optional[dict[str, Any]] = None,
+    ) -> GraphEdge:
+        data = {"record_source": record_source}
+        if timestamp:
+            data["timestamp"] = timestamp
+        if extra:
+            data.update(extra)
+        return GraphEdge(
+            id=id,
+            source=source,
+            target=target,
+            relationship=relationship,
+            confidence=confidence,
+            evidence_id=evidence_id,
+            data=data,
+        )
+
+    transaction_node_id = f"TRANSACTION:{payment.payment_id}"
     nodes: List[GraphNode] = [
         GraphNode(
+            id=transaction_node_id,
+            type="Transaction",
+            label=payment.payment_id,
+            evidence_id=f"EVD_PAYMENT_{payment.payment_id}",
+            data={"amount": str(payment.amount), "currency": payment.currency, "risk_score": risk_score},
+        ),
+        GraphNode(
             id=f"PAYMENT:{payment.payment_id}",
-            type="payment",
+            type="Payment",
             label=payment.payment_id,
             evidence_id=f"EVD_PAYMENT_{payment.payment_id}",
             data={"amount": str(payment.amount), "currency": payment.currency},
         ),
         GraphNode(
             id=f"MERCHANT:{payment.merchant_id}",
-            type="merchant",
+            type="Merchant",
             label=payment.merchant_id,
             data={"merchant_id": payment.merchant_id},
         ),
         GraphNode(
             id=f"CUSTOMER:{payment.customer_id}",
-            type="customer",
+            type="Customer",
             label=payment.customer_id,
             data={"customer_id": payment.customer_id},
         ),
     ]
     edges: List[GraphEdge] = [
-        GraphEdge(
+        edge(
+            f"EDGE_TRANSACTION_PAYMENT_{payment.payment_id}",
+            transaction_node_id,
+            f"PAYMENT:{payment.payment_id}",
+            "PAID",
+            1.0,
+            f"EVD_PAYMENT_{payment.payment_id}",
+            payment.source,
+            payment.captured_at.isoformat(),
+        ),
+        edge(
             id=f"EDGE_MERCHANT_PAYMENT_{payment.payment_id}",
             source=f"MERCHANT:{payment.merchant_id}",
-            target=f"PAYMENT:{payment.payment_id}",
-            relationship="receives",
+            target=transaction_node_id,
+            relationship="BELONGS_TO",
             confidence=1.0,
             evidence_id=f"EVD_PAYMENT_{payment.payment_id}",
+            record_source=payment.source,
+            timestamp=payment.captured_at.isoformat(),
         ),
-        GraphEdge(
+        edge(
             id=f"EDGE_CUSTOMER_PAYMENT_{payment.payment_id}",
             source=f"CUSTOMER:{payment.customer_id}",
-            target=f"PAYMENT:{payment.payment_id}",
-            relationship="pays",
+            target=transaction_node_id,
+            relationship="PAID",
             confidence=1.0,
             evidence_id=f"EVD_PAYMENT_{payment.payment_id}",
+            record_source=payment.source,
+            timestamp=payment.captured_at.isoformat(),
         ),
     ]
     if order:
         nodes.append(
             GraphNode(
                 id=f"ORDER:{order.order_id}",
-                type="order",
+                type="Order",
                 label=order.order_id,
                 evidence_id=f"EVD_ORDER_{order.order_id}",
                 data={"amount": str(order.amount), "currency": order.currency},
             )
         )
         edges.append(
-            GraphEdge(
+            edge(
                 id=f"EDGE_ORDER_PAYMENT_{payment.payment_id}",
                 source=f"ORDER:{order.order_id}",
                 target=f"PAYMENT:{payment.payment_id}",
-                relationship="creates",
+                relationship="CREATED",
                 confidence=1.0 if order.order_id == payment.order_id else 0.0,
                 evidence_id=f"EVD_ORDER_{order.order_id}",
+                record_source=order.source,
+                timestamp=order.created_at.isoformat(),
             )
         )
     for settlement in settlements:
         nodes.append(
             GraphNode(
                 id=f"SETTLEMENT:{settlement.settlement_id}",
-                type="settlement",
+                type="Settlement",
                 label=settlement.settlement_id,
                 evidence_id=f"EVD_SETTLEMENT_{settlement.settlement_id}",
                 data={"amount": str(settlement.amount), "currency": settlement.currency},
             )
         )
         edges.append(
-            GraphEdge(
+            edge(
                 id=f"EDGE_PAYMENT_SETTLEMENT_{settlement.settlement_id}",
                 source=f"PAYMENT:{payment.payment_id}",
                 target=f"SETTLEMENT:{settlement.settlement_id}",
-                relationship="settles_through",
+                relationship="SETTLED",
                 confidence=1.0,
                 evidence_id=f"EVD_SETTLEMENT_{settlement.settlement_id}",
+                record_source=settlement.source,
+                timestamp=settlement.settled_at.isoformat(),
             )
         )
     for refund in refunds:
         nodes.append(
             GraphNode(
                 id=f"REFUND:{refund.refund_id}",
-                type="refund",
+                type="Refund",
                 label=refund.refund_id,
                 evidence_id=f"EVD_REFUND_{refund.refund_id}",
                 data={"amount": str(refund.amount), "currency": refund.currency},
             )
         )
         edges.append(
-            GraphEdge(
+            edge(
                 id=f"EDGE_PAYMENT_REFUND_{refund.refund_id}",
                 source=f"PAYMENT:{payment.payment_id}",
                 target=f"REFUND:{refund.refund_id}",
-                relationship="adjusted_by",
+                relationship="REFUNDED",
                 confidence=1.0,
                 evidence_id=f"EVD_REFUND_{refund.refund_id}",
+                record_source=refund.source,
+                timestamp=refund.refunded_at.isoformat(),
             )
         )
     if fee_rule:
         nodes.append(
             GraphNode(
                 id=f"FEE_RULE:{fee_rule.fee_rule_id}",
-                type="fee_rule",
+                type="FeeRule",
                 label=fee_rule.fee_rule_id,
                 evidence_id=f"EVD_FEE_RULE_{fee_rule.fee_rule_id}",
                 data={"percent_bps": fee_rule.percent_bps, "fixed_fee": str(fee_rule.fixed_fee)},
             )
         )
         edges.append(
-            GraphEdge(
+            edge(
                 id=f"EDGE_PAYMENT_FEE_{payment.payment_id}",
                 source=f"PAYMENT:{payment.payment_id}",
                 target=f"FEE_RULE:{fee_rule.fee_rule_id}",
-                relationship="governed_by",
+                relationship="GOVERNED_BY",
                 confidence=1.0,
                 evidence_id=f"EVD_FEE_RULE_{fee_rule.fee_rule_id}",
+                record_source=fee_rule.source,
+                timestamp=fee_rule.active_from.isoformat(),
             )
         )
+    if case_id:
+        investigation_id = f"INVESTIGATION:{case_id}"
+        decision_id = f"DECISION:{case_id}"
+        nodes.extend(
+            [
+                GraphNode(
+                    id=investigation_id,
+                    type="Investigation",
+                    label=case_id,
+                    data={
+                        "ai_investigation_id": ai_investigation.investigation_id if ai_investigation else None,
+                        "hypothesis_count": len(ai_investigation.hypotheses) if ai_investigation else 0,
+                    },
+                ),
+                GraphNode(
+                    id=decision_id,
+                    type="Decision",
+                    label=str(status) if status is not None else "PENDING",
+                    data={"status": str(status) if status is not None else None, "risk_score": risk_score},
+                ),
+            ]
+        )
+        edges.extend(
+            [
+                edge(
+                    f"EDGE_TRANSACTION_INVESTIGATION_{case_id}",
+                    transaction_node_id,
+                    investigation_id,
+                    "INVESTIGATED_BY",
+                    1.0,
+                    record_source="auditra_controller",
+                ),
+                edge(
+                    f"EDGE_INVESTIGATION_DECISION_{case_id}",
+                    investigation_id,
+                    decision_id,
+                    "RESULTED_IN",
+                    1.0,
+                    record_source="auditra_controller",
+                ),
+            ]
+        )
+
+        support_set = set(supporting_evidence or [])
+        contradiction_set = set(contradicting_evidence or [])
+        for item in evidence_items or []:
+            evidence_node_id = f"EVIDENCE:{item.evidence_id}"
+            nodes.append(
+                GraphNode(
+                    id=evidence_node_id,
+                    type="Evidence",
+                    label=item.evidence_id,
+                    evidence_id=item.evidence_id,
+                    data={"entity_type": item.entity_type, "entity_id": item.entity_id, "summary": item.summary},
+                )
+            )
+            if item.evidence_id in support_set:
+                relationship = "SUPPORTED_BY"
+                confidence = 1.0
+            elif item.evidence_id in contradiction_set:
+                relationship = "CONTRADICTED_BY"
+                confidence = 0.75
+            else:
+                relationship = "RELATED_TO"
+                confidence = 0.65
+            edges.append(
+                edge(
+                    f"EDGE_DECISION_EVIDENCE_{case_id}_{item.evidence_id}",
+                    decision_id,
+                    evidence_node_id,
+                    relationship,
+                    confidence,
+                    item.evidence_id,
+                    item.source,
+                    extra={"entity_type": item.entity_type, "entity_id": item.entity_id},
+                )
+            )
     return EvidenceGraph(transaction_id=payment.payment_id, nodes=nodes, edges=edges)

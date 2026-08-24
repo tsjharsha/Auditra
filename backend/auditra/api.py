@@ -221,6 +221,20 @@ def create_evaluation_run(request: EvaluationRunRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@app.post("/evaluation/compare")
+def compare_controller_modes(request: EvaluationRunRequest) -> Dict[str, Any]:
+    try:
+        dataset_id = request.dataset_id
+        if not dataset_id:
+            dataset = store.create_dataset(
+                ScenarioRequest(mode=request.mode, record_count=request.record_count, seed=request.seed)
+            )
+            dataset_id = dataset.dataset_id
+        return store.compare_controllers(dataset_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
 @app.get("/evaluation/runs/{evaluation_run_id}")
 def get_evaluation_run(evaluation_run_id: str) -> Dict[str, Any]:
     try:
