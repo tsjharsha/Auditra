@@ -29,6 +29,23 @@ class ApiTests(unittest.TestCase):
         self.assertIn("evaluation", body)
         self.assertNotIn("ground_truth", body["dataset"])
 
+    def test_world_build_endpoint(self) -> None:
+        client = TestClient(app)
+        response = client.post(
+            "/worlds/build",
+            json={
+                "prompt": "Generate an Indian e-commerce merchant with 50 orders, UPI and card payments, 2% fees, T+2 settlement and realistic anomalies.",
+                "seed": 42,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertIn("world_id", body)
+        self.assertIn("schema_preview", body)
+        self.assertIn("relationship_model", body)
+        self.assertTrue(body["validation"]["valid"])
+        self.assertNotIn("ground_truth", body)
+
 
 if __name__ == "__main__":
     unittest.main()

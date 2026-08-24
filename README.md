@@ -1,26 +1,41 @@
 # Auditra
 
-Autonomous financial control you can verify.
+From financial intent to verified control.
 
-Auditra is an AI Finance Controller focused on one strong finance-ops loop: multi-source payment reconciliation across orders, payments, settlements, refunds, and fee rules. The controller uses deterministic financial arithmetic, bounded investigation tools, financial invariants, dynamic AI-assisted hypotheses, evidence graphs, verification checks, human escalation, and independent evaluation.
+Auditra is an autonomous financial control system. A user describes a financial world in natural language; Auditra builds a deterministic synthetic finance environment, stresses it with controlled anomalies, audits it with deterministic controls and bounded AI investigation, then independently proves what the controller got right and wrong.
 
-It is not a chatbot and it does not ask an LLM to do authoritative money math.
+It is not a chatbot, and it does not ask an LLM to do authoritative money math.
 
-## What Works Now
+## Product Loop
 
-- Deterministic scenario generation for 10 to 10,000 payment-level records.
-- Linked orders, payments, settlements, refunds, merchants, and fee rules.
-- Hidden ground truth isolated from controller execution.
-- Decimal-only fee, refund, settlement, difference, and impact calculations.
-- Bounded tool layer with structured tool-call logs.
-- Dynamic exception investigation with explicit hypotheses and self-challenge.
-- Rule-level financial invariant results with evidence IDs.
-- Evidence graph per transaction, including investigation, decision, and evidence nodes.
-- Risk scoring and review prioritization fields.
-- Verification stage before final decision.
-- Human-review and unresolved states.
-- Independent evaluator with accuracy, precision, recall, F1, false-positive and false-negative rates, throughput, median/p95/p99 latency, cost/tool metrics, failure taxonomy, and financial impact metrics.
-- FastAPI endpoints for datasets, controller runs, reconciliation cases, exceptions, evidence, graphs, audit trail, evaluation, and demo mode.
+```text
+CREATE -> STRESS -> AUDIT -> PROVE
+```
+
+1. Describe a financial system.
+2. Preview schema and relationships.
+3. Generate a validated financial world.
+4. Inject hidden controlled anomalies.
+5. Run reconciliation and AI-assisted investigation.
+6. Inspect evidence, graph, hypotheses, verification, and human review.
+7. Compare AI-assisted control with deterministic baseline.
+
+## What Works
+
+- Prompt-to-`FinancialWorldSpec` world builder.
+- Deterministic generation of merchants, orders, payments, settlements, refunds, and fee rules.
+- Schema preview and relationship model.
+- World validation before audit.
+- Hidden ground truth isolated from the controller.
+- CSV, JSON, and Razorpay test-data adapters.
+- Decimal-only financial arithmetic.
+- Financial invariant engine.
+- Evidence graph with source records, investigation, decision, and evidence nodes.
+- Bounded AI investigation with hypotheses, self-challenge, typed tools, and verification.
+- Human review actions.
+- Independent evaluation with confusion matrix, failure taxonomy, financial impact, latency, throughput, tool calls, LLM calls, and estimated cost.
+- Optional OpenAI providers for world understanding and investigation planning.
+- Optional PostgreSQL persistence via `AUDITRA_DATABASE_URL`.
 
 ## Quick Start
 
@@ -28,14 +43,6 @@ Use Python 3.11+.
 
 ```powershell
 python -m pip install -r requirements.txt
-python scripts/demo_run.py --mode MIXED --records 1000 --seed 42
-```
-
-The demo writes source CSVs plus a compact `controller_run.json`, `evaluation_report.json`, and `latest_summary.json` under `data/demo/`. Use `--write-full-run` only when you need every case graph and tool call in JSON.
-
-Run tests:
-
-```powershell
 python -m unittest discover -s tests -v
 ```
 
@@ -46,50 +53,63 @@ $env:PYTHONPATH="$PWD\backend"
 uvicorn auditra.api:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Open API docs at:
+Open the app:
 
 ```text
-http://127.0.0.1:8000/docs
+http://127.0.0.1:5173/
 ```
 
-Open the local console:
+If you only need the static file:
 
 ```text
 frontend/index.html
 ```
 
-Compare deterministic-only and AI-assisted modes:
+Run the final product demo from CLI:
 
 ```powershell
-python scripts/compare_controllers.py --records 1000 --mode MIXED --seed 42
+python scripts/world_demo.py --seed 42
 ```
 
-## Demo Flow
-
-1. Create a 1,000-record scenario.
-2. Run the controller.
-3. Inspect metrics from actual execution.
-4. Open a resolved case and inspect the evidence graph.
-5. Open a review/escalated case and inspect why it was not auto-resolved.
-6. Run evaluation and reveal hidden ground truth.
-7. Inspect every failure record.
-
-CLI:
+Run benchmarks:
 
 ```powershell
-python scripts/demo_run.py --mode ADVERSARIAL --records 1000 --seed 42
+python scripts/benchmark.py --counts 100 500 1000 --mode MIXED --seed 42
 ```
 
-API:
+## Measured Seed-42 World Demo
 
-```powershell
-curl -X POST http://127.0.0.1:8000/demo -H "Content-Type: application/json" -d "{\"mode\":\"ADVERSARIAL\",\"record_count\":1000,\"seed\":42}"
+Prompt:
+
+```text
+Generate an Indian e-commerce merchant with 500 orders, UPI and card payments, 2% platform fees, T+2 settlement, refunds, partial settlements and realistic reconciliation anomalies.
 ```
 
-The response says either `CONTROLLER SURVIVED` or `CONTROLLER FAILED N CASES` based on measured evaluation output.
+Result:
+
+- 500 orders
+- 506 payments
+- 486 settlements
+- 60 refunds
+- 112 controlled anomalies
+- INR 2145335.29 payment volume
+- 95.85% accuracy
+- 96.64% automatic resolution
+- 3.36% human escalation
+- 813.47 records/sec AI-assisted throughput in the latest acceptance run
+- 0 external LLM calls by default
+
+AI-assisted mode added evidence depth and investigation traceability in this run. It did not improve classification accuracy versus deterministic baseline, and Auditra reports that honestly.
 
 ## API Surface
 
+- `POST /worlds/preview`
+- `POST /worlds/build`
+- `POST /worlds/spec`
+- `GET /worlds`
+- `GET /worlds/{world_id}`
+- `POST /worlds/{world_id}/audit`
+- `POST /ingest/{adapter}`
 - `POST /datasets`
 - `GET /datasets`
 - `POST /controller/runs`
@@ -103,38 +123,51 @@ The response says either `CONTROLLER SURVIVED` or `CONTROLLER FAILED N CASES` ba
 - `POST /investigations/{id}/run`
 - `POST /review/{id}`
 - `GET /audit`
-- `POST /evaluation/scenarios`
 - `POST /evaluation/runs`
 - `POST /evaluation/compare`
 - `GET /evaluation/runs/{id}`
 - `GET /evaluation/runs/{id}/failures`
 - `POST /demo`
 
-## Architecture
+## Optional LLM Providers
 
-See [docs/architecture.md](docs/architecture.md), [docs/agent_design.md](docs/agent_design.md), [docs/evaluation.md](docs/evaluation.md), and [docs/security.md](docs/security.md).
+Local demos are offline by default. To use OpenAI for structured world understanding or investigation planning:
 
-The implementation separates:
+```powershell
+$env:OPENAI_API_KEY="..."
+$env:AUDITRA_USE_OPENAI_WORLD_BUILDER="1"
+$env:AUDITRA_USE_OPENAI_INVESTIGATOR="1"
+$env:AUDITRA_OPENAI_MODEL="gpt-5-mini"
+```
 
-- deterministic finance engine
-- bounded investigation tools
-- AI-assisted hypothesis layer
-- financial invariant engine
-- risk scoring
-- verification layer
-- human escalation
-- independent evaluation
+LLMs produce structured specs or investigation plans only. Deterministic systems generate records, compute money, verify decisions, and evaluate results.
 
-## Galarix Reference
+## Optional PostgreSQL
 
-Galarix was inspected for selective reuse ideas only. Auditra does not copy the Galarix product, UI, routes, branding, or synthetic-data pipeline.
+Apply:
 
-See [docs/galarix_reuse_map.md](docs/galarix_reuse_map.md).
+```text
+migrations/001_initial_postgres.sql
+```
 
-## Current Limitations
+Then set:
 
-- Persistence is in-memory for the first working slice.
-- Upload ingestion is not yet exposed through file upload endpoints.
-- The frontend is a lightweight static console in this phase.
-- External LLM calls are intentionally disabled by default; the local provider is offline and structured.
-- Razorpay test-mode adapters are planned but not required for the local demo.
+```powershell
+$env:AUDITRA_DATABASE_URL="postgresql://..."
+```
+
+Without a database URL, Auditra uses in-memory storage for the local demo.
+
+## Documentation
+
+- [Final Architecture](docs/final_architecture.md)
+- [World Builder](docs/world_builder.md)
+- [Agent Design](docs/agent_design.md)
+- [Data Model](docs/data_model.md)
+- [Evaluation](docs/evaluation.md)
+- [Benchmarks](docs/benchmarks.md)
+- [Security](docs/security.md)
+- [Demo Script](docs/demo_script.md)
+- [Galarix Integration Boundary](docs/galarix_integration.md)
+- [Engineering Decisions](docs/decisions.md)
+- [Final Quality Report](docs/final_quality_report.md)

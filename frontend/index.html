@@ -7,60 +7,69 @@
     <style>
       :root {
         color-scheme: light;
-        --ink: #171717;
-        --muted: #66615b;
-        --line: #dedad3;
-        --paper: #fbfaf7;
+        --bg: #f7f8fb;
         --panel: #ffffff;
-        --mint: #0f766e;
-        --amber: #a16207;
+        --ink: #16181d;
+        --muted: #667085;
+        --line: #d7dce5;
+        --soft: #eef2f7;
+        --teal: #0f766e;
+        --teal-soft: #e6f5f3;
+        --indigo: #4338ca;
+        --indigo-soft: #eef2ff;
+        --amber: #b45309;
+        --amber-soft: #fff7ed;
         --rose: #be123c;
+        --rose-soft: #fff1f2;
         --green: #15803d;
-        --violet: #6d28d9;
+        --green-soft: #ecfdf3;
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
 
       body {
         margin: 0;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: var(--paper);
+        background: var(--bg);
         color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
       header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.94);
+      }
+
+      .topbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 20px;
-        padding: 18px 28px;
-        border-bottom: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.86);
-        position: sticky;
-        top: 0;
-        z-index: 10;
+        gap: 18px;
+        padding: 14px 24px;
       }
 
       .brand {
         display: flex;
         align-items: center;
         gap: 12px;
-        min-width: 0;
+        min-width: 230px;
       }
 
       .mark {
         width: 34px;
         height: 34px;
         border-radius: 8px;
-        background: conic-gradient(from 190deg, var(--mint), #111827, var(--amber), var(--mint));
+        background: linear-gradient(135deg, var(--ink) 0%, var(--teal) 52%, var(--amber) 100%);
       }
 
+      h1, h2, h3, p { margin: 0; }
+
       h1 {
-        margin: 0;
-        font-size: 20px;
+        font-size: 19px;
         line-height: 1.1;
+        letter-spacing: 0;
       }
 
       .tagline {
@@ -69,83 +78,92 @@
         margin-top: 2px;
       }
 
-      .actions {
+      nav {
         display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
+        gap: 4px;
+        overflow: auto;
+        padding: 0 24px 12px;
       }
 
-      button, select, input {
+      nav button {
+        min-width: max-content;
+      }
+
+      button, textarea, input, select {
         border: 1px solid var(--line);
+        border-radius: 8px;
         background: var(--panel);
         color: var(--ink);
-        border-radius: 8px;
-        min-height: 36px;
-        padding: 0 12px;
         font: inherit;
       }
 
       button {
+        min-height: 36px;
+        padding: 0 12px;
         cursor: pointer;
-        font-weight: 700;
+        font-weight: 750;
       }
 
       button.primary {
         background: var(--ink);
-        color: #fff;
         border-color: var(--ink);
+        color: #fff;
+      }
+
+      button.teal {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: #fff;
+      }
+
+      button.ghost {
+        background: transparent;
+      }
+
+      button.active {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+
+      button.warn {
+        background: var(--amber-soft);
+        border-color: #fed7aa;
+        color: var(--amber);
       }
 
       button.danger {
-        background: #fff1f2;
-        color: var(--rose);
+        background: var(--rose-soft);
         border-color: #fecdd3;
+        color: var(--rose);
       }
 
       main {
-        max-width: 1440px;
+        max-width: 1480px;
         margin: 0 auto;
-        padding: 22px 28px 40px;
+        padding: 22px 24px 46px;
       }
 
-      .metrics {
+      .hero {
         display: grid;
-        grid-template-columns: repeat(6, minmax(140px, 1fr));
-        gap: 10px;
+        grid-template-columns: minmax(420px, 0.95fr) minmax(440px, 1.05fr);
+        gap: 16px;
+        align-items: stretch;
       }
 
-      .metric {
+      .panel {
         background: var(--panel);
         border: 1px solid var(--line);
         border-radius: 8px;
-        padding: 14px;
-      }
-
-      .metric label {
-        display: block;
-        color: var(--muted);
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0;
-      }
-
-      .metric strong {
-        display: block;
-        margin-top: 8px;
-        font-size: 24px;
-      }
-
-      .layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
-        gap: 16px;
-        margin-top: 16px;
-        align-items: start;
-      }
-
-      section {
+        padding: 16px;
         min-width: 0;
+      }
+
+      .surface {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
       }
 
       .section-head {
@@ -156,16 +174,143 @@
         margin: 22px 0 10px;
       }
 
-      h2 {
-        margin: 0;
+      h2 { font-size: 16px; }
+      h3 { font-size: 13px; }
+
+      .headline {
+        font-size: 34px;
+        line-height: 1.05;
+        max-width: 720px;
+        margin-bottom: 10px;
+      }
+
+      .subhead {
+        color: var(--muted);
         font-size: 15px;
+        max-width: 780px;
+        line-height: 1.5;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 138px;
+        resize: vertical;
+        padding: 13px;
+        line-height: 1.45;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .field label {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 750;
+        text-transform: uppercase;
+        letter-spacing: 0;
+        margin-bottom: 5px;
+      }
+
+      input, select {
+        width: 100%;
+        min-height: 36px;
+        padding: 0 10px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+
+      .status {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .timeline {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .step {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 8px;
+        padding: 10px;
+        min-height: 80px;
+      }
+
+      .step.done { border-color: #99f6e4; background: var(--teal-soft); }
+      .step.active { border-color: #c7d2fe; background: var(--indigo-soft); }
+
+      .step strong {
+        display: block;
+        font-size: 12px;
+        margin-bottom: 5px;
+      }
+
+      .step span {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(130px, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        min-height: 82px;
+      }
+
+      .metric label {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 750;
+        text-transform: uppercase;
+        letter-spacing: 0;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 22px;
+        line-height: 1.1;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
       }
 
       .table-wrap {
         overflow: auto;
+        background: var(--panel);
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: var(--panel);
       }
 
       table {
@@ -183,396 +328,737 @@
       }
 
       th {
+        background: var(--soft);
         color: var(--muted);
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0;
-        background: #f4f2ed;
       }
 
-      tr {
-        cursor: pointer;
-      }
-
-      tr:hover td {
-        background: #faf6ed;
-      }
+      tbody tr { cursor: pointer; }
+      tbody tr:hover td { background: #f9fafb; }
 
       .pill {
         display: inline-flex;
         align-items: center;
+        border: 1px solid var(--line);
         border-radius: 999px;
-        padding: 4px 8px;
-        font-weight: 800;
+        min-height: 23px;
+        padding: 3px 8px;
         font-size: 11px;
-        border: 1px solid var(--line);
+        font-weight: 800;
       }
 
-      .ok { color: var(--green); background: #f0fdf4; border-color: #bbf7d0; }
-      .warn { color: var(--amber); background: #fffbeb; border-color: #fde68a; }
-      .bad { color: var(--rose); background: #fff1f2; border-color: #fecdd3; }
-      .review { color: var(--violet); background: #f5f3ff; border-color: #ddd6fe; }
+      .ok { color: var(--green); background: var(--green-soft); border-color: #bbf7d0; }
+      .bad { color: var(--rose); background: var(--rose-soft); border-color: #fecdd3; }
+      .warn-pill { color: var(--amber); background: var(--amber-soft); border-color: #fed7aa; }
+      .review { color: var(--indigo); background: var(--indigo-soft); border-color: #c7d2fe; }
 
-      .panel {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        padding: 14px;
-      }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .muted { color: var(--muted); }
 
-      .timeline {
+      .list {
         display: grid;
         gap: 8px;
-        margin: 0;
-        padding: 0;
-        list-style: none;
       }
 
-      .timeline li {
-        border-left: 3px solid var(--mint);
-        padding-left: 10px;
-        color: #2f2b27;
+      .row {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 10px;
         font-size: 13px;
+      }
+
+      .row strong {
+        display: block;
+        margin-bottom: 4px;
       }
 
       .graph {
         width: 100%;
-        height: 320px;
+        height: 360px;
+        background: #fbfdff;
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: #fffdf9;
       }
 
-      .failures {
-        display: grid;
-        gap: 10px;
+      .hidden { display: none !important; }
+
+      @media (max-width: 1120px) {
+        .hero, .grid-2 { grid-template-columns: 1fr; }
+        .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
 
-      .detail-list {
-        display: grid;
-        gap: 8px;
-        margin-top: 10px;
-      }
-
-      .detail-row {
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        padding: 10px;
-        font-size: 12px;
-        background: #fffdf9;
-      }
-
-      .detail-row strong {
-        display: block;
-        font-size: 13px;
-        margin-bottom: 5px;
-      }
-
-      .meta {
-        color: var(--muted);
-        font-size: 12px;
-      }
-
-      .failure {
-        border: 1px solid #fecdd3;
-        background: #fff7f8;
-        border-radius: 8px;
-        padding: 12px;
-      }
-
-      .mono {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      }
-
-      @media (max-width: 980px) {
-        header {
-          align-items: flex-start;
-          flex-direction: column;
-        }
-
-        .metrics {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .layout {
-          grid-template-columns: 1fr;
-        }
+      @media (max-width: 720px) {
+        .topbar { align-items: flex-start; flex-direction: column; }
+        main { padding: 16px; }
+        .headline { font-size: 26px; }
+        .metrics, .grid-3, .form-row, .timeline { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
     <header>
-      <div class="brand">
-        <div class="mark" aria-hidden="true"></div>
-        <div>
-          <h1>Auditra</h1>
-          <div class="tagline">Autonomous financial control you can verify.</div>
+      <div class="topbar">
+        <div class="brand">
+          <div class="mark" aria-hidden="true"></div>
+          <div>
+            <h1>Auditra</h1>
+            <div class="tagline">From financial intent to verified control.</div>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:0">
+          <button id="quickDemo" class="ghost">Use Demo Scenario</button>
+          <button id="breakController" class="danger">Break The Controller</button>
         </div>
       </div>
-      <div class="actions">
-        <select id="mode">
-          <option value="MIXED">Mixed</option>
-          <option value="NORMAL">Normal</option>
-          <option value="DIFFICULT">Difficult</option>
-          <option value="ADVERSARIAL">Adversarial</option>
-        </select>
-        <input id="records" type="number" min="10" max="10000" step="10" value="1000" />
-        <input id="seed" type="number" value="42" />
-        <button id="run" class="primary">Run</button>
-        <button id="break" class="danger">Break</button>
-      </div>
+      <nav id="nav"></nav>
     </header>
 
     <main>
-      <div id="status" class="panel mono">Ready</div>
-
-      <div class="metrics" id="metrics"></div>
-
-      <div class="layout">
-        <section>
-          <div class="section-head">
-            <h2>Reconciliation</h2>
-            <select id="filter">
-              <option value="">All statuses</option>
-              <option value="MATCHED">Matched</option>
-              <option value="FEE_EXPLAINED">Fee explained</option>
-              <option value="REFUND_ADJUSTED">Refund adjusted</option>
-              <option value="AMOUNT_MISMATCH">Amount mismatch</option>
-              <option value="MISSING_SETTLEMENT">Missing settlement</option>
-              <option value="DUPLICATE">Duplicate</option>
-              <option value="TIMING_MISMATCH">Timing mismatch</option>
-              <option value="PARTIAL_MATCH">Partial match</option>
-              <option value="HUMAN_REVIEW">Human review</option>
-            </select>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Transaction</th>
-                  <th>Order</th>
-                  <th>Status</th>
-                  <th>Confidence</th>
-                  <th>Risk</th>
-                  <th>AI</th>
-                  <th>Expected</th>
-                  <th>Actual</th>
-                  <th>Difference</th>
-                  <th>Impact</th>
-                </tr>
-              </thead>
-              <tbody id="caseRows"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <section>
-          <div class="section-head">
-            <h2>Investigation</h2>
-            <span id="selected" class="mono"></span>
+      <section id="view-home">
+        <div class="hero">
+          <div class="panel">
+            <h2 class="headline">FROM FINANCIAL INTENT TO VERIFIED CONTROL.</h2>
+            <p class="subhead">Describe a financial world. Auditra builds it, stresses it, audits it, and proves what the controller got right.</p>
+            <div class="section-head"><h2>World Prompt</h2><span id="apiState" class="pill warn-pill">Ready</span></div>
+            <textarea id="worldPrompt">Generate an Indian e-commerce merchant with 500 orders, UPI and card payments, 2% platform fees, T+2 settlement, refunds, partial settlements and realistic reconciliation anomalies.</textarea>
+            <div class="form-row">
+              <div class="field">
+                <label>Seed</label>
+                <input id="seed" type="number" value="42" />
+              </div>
+              <div class="field">
+                <label>Records</label>
+                <input id="recordOverride" type="number" min="10" max="10000" value="500" />
+              </div>
+              <div class="field">
+                <label>Stress</label>
+                <select id="stressMode">
+                  <option value="realistic reconciliation anomalies">Stressed</option>
+                  <option value="normal transactions">Normal</option>
+                  <option value="adversarial anomalies">Adversarial</option>
+                  <option value="chaos anomalies">Chaos</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button id="previewWorld">Preview Schema</button>
+              <button id="buildWorld" class="primary">Build Financial World</button>
+              <button id="auditWorld" class="teal" disabled>Audit This World</button>
+            </div>
+            <div id="status" class="status mono">No world built yet.</div>
           </div>
           <div class="panel">
-            <svg id="graph" class="graph" viewBox="0 0 720 320" role="img"></svg>
-            <div class="section-head"><h2>Timeline</h2></div>
-            <ul id="timeline" class="timeline"></ul>
-            <div class="section-head"><h2>Hypotheses</h2></div>
-            <div id="hypotheses" class="detail-list"></div>
-            <div class="section-head"><h2>Invariants</h2></div>
-            <div id="invariants" class="detail-list"></div>
+            <div class="timeline" id="builderTimeline"></div>
           </div>
+        </div>
 
-          <div class="section-head">
-            <h2>Break The Controller</h2>
-            <span id="survival" class="pill warn">No run</span>
+        <div class="section-head"><h2>Financial World</h2><span id="worldBadge" class="pill warn-pill">Not built</span></div>
+        <div class="metrics" id="worldMetrics"></div>
+      </section>
+
+      <section id="view-world" class="hidden">
+        <div class="grid-2">
+          <div>
+            <div class="section-head"><h2>Schema</h2></div>
+            <div id="schemaPreview" class="list"></div>
           </div>
-          <div id="failures" class="failures"></div>
-        </section>
-      </div>
+          <div>
+            <div class="section-head"><h2>Relationships</h2></div>
+            <div id="relationshipPreview" class="list"></div>
+          </div>
+        </div>
+        <div class="section-head"><h2>World Explorer</h2></div>
+        <div class="grid-3" id="worldExplorer"></div>
+      </section>
+
+      <section id="view-reconciliation" class="hidden">
+        <div class="section-head">
+          <h2>Reconciliation</h2>
+          <select id="caseFilter">
+            <option value="">All statuses</option>
+            <option value="MATCHED">Matched</option>
+            <option value="FEE_EXPLAINED">Fee explained</option>
+            <option value="REFUND_ADJUSTED">Refund adjusted</option>
+            <option value="AMOUNT_MISMATCH">Amount mismatch</option>
+            <option value="MISSING_SETTLEMENT">Missing settlement</option>
+            <option value="DUPLICATE">Duplicate</option>
+            <option value="TIMING_MISMATCH">Timing mismatch</option>
+            <option value="PARTIAL_MATCH">Partial match</option>
+            <option value="HUMAN_REVIEW">Human review</option>
+          </select>
+        </div>
+        <div class="metrics" id="auditMetrics"></div>
+        <div class="section-head"><h2>Transactions</h2><span id="caseCount" class="mono muted"></span></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Payment</th>
+                <th>Order</th>
+                <th>Status</th>
+                <th>Confidence</th>
+                <th>Risk</th>
+                <th>Expected</th>
+                <th>Actual</th>
+                <th>Difference</th>
+                <th>Impact</th>
+              </tr>
+            </thead>
+            <tbody id="caseRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="view-investigations" class="hidden">
+        <div class="grid-2">
+          <div class="panel">
+            <div class="section-head"><h2 id="selectedTitle">Investigation</h2><span id="selectedStatus" class="pill warn-pill">None</span></div>
+            <div id="caseFinancials" class="metrics"></div>
+            <div class="section-head"><h2>AI Investigation</h2></div>
+            <div id="hypotheses" class="list"></div>
+            <div class="section-head"><h2>Verification</h2></div>
+            <div id="verification" class="list"></div>
+            <div class="section-head"><h2>Invariant Exceptions</h2></div>
+            <div id="invariants" class="list"></div>
+          </div>
+          <div class="panel">
+            <div class="section-head"><h2>Evidence Graph</h2><span id="graphMeta" class="mono muted"></span></div>
+            <svg id="graph" class="graph" viewBox="0 0 760 360" role="img"></svg>
+            <div class="section-head"><h2>Tool Activity</h2></div>
+            <div id="toolCalls" class="list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-review" class="hidden">
+        <div class="section-head"><h2>Human Review</h2><span id="reviewCount" class="pill review">0</span></div>
+        <div id="reviewList" class="list"></div>
+      </section>
+
+      <section id="view-evaluation" class="hidden">
+        <div class="section-head"><h2>Evaluation Lab</h2><button id="rerunCompare">Run AI vs Baseline</button></div>
+        <div class="metrics" id="evaluationMetrics"></div>
+        <div class="grid-2">
+          <div class="panel">
+            <div class="section-head"><h2>AI vs Baseline</h2></div>
+            <div id="comparison" class="list"></div>
+          </div>
+          <div class="panel">
+            <div class="section-head"><h2>Failure Analysis</h2></div>
+            <div id="failures" class="list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-audit" class="hidden">
+        <div class="section-head"><h2>Audit Trail</h2></div>
+        <div id="auditTrail" class="list"></div>
+      </section>
     </main>
 
     <script>
       const apiBase = "http://127.0.0.1:8000";
-      let latest = null;
-      let selectedCase = null;
-
-      const metricDefs = [
-        ["Records", data => data.controller_run.metrics.transactions_processed],
-        ["Volume", data => "INR " + data.controller_run.metrics.total_payment_volume],
-        ["Match rate", data => pct(data.controller_run.metrics.match_rate)],
-        ["Auto resolved", data => pct(data.controller_run.metrics.automatic_resolution_rate)],
-        ["Accuracy", data => pct(data.evaluation.metrics.accuracy)],
-        ["Throughput", data => data.evaluation.metrics.throughput_records_per_sec + "/sec"],
-        ["P99 latency", data => data.controller_run.metrics.p99_latency_ms + "ms"],
-        ["AI cases", data => data.controller_run.metrics.ai_investigation_count],
-        ["Avg risk", data => Number(data.controller_run.metrics.average_risk_score || 0).toFixed(1)],
+      const views = [
+        ["home", "Home"],
+        ["world", "World Explorer"],
+        ["reconciliation", "Reconciliation"],
+        ["investigations", "Investigations"],
+        ["review", "Human Review"],
+        ["evaluation", "Evaluation Lab"],
+        ["audit", "Audit Trail"],
       ];
+      const builderSteps = [
+        "Understand intent",
+        "Extract financial entities",
+        "Build schema",
+        "Build relationships",
+        "Configure financial rules",
+        "Generate linked data",
+        "Validate world",
+        "Inject controlled anomalies",
+      ];
+      const demoPrompt = "Generate an Indian e-commerce merchant with 500 orders, UPI and card payments, 2% platform fees, T+2 settlement, refunds, partial settlements and realistic reconciliation anomalies.";
 
-      function pct(value) {
-        return (Number(value) * 100).toFixed(1) + "%";
+      let state = {
+        view: "home",
+        preview: null,
+        world: null,
+        audit: null,
+        selectedCase: null,
+      };
+
+      function init() {
+        document.getElementById("nav").innerHTML = views.map(([id, label]) => `<button class="ghost" data-view="${id}">${label}</button>`).join("");
+        document.querySelectorAll("button[data-view]").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
+        document.getElementById("previewWorld").addEventListener("click", previewWorld);
+        document.getElementById("buildWorld").addEventListener("click", buildWorld);
+        document.getElementById("auditWorld").addEventListener("click", auditWorld);
+        document.getElementById("quickDemo").addEventListener("click", useDemo);
+        document.getElementById("breakController").addEventListener("click", breakController);
+        document.getElementById("caseFilter").addEventListener("change", renderCases);
+        document.getElementById("rerunCompare").addEventListener("click", rerunComparison);
+        renderAll();
       }
 
-      function badgeClass(status) {
-        if (["MATCHED", "FEE_EXPLAINED", "REFUND_ADJUSTED"].includes(status)) return "ok";
-        if (["HUMAN_REVIEW", "UNRESOLVED"].includes(status)) return "review";
-        if (["AMOUNT_MISMATCH", "MISSING_SETTLEMENT"].includes(status)) return "bad";
-        return "warn";
+      function promptWithOverrides() {
+        const count = Number(document.getElementById("recordOverride").value || 500);
+        const stress = document.getElementById("stressMode").value;
+        return document.getElementById("worldPrompt").value
+          .replace(/\d+\s+orders/i, count + " orders")
+          .replace(/realistic reconciliation anomalies|normal transactions|adversarial anomalies|chaos anomalies/i, stress);
       }
 
-      async function runDemo(modeOverride) {
-        const mode = modeOverride || document.getElementById("mode").value;
-        const record_count = Number(document.getElementById("records").value);
-        const seed = Number(document.getElementById("seed").value);
-        document.getElementById("status").textContent = "Running " + mode + " / " + record_count + " / seed " + seed;
-        const response = await fetch(apiBase + "/demo", {
+      async function api(path, options = {}) {
+        setApiState("Running", "review");
+        const response = await fetch(apiBase + path, options);
+        if (!response.ok) {
+          const text = await response.text();
+          setApiState("API error", "bad");
+          throw new Error(text || response.statusText);
+        }
+        const body = await response.json();
+        setApiState("Ready", "ok");
+        return body;
+      }
+
+      async function previewWorld() {
+        try {
+          setStatus("Understanding prompt and building schema preview...");
+          const body = await api("/worlds/preview", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: promptWithOverrides(), seed: Number(document.getElementById("seed").value || 42) }),
+          });
+          state.preview = body;
+          setStatus("Schema and relationship model ready.");
+          renderAll();
+          setView("world");
+        } catch (error) {
+          setStatus(error.message);
+        }
+      }
+
+      async function buildWorld() {
+        try {
+          setStatus("Generating and validating financial world...");
+          const body = await api("/worlds/build", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: promptWithOverrides(), seed: Number(document.getElementById("seed").value || 42) }),
+          });
+          state.world = body;
+          state.preview = body;
+          state.audit = null;
+          state.selectedCase = null;
+          document.getElementById("auditWorld").disabled = false;
+          setStatus(body.world_id + " created and validated.");
+          renderAll();
+          setView("world");
+        } catch (error) {
+          setStatus(error.message);
+        }
+      }
+
+      async function auditWorld() {
+        if (!state.world) return;
+        try {
+          setStatus("Auditra controller running...");
+          const body = await api("/worlds/" + encodeURIComponent(state.world.world_id) + "/audit", { method: "POST" });
+          state.audit = body;
+          state.selectedCase = firstDifficultCase() || (body.controller_run.cases || [])[0] || null;
+          setStatus(body.survival_status);
+          renderAll();
+          setView("reconciliation");
+        } catch (error) {
+          setStatus(error.message);
+        }
+      }
+
+      async function rerunComparison() {
+        if (!state.world) return;
+        const datasetId = state.world.dataset_id;
+        const comparison = await api("/evaluation/compare", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode, record_count, seed }),
+          body: JSON.stringify({ dataset_id: datasetId }),
         });
-        if (!response.ok) {
-          document.getElementById("status").textContent = "API error: " + response.status;
-          return;
-        }
-        latest = await response.json();
-        selectedCase = null;
-        document.getElementById("status").textContent = latest.dataset.dataset_id + " / " + latest.controller_run.run_id;
-        render();
+        if (state.audit) state.audit.comparison = comparison;
+        renderEvaluation();
       }
 
-      async function hydrateCases() {
-        if (!latest || latest.cases) return;
-        const runId = latest.controller_run.run_id;
-        const response = await fetch(apiBase + "/reconciliation?run_id=" + encodeURIComponent(runId) + "&limit=1000");
-        const body = await response.json();
-        latest.cases = body.cases;
-        selectedCase = latest.cases[0] || null;
+      function useDemo() {
+        document.getElementById("worldPrompt").value = demoPrompt;
+        document.getElementById("recordOverride").value = 500;
+        document.getElementById("stressMode").value = "realistic reconciliation anomalies";
+        setView("home");
       }
 
-      async function render() {
-        await hydrateCases();
-        renderMetrics();
+      async function breakController() {
+        document.getElementById("worldPrompt").value = "Generate an Indian e-commerce merchant with 500 orders, UPI and card payments, 2% platform fees, T+2 settlement, refunds, partial settlements and adversarial anomalies.";
+        document.getElementById("recordOverride").value = 500;
+        document.getElementById("stressMode").value = "adversarial anomalies";
+        await buildWorld();
+        await auditWorld();
+      }
+
+      function firstDifficultCase() {
+        const cases = state.audit?.controller_run?.cases || [];
+        return cases.find(item => item.status === "HUMAN_REVIEW")
+          || cases.find(item => !["MATCHED", "FEE_EXPLAINED", "REFUND_ADJUSTED"].includes(item.status))
+          || null;
+      }
+
+      function setView(view) {
+        state.view = view;
+        renderAll();
+      }
+
+      function renderAll() {
+        views.forEach(([id]) => {
+          document.getElementById("view-" + id).classList.toggle("hidden", state.view !== id);
+        });
+        document.querySelectorAll("button[data-view]").forEach(btn => btn.classList.toggle("active", btn.dataset.view === state.view));
+        renderTimeline();
+        renderWorld();
         renderCases();
-        renderSelected();
-        renderFailures();
+        renderInvestigation();
+        renderReview();
+        renderEvaluation();
+        renderAuditTrail();
       }
 
-      function renderMetrics() {
-        const container = document.getElementById("metrics");
-        container.innerHTML = metricDefs.map(([label, getter]) => `
-          <div class="metric">
-            <label>${label}</label>
-            <strong>${getter(latest)}</strong>
+      function renderTimeline() {
+        const completed = state.audit ? 8 : state.world ? 7 : state.preview ? 5 : 0;
+        document.getElementById("builderTimeline").innerHTML = builderSteps.map((step, index) => `
+          <div class="step ${index < completed ? "done" : index === completed ? "active" : ""}">
+            <strong>${step}</strong>
+            <span>${stepDetail(step)}</span>
           </div>
         `).join("");
       }
 
+      function stepDetail(step) {
+        const summary = state.world?.summary;
+        const spec = state.preview?.spec || state.world?.spec;
+        const details = {
+          "Understand intent": spec ? `${spec.record_count} orders, ${spec.payment_methods.join(" / ")}` : "Waiting for prompt",
+          "Extract financial entities": "Merchant, order, payment, settlement, refund, fee rule",
+          "Build schema": state.preview ? `${state.preview.schema_preview.entities.length} canonical entities` : "Not ready",
+          "Build relationships": state.preview ? `${state.preview.relationship_model.edges.length} relationship edges` : "Not ready",
+          "Configure financial rules": spec ? `${spec.fee_rate} fee, T+${spec.settlement_delay_days}` : "Not ready",
+          "Generate linked data": summary ? `${summary.payments} payments, ${summary.settlements} settlements` : "Not ready",
+          "Validate world": state.world ? "WORLD VALIDATED" : "Not ready",
+          "Inject controlled anomalies": summary ? `${summary.anomalies} anomaly labels held out` : "Not ready",
+        };
+        return details[step] || "";
+      }
+
+      function renderWorld() {
+        const summary = state.world?.summary;
+        document.getElementById("worldBadge").textContent = state.world ? "WORLD READY" : "Not built";
+        document.getElementById("worldBadge").className = "pill " + (state.world ? "ok" : "warn-pill");
+        const metrics = summary ? [
+          ["Merchant", summary.merchant],
+          ["Orders", summary.orders],
+          ["Payments", summary.payments],
+          ["Settlements", summary.settlements],
+          ["Refunds", summary.refunds],
+          ["Volume", money(summary.payment_volume)],
+          ["Settlement", summary.settlement],
+          ["Fee", summary.fee],
+          ["Anomalies", summary.anomalies],
+          ["Human review amount", money(summary.human_review_amount)],
+          ["Unresolved impact", money(summary.unresolved_amount)],
+          ["Currencies", summary.currencies.join(" / ")],
+        ] : [
+          ["Merchant", "-"], ["Orders", "-"], ["Payments", "-"], ["Settlements", "-"], ["Refunds", "-"], ["Volume", "-"],
+        ];
+        document.getElementById("worldMetrics").innerHTML = metricMarkup(metrics);
+
+        const preview = state.preview || state.world;
+        document.getElementById("schemaPreview").innerHTML = preview ? preview.schema_preview.entities.map(entity => `
+          <div class="row">
+            <strong>${entity.entity}</strong>
+            <div class="muted">${entity.fields.map(field => field.name).join(" | ")}</div>
+          </div>
+        `).join("") : empty("No schema preview yet.");
+        document.getElementById("relationshipPreview").innerHTML = preview ? preview.relationship_model.edges.map(edge => `
+          <div class="row">
+            <strong>${edge.source} ${edge.relationship} ${edge.target}</strong>
+            <div class="muted">${edge.description}</div>
+          </div>
+        `).join("") : empty("No relationship model yet.");
+        document.getElementById("worldExplorer").innerHTML = summary ? [
+          explorerCard("Orders", summary.orders, "Canonical order ledger"),
+          explorerCard("Payments", summary.payments, summary.payment_methods.join(" / ")),
+          explorerCard("Settlements", summary.settlements, summary.settlement),
+          explorerCard("Refunds", summary.refunds, "Refund-adjusted cases"),
+          explorerCard("Fees", summary.fee_rules, summary.fee),
+          explorerCard("Anomalies", summary.anomalies, Object.entries(summary.anomaly_mix).map(([k, v]) => `${k}:${v}`).join(" ")),
+        ].join("") : empty("Build a world to inspect generated records.");
+      }
+
       function renderCases() {
-        const filter = document.getElementById("filter").value;
-        const rows = (latest.cases || []).filter(item => !filter || item.status === filter).slice(0, 200);
-        document.getElementById("caseRows").innerHTML = rows.map(item => `
+        if (!state.audit) {
+          document.getElementById("auditMetrics").innerHTML = "";
+          document.getElementById("caseRows").innerHTML = "";
+          document.getElementById("caseCount").textContent = "";
+          return;
+        }
+        const run = state.audit.controller_run;
+        const evalMetrics = state.audit.evaluation.metrics;
+        document.getElementById("auditMetrics").innerHTML = metricMarkup([
+          ["Processed", run.metrics.transactions_processed],
+          ["Payment volume", money(run.metrics.total_payment_volume)],
+          ["Reconciled", money(run.metrics.reconciled_amount)],
+          ["Match rate", pct(run.metrics.match_rate)],
+          ["Auto resolution", pct(run.metrics.automatic_resolution_rate)],
+          ["Human review", pct(run.metrics.human_review_rate)],
+          ["Accuracy", pct(evalMetrics.accuracy)],
+          ["Precision", pct(evalMetrics.precision)],
+          ["Recall", pct(evalMetrics.recall)],
+          ["F1", pct(evalMetrics.f1)],
+          ["Throughput", run.metrics.throughput_records_per_sec + "/sec"],
+          ["P95 latency", run.metrics.p95_latency_ms + "ms"],
+        ]);
+        const filter = document.getElementById("caseFilter").value;
+        const cases = (run.cases || []).filter(item => !filter || item.status === filter);
+        document.getElementById("caseCount").textContent = cases.length + " cases";
+        document.getElementById("caseRows").innerHTML = cases.slice(0, 350).map(item => `
           <tr data-case="${item.case_id}">
             <td class="mono">${item.payment_id}</td>
             <td class="mono">${item.order_id || ""}</td>
             <td><span class="pill ${badgeClass(item.status)}">${item.status}</span></td>
-            <td>${Number(item.decision.confidence_score * 100).toFixed(1)}% / ${item.decision.confidence_band}</td>
+            <td>${(Number(item.decision.confidence_score) * 100).toFixed(1)}% / ${item.decision.confidence_band}</td>
             <td>${Number(item.risk_score || 0).toFixed(1)}</td>
-            <td>${item.ai_investigation ? item.ai_investigation.hypotheses.length : 0}</td>
             <td>${item.decision.expected_settlement || ""}</td>
             <td>${item.decision.actual_settlement || ""}</td>
             <td>${item.decision.difference || ""}</td>
             <td>${item.decision.financial_impact}</td>
           </tr>
         `).join("");
-        document.querySelectorAll("tr[data-case]").forEach(row => {
-          row.addEventListener("click", () => {
-            selectedCase = latest.cases.find(item => item.case_id === row.dataset.case);
-            renderSelected();
-          });
-        });
+        document.querySelectorAll("tr[data-case]").forEach(row => row.addEventListener("click", () => {
+          state.selectedCase = (run.cases || []).find(item => item.case_id === row.dataset.case);
+          setView("investigations");
+        }));
       }
 
-      function renderSelected() {
-        if (!selectedCase && latest.cases && latest.cases.length) selectedCase = latest.cases[0];
-        if (!selectedCase) return;
-        document.getElementById("selected").textContent = selectedCase.payment_id;
-        document.getElementById("timeline").innerHTML = selectedCase.investigation_timeline.map(item => `<li>${item}</li>`).join("");
-        renderHypotheses(selectedCase.ai_investigation);
-        renderInvariants(selectedCase.invariants || []);
-        drawGraph(selectedCase.graph);
-      }
-
-      function renderHypotheses(ai) {
-        const container = document.getElementById("hypotheses");
-        if (!ai) {
-          container.innerHTML = `<div class="meta">No AI investigation was needed for this case.</div>`;
+      function renderInvestigation() {
+        const item = state.selectedCase;
+        if (!item) {
+          document.getElementById("selectedTitle").textContent = "Investigation";
+          document.getElementById("selectedStatus").textContent = "None";
+          document.getElementById("caseFinancials").innerHTML = "";
+          document.getElementById("hypotheses").innerHTML = empty("Select a transaction.");
+          document.getElementById("verification").innerHTML = "";
+          document.getElementById("invariants").innerHTML = "";
+          document.getElementById("toolCalls").innerHTML = "";
+          document.getElementById("graph").innerHTML = "";
           return;
         }
-        container.innerHTML = ai.hypotheses.map(item => `
-          <div class="detail-row">
-            <strong>${item.label}</strong>
-            <div>${item.status} / ${(Number(item.confidence) * 100).toFixed(1)}%</div>
-            <div class="meta">${item.rationale}</div>
+        document.getElementById("selectedTitle").textContent = item.payment_id;
+        document.getElementById("selectedStatus").textContent = item.status;
+        document.getElementById("selectedStatus").className = "pill " + badgeClass(item.status);
+        document.getElementById("caseFinancials").innerHTML = metricMarkup([
+          ["Expected", item.decision.expected_settlement || "-"],
+          ["Actual", item.decision.actual_settlement || "-"],
+          ["Difference", item.decision.difference || "0.00"],
+          ["Impact", item.decision.financial_impact],
+          ["Confidence", (Number(item.decision.confidence_score) * 100).toFixed(1) + "%"],
+          ["Risk", Number(item.risk_score || 0).toFixed(1)],
+        ]);
+        const ai = item.ai_investigation;
+        document.getElementById("hypotheses").innerHTML = ai ? ai.hypotheses.map(hyp => `
+          <div class="row">
+            <strong>${hyp.label} <span class="pill ${hyp.status === "SUPPORTED" ? "ok" : hyp.status === "REJECTED" ? "bad" : "warn-pill"}">${hyp.status}</span></strong>
+            <div>${(Number(hyp.confidence) * 100).toFixed(1)}% confidence</div>
+            <div class="muted">${hyp.rationale}</div>
           </div>
-        `).join("");
+        `).join("") : empty("No AI investigation was needed for this case.");
+        document.getElementById("verification").innerHTML = (item.decision.verification?.checks || []).map(check => `
+          <div class="row">
+            <strong>${check.check} <span class="pill ${check.passed ? "ok" : "bad"}">${check.passed ? "PASSED" : "FAILED"}</span></strong>
+            <div class="muted">${check.detail}</div>
+          </div>
+        `).join("") || empty("No verification checks.");
+        const invariantRows = (item.invariants || []).filter(row => row.status !== "PASSED");
+        document.getElementById("invariants").innerHTML = invariantRows.map(row => `
+          <div class="row">
+            <strong>${row.rule_id} <span class="pill ${row.status === "FAILED" ? "bad" : "warn-pill"}">${row.status}</span></strong>
+            <div class="muted">${row.reason}</div>
+          </div>
+        `).join("") || empty("All applicable invariant checks passed.");
+        document.getElementById("toolCalls").innerHTML = (item.tool_calls || []).slice(-12).map(call => `
+          <div class="row">
+            <strong>${call.tool_name}</strong>
+            <div class="muted mono">${JSON.stringify(call.output).slice(0, 180)}</div>
+          </div>
+        `).join("") || empty("No tool calls.");
+        drawGraph(item.graph);
       }
 
-      function renderInvariants(invariants) {
-        const rows = invariants.filter(item => item.status !== "PASSED").slice(0, 8);
-        document.getElementById("invariants").innerHTML = rows.length ? rows.map(item => `
-          <div class="detail-row">
-            <strong>${item.rule_id}</strong>
-            <div><span class="pill ${item.status === "FAILED" ? "bad" : "warn"}">${item.status}</span></div>
-            <div class="meta">${item.reason}</div>
+      function renderReview() {
+        const cases = (state.audit?.controller_run?.cases || []).filter(item => ["HUMAN_REVIEW", "UNRESOLVED"].includes(item.status));
+        document.getElementById("reviewCount").textContent = cases.length;
+        document.getElementById("reviewList").innerHTML = cases.length ? cases.map(item => `
+          <div class="row">
+            <strong>${item.payment_id} <span class="pill ${badgeClass(item.status)}">${item.status}</span></strong>
+            <div>Impact ${money(item.decision.financial_impact)} | Risk ${Number(item.risk_score || 0).toFixed(1)}</div>
+            <div class="muted">${(item.risk_factors || []).join(" | ") || "Review required"}</div>
+            <div class="actions">
+              <button onclick="reviewCase('${item.case_id}', 'APPROVE')">Approve</button>
+              <button onclick="reviewCase('${item.case_id}', 'REJECT')" class="danger">Reject</button>
+              <button onclick="reviewCase('${item.case_id}', 'MARK_UNRESOLVED')" class="warn">Mark Unresolved</button>
+              <button onclick="selectCase('${item.case_id}')">Open</button>
+            </div>
           </div>
-        `).join("") : `<div class="meta">All applicable invariant checks passed.</div>`;
+        `).join("") : empty("No cases currently require human review.");
+      }
+
+      async function reviewCase(caseId, action) {
+        const runId = state.audit?.controller_run?.run_id;
+        await api("/review/" + encodeURIComponent(caseId) + "?run_id=" + encodeURIComponent(runId), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action, reviewer: "demo_reviewer", note: "Recorded from Auditra console" }),
+        });
+        setStatus(action + " recorded for " + caseId);
+      }
+
+      function selectCase(caseId) {
+        state.selectedCase = (state.audit?.controller_run?.cases || []).find(item => item.case_id === caseId) || null;
+        setView("investigations");
+      }
+
+      function renderEvaluation() {
+        if (!state.audit) {
+          document.getElementById("evaluationMetrics").innerHTML = "";
+          document.getElementById("comparison").innerHTML = empty("Run an audit to compare controllers.");
+          document.getElementById("failures").innerHTML = "";
+          return;
+        }
+        const metrics = state.audit.evaluation.metrics;
+        document.getElementById("evaluationMetrics").innerHTML = metricMarkup([
+          ["Accuracy", pct(metrics.accuracy)],
+          ["False positives", pct(metrics.false_positive_rate)],
+          ["False negatives", pct(metrics.false_negative_rate)],
+          ["Incorrect amount", money(metrics.financial_amount_incorrectly_classified)],
+          ["Error impact", money(metrics.financial_impact_of_errors)],
+          ["AI cost", "USD " + metrics.estimated_ai_cost_usd],
+        ]);
+        const rows = state.audit.comparison?.comparison || [];
+        document.getElementById("comparison").innerHTML = rows.map(row => {
+          const m = row.metrics || {};
+          const c = row.controller_metrics || {};
+          return `<div class="row">
+            <strong>${row.mode}</strong>
+            <div>Accuracy ${pct(m.accuracy)} | Auto ${pct(m.automatic_resolution_rate)} | F1 ${pct(m.f1)}</div>
+            <div class="muted">Tool calls ${c.agent_tool_calls || m.agent_tool_calls || 0} | LLM calls ${m.llm_calls || 0} | Cost USD ${m.estimated_ai_cost_usd || "0.00"}</div>
+          </div>`;
+        }).join("") || empty("No comparison available.");
+        const failures = state.audit.evaluation.failures || [];
+        document.getElementById("failures").innerHTML = failures.slice(0, 12).map(item => `
+          <div class="row">
+            <strong>${item.payment_id} <span class="pill bad">${item.failure_category}</span></strong>
+            <div>${item.expected} -> ${item.predicted}</div>
+            <div class="muted">${item.root_cause}</div>
+            <div class="actions"><button onclick="selectCase('${item.case_id}')">Replay</button></div>
+          </div>
+        `).join("") || empty("Controller survived this evaluation.");
+      }
+
+      function renderAuditTrail() {
+        const events = state.audit?.controller_run?.audit_events || [];
+        document.getElementById("auditTrail").innerHTML = events.slice(-60).reverse().map(event => `
+          <div class="row">
+            <strong>${event.action} <span class="mono muted">${event.entity_id}</span></strong>
+            <div class="muted">${event.timestamp} | ${event.actor} | ${event.reason}</div>
+          </div>
+        `).join("") || empty("No audit events yet.");
       }
 
       function drawGraph(graph) {
         const svg = document.getElementById("graph");
-        const nodes = graph.nodes || [];
-        const edges = graph.edges || [];
+        const nodes = graph?.nodes || [];
+        const edges = graph?.edges || [];
+        document.getElementById("graphMeta").textContent = nodes.length + " nodes / " + edges.length + " edges";
+        if (!nodes.length) {
+          svg.innerHTML = "";
+          return;
+        }
         const positions = {};
+        const radius = 128;
+        const center = { x: 380, y: 175 };
         nodes.forEach((node, index) => {
-          const col = index % 3;
-          const row = Math.floor(index / 3);
-          positions[node.id] = { x: 110 + col * 250, y: 70 + row * 85 };
+          if (index === 0) {
+            positions[node.id] = center;
+          } else {
+            const angle = (Math.PI * 2 * (index - 1)) / Math.max(1, nodes.length - 1);
+            positions[node.id] = { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius };
+          }
         });
         const edgeMarkup = edges.map(edge => {
           const a = positions[edge.source];
           const b = positions[edge.target];
           if (!a || !b) return "";
-          return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#8b8175" stroke-width="1.5" />`;
+          return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#98a2b3" stroke-width="1.4"></line>`;
         }).join("");
         const nodeMarkup = nodes.map(node => {
           const p = positions[node.id];
           const type = String(node.type || "").toLowerCase();
-          const fill = type === "payment" ? "#0f766e" : type === "settlement" ? "#a16207" : type === "refund" ? "#be123c" : type === "decision" ? "#6d28d9" : "#171717";
-          return `
-            <g>
-              <circle cx="${p.x}" cy="${p.y}" r="18" fill="${fill}"></circle>
-              <text x="${p.x}" y="${p.y + 38}" text-anchor="middle" font-size="11" fill="#171717">${node.label}</text>
-            </g>
-          `;
+          const fill = type.includes("payment") || type.includes("transaction") ? "#0f766e" : type.includes("settlement") ? "#b45309" : type.includes("refund") ? "#be123c" : type.includes("decision") ? "#4338ca" : "#16181d";
+          const label = String(node.label || node.id).slice(0, 18);
+          return `<g>
+            <circle cx="${p.x}" cy="${p.y}" r="18" fill="${fill}"></circle>
+            <text x="${p.x}" y="${p.y + 34}" text-anchor="middle" font-size="10" fill="#16181d">${label}</text>
+          </g>`;
         }).join("");
         svg.innerHTML = edgeMarkup + nodeMarkup;
       }
 
-      function renderFailures() {
-        const survival = document.getElementById("survival");
-        survival.textContent = latest.survival_status;
-        survival.className = "pill " + (latest.evaluation.failures.length ? "bad" : "ok");
-        document.getElementById("failures").innerHTML = latest.evaluation.failures.slice(0, 5).map(item => `
-          <div class="failure">
-            <div class="mono">${item.case_id} / ${item.payment_id}</div>
-            <div>${item.expected} -> ${item.predicted}</div>
-            <div>${item.root_cause}</div>
-            <div>Impact INR ${item.financial_impact}</div>
-          </div>
-        `).join("");
+      function metricMarkup(rows) {
+        return rows.map(([label, value]) => `<div class="metric"><label>${label}</label><strong>${value}</strong></div>`).join("");
       }
 
-      document.getElementById("run").addEventListener("click", () => runDemo());
-      document.getElementById("break").addEventListener("click", () => runDemo("ADVERSARIAL"));
-      document.getElementById("filter").addEventListener("change", renderCases);
+      function explorerCard(title, value, detail) {
+        return `<div class="panel"><h3>${title}</h3><div style="font-size:28px;font-weight:800;margin-top:8px">${value}</div><div class="muted" style="margin-top:6px;font-size:12px">${detail || ""}</div></div>`;
+      }
+
+      function badgeClass(status) {
+        if (["MATCHED", "FEE_EXPLAINED", "REFUND_ADJUSTED"].includes(status)) return "ok";
+        if (["HUMAN_REVIEW", "UNRESOLVED"].includes(status)) return "review";
+        if (["AMOUNT_MISMATCH", "MISSING_SETTLEMENT"].includes(status)) return "bad";
+        return "warn-pill";
+      }
+
+      function pct(value) {
+        return (Number(value || 0) * 100).toFixed(1) + "%";
+      }
+
+      function money(value) {
+        if (value === undefined || value === null || value === "") return "-";
+        return "INR " + value;
+      }
+
+      function empty(text) {
+        return `<div class="row muted">${text}</div>`;
+      }
+
+      function setStatus(text) {
+        document.getElementById("status").textContent = text;
+      }
+
+      function setApiState(text, cls) {
+        const el = document.getElementById("apiState");
+        el.textContent = text;
+        el.className = "pill " + cls;
+      }
+
+      init();
     </script>
   </body>
 </html>

@@ -1,0 +1,673 @@
+{
+  "world": {
+    "world_id": "FW_07128d95be6d",
+    "world_version": 1,
+    "prompt": "Generate an Indian e-commerce merchant with 500 orders, UPI and card payments, 2% platform fees, T+2 settlement, refunds, partial settlements and realistic reconciliation anomalies.",
+    "spec": {
+      "prompt": "Generate an Indian e-commerce merchant with 500 orders, UPI and card payments, 2% platform fees, T+2 settlement, refunds, partial settlements and realistic reconciliation anomalies.",
+      "world_name": "Demo Commerce India",
+      "merchant_name": "Demo Commerce India",
+      "country": "IN",
+      "record_count": 500,
+      "seed": 42,
+      "currencies": [
+        "INR"
+      ],
+      "payment_methods": [
+        "UPI",
+        "CARD"
+      ],
+      "fee_rate": "0.0200",
+      "fixed_fee": "0.00",
+      "settlement_delay_days": 2,
+      "refund_rate": "0.0800",
+      "partial_settlement_rate": "0.0300",
+      "anomaly_mode": "STRESSED",
+      "anomaly_rates": {
+        "AMOUNT_MISMATCH": "0.0500",
+        "MISSING_SETTLEMENT": "0.0300",
+        "DUPLICATE_PAYMENT": "0.0200",
+        "FEE_MISMATCH": "0.0300",
+        "REFUND_MISMATCH": "0.0200",
+        "PARTIAL_SETTLEMENT": "0.0300",
+        "TIMING_MISMATCH": "0.0300",
+        "CONFLICTING_EVIDENCE": "0.0100"
+      },
+      "start_at": "2026-01-05T09:30:00+00:00",
+      "source": "prompt",
+      "understanding_source": "deterministic_parser",
+      "version": 1
+    },
+    "schema_preview": {
+      "entities": [
+        {
+          "entity": "MERCHANT",
+          "fields": [
+            {
+              "name": "merchant_id",
+              "type": "string",
+              "required": true,
+              "description": "Canonical merchant identifier"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "required": true,
+              "description": "Merchant display name"
+            },
+            {
+              "name": "settlement_cycle_days",
+              "type": "integer",
+              "required": true,
+              "description": "T+N settlement delay"
+            },
+            {
+              "name": "risk_tier",
+              "type": "string",
+              "required": true,
+              "description": "Review prioritization tier"
+            }
+          ]
+        },
+        {
+          "entity": "ORDER",
+          "fields": [
+            {
+              "name": "order_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "merchant_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "customer_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "amount",
+              "type": "decimal_money",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "currency",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "created_at",
+              "type": "datetime_tz",
+              "required": true,
+              "description": ""
+            }
+          ]
+        },
+        {
+          "entity": "PAYMENT",
+          "fields": [
+            {
+              "name": "payment_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "order_id",
+              "type": "string",
+              "required": false,
+              "description": ""
+            },
+            {
+              "name": "merchant_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "customer_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "amount",
+              "type": "decimal_money",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "currency",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "payment_method",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "captured_at",
+              "type": "datetime_tz",
+              "required": true,
+              "description": ""
+            }
+          ]
+        },
+        {
+          "entity": "SETTLEMENT",
+          "fields": [
+            {
+              "name": "settlement_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "payment_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "merchant_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "amount",
+              "type": "decimal_money",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "currency",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "settled_at",
+              "type": "datetime_tz",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "batch_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            }
+          ]
+        },
+        {
+          "entity": "REFUND",
+          "fields": [
+            {
+              "name": "refund_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "payment_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "merchant_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "amount",
+              "type": "decimal_money",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "currency",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "refunded_at",
+              "type": "datetime_tz",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "reason",
+              "type": "string",
+              "required": true,
+              "description": ""
+            }
+          ]
+        },
+        {
+          "entity": "FEE_RULE",
+          "fields": [
+            {
+              "name": "fee_rule_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "merchant_id",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "currency",
+              "type": "string",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "percent_bps",
+              "type": "integer",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "fixed_fee",
+              "type": "decimal_money",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "active_from",
+              "type": "datetime_tz",
+              "required": true,
+              "description": ""
+            },
+            {
+              "name": "active_to",
+              "type": "datetime_tz",
+              "required": false,
+              "description": ""
+            }
+          ]
+        }
+      ]
+    },
+    "relationship_model": {
+      "nodes": [
+        "MERCHANT",
+        "ORDER",
+        "PAYMENT",
+        "SETTLEMENT",
+        "REFUND",
+        "FEE_RULE"
+      ],
+      "edges": [
+        {
+          "source": "MERCHANT",
+          "relationship": "CREATED",
+          "target": "ORDER",
+          "required": true,
+          "description": "Merchant has orders"
+        },
+        {
+          "source": "ORDER",
+          "relationship": "PAID",
+          "target": "PAYMENT",
+          "required": true,
+          "description": "Order is paid by payment"
+        },
+        {
+          "source": "PAYMENT",
+          "relationship": "SETTLED",
+          "target": "SETTLEMENT",
+          "required": true,
+          "description": "Payment settles into settlement"
+        },
+        {
+          "source": "PAYMENT",
+          "relationship": "REFUNDED",
+          "target": "REFUND",
+          "required": false,
+          "description": "Refund adjusts a payment"
+        },
+        {
+          "source": "PAYMENT",
+          "relationship": "GOVERNED_BY",
+          "target": "FEE_RULE",
+          "required": true,
+          "description": "Payment uses merchant fee rule"
+        },
+        {
+          "source": "PAYMENT",
+          "relationship": "RELATED_TO",
+          "target": "PAYMENT",
+          "required": false,
+          "description": "Duplicate or linked payment relation"
+        }
+      ]
+    },
+    "understanding_steps": [
+      {
+        "step": "Understand intent",
+        "status": "COMPLETED",
+        "detail": "Parsed merchant, volume, payment rails, fees, settlement policy and anomaly intent."
+      },
+      {
+        "step": "Extract financial entities",
+        "status": "COMPLETED",
+        "detail": "MERCHANT, ORDER, PAYMENT, SETTLEMENT, REFUND and FEE_RULE selected."
+      },
+      {
+        "step": "Build schema",
+        "status": "COMPLETED",
+        "detail": "Canonical Auditra finance schema prepared for preview."
+      },
+      {
+        "step": "Build relationship model",
+        "status": "COMPLETED",
+        "detail": "Order-payment-settlement-refund-fee relationships derived."
+      },
+      {
+        "step": "Configure rules",
+        "status": "COMPLETED",
+        "detail": "2.00% fee, T+2, STRESSED anomaly mode."
+      }
+    ],
+    "validation": {
+      "world_id": "FW_07128d95be6d",
+      "valid": true,
+      "checks": [
+        {
+          "check_id": "REFERENTIAL_INTEGRITY",
+          "status": "PASSED",
+          "detail": "All visible settlement/refund links resolve.",
+          "count": 0
+        },
+        {
+          "check_id": "CURRENCY_CONSISTENCY",
+          "status": "PASSED",
+          "detail": "Visible currencies are internally consistent.",
+          "count": 0
+        },
+        {
+          "check_id": "MERCHANT_CONSISTENCY",
+          "status": "PASSED",
+          "detail": "Merchant references are consistent.",
+          "count": 0
+        },
+        {
+          "check_id": "TEMPORAL_CONSISTENCY",
+          "status": "PASSED",
+          "detail": "No settlement predates payment capture.",
+          "count": 0
+        },
+        {
+          "check_id": "REFUND_CONSTRAINTS",
+          "status": "PASSED",
+          "detail": "Refund totals do not exceed payment amounts.",
+          "count": 0
+        },
+        {
+          "check_id": "FEE_RULES",
+          "status": "PASSED",
+          "detail": "Every merchant has an active fee rule.",
+          "count": 0
+        },
+        {
+          "check_id": "DUPLICATE_CONSTRAINTS",
+          "status": "WARNING",
+          "detail": "Duplicate payments are controlled anomalies.",
+          "count": 6
+        }
+      ]
+    },
+    "summary": {
+      "world_id": "FW_07128d95be6d",
+      "world_version": 1,
+      "merchant": "Demo Commerce India",
+      "orders": 500,
+      "payments": 506,
+      "settlements": 486,
+      "refunds": 60,
+      "fee_rules": 1,
+      "payment_volume": "2145335.29",
+      "reconciled_amount": "1948125.84",
+      "unresolved_amount": "131641.42",
+      "human_review_amount": "20941.05",
+      "currencies": [
+        "INR"
+      ],
+      "payment_methods": [
+        "UPI",
+        "CARD"
+      ],
+      "settlement": "T+2",
+      "fee": "2.00%",
+      "anomalies": 112,
+      "anomaly_mix": {
+        "AMOUNT_MISMATCH": 31,
+        "MISSING_SETTLEMENT": 14,
+        "DUPLICATE_PAYMENT": 6,
+        "PARTIAL_SETTLEMENT": 17,
+        "TIMING_MISMATCH": 18,
+        "CONFLICTING_EVIDENCE": 4,
+        "FEE_MISMATCH": 9,
+        "REFUND_MISMATCH": 13
+      }
+    },
+    "dataset_id": "WORLD_FW_07128d95be6d",
+    "dataset": {
+      "dataset_id": "WORLD_FW_07128d95be6d",
+      "mode": "DIFFICULT",
+      "seed": 42,
+      "requested_records": 506,
+      "generated_at": "2026-01-05T09:30:00+00:00",
+      "counts": {
+        "merchants": 1,
+        "orders": 500,
+        "payments": 506,
+        "settlements": 486,
+        "refunds": 60,
+        "fee_rules": 1
+      }
+    }
+  },
+  "controller_run_id": "RUN_fabad81efb9b",
+  "evaluation_run_id": "EVAL_1a7c644e2daf",
+  "evaluation": {
+    "accuracy": 0.9585,
+    "precision": 0.8067,
+    "recall": 0.9011,
+    "f1": 0.8199,
+    "false_positive_rate": 0.0076,
+    "false_negative_rate": 0.0,
+    "match_rate": 0.7727,
+    "automatic_resolution_rate": 0.9664,
+    "escalation_rate": 0.0336,
+    "unresolved_rate": 0.0,
+    "throughput_records_per_sec": 813.47,
+    "median_latency_ms": 0.6386,
+    "p95_latency_ms": 1.723,
+    "p99_latency_ms": 3.1859,
+    "llm_calls": 0,
+    "agent_tool_calls": 6462,
+    "estimated_ai_cost_usd": "0.00",
+    "financial_amount_correctly_reconciled": "2065299.19",
+    "financial_amount_incorrectly_classified": "80036.10",
+    "financial_impact_of_errors": "39687.93",
+    "confusion_matrix": {
+      "TIMING_MISMATCH": {
+        "TIMING_MISMATCH": 18,
+        "UNRESOLVED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "FEE_EXPLAINED": 0,
+        "AMOUNT_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0
+      },
+      "UNRESOLVED": {
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "FEE_EXPLAINED": 0,
+        "AMOUNT_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0
+      },
+      "MISSING_SETTLEMENT": {
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MISSING_SETTLEMENT": 14,
+        "FEE_EXPLAINED": 0,
+        "AMOUNT_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0
+      },
+      "FEE_EXPLAINED": {
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "FEE_EXPLAINED": 356,
+        "AMOUNT_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 3,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0
+      },
+      "AMOUNT_MISMATCH": {
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "FEE_EXPLAINED": 0,
+        "AMOUNT_MISMATCH": 38,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 13,
+        "DUPLICATE": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 2
+      },
+      "REFUND_ADJUSTED": {
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "FEE_EXPLAINED": 0,
+        "AMOUNT_MISMATCH": 0,
+        "REFUND_ADJUSTED": 35,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0
+      },
+      "HUMAN_REVIEW": {
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "FEE_EXPLAINED": 0,
+        "AMOUNT_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 4,
+        "DUPLICATE": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0
+      },
+      "DUPLICATE": {
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MISSING_SETTLEMENT": 3,
+        "FEE_EXPLAINED": 0,
+        "AMOUNT_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 3,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0
+      },
+      "MATCHED": {
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "FEE_EXPLAINED": 0,
+        "AMOUNT_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0
+      },
+      "PARTIAL_MATCH": {
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "FEE_EXPLAINED": 0,
+        "AMOUNT_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 17
+      }
+    },
+    "failure_taxonomy": {
+      "OVER_ESCALATION": 13,
+      "CLASSIFICATION_ERROR": 5,
+      "FALSE_EXCEPTION": 3
+    }
+  },
+  "comparison": [
+    {
+      "mode": "deterministic_only",
+      "accuracy": 0.9585,
+      "precision": 0.8067,
+      "recall": 0.9011,
+      "f1": 0.8199,
+      "auto_resolution": 0.9664,
+      "human_review": 0.0336,
+      "throughput": 1078.87,
+      "p95_latency_ms": 1.3153,
+      "llm_calls": 0,
+      "tool_calls": 5020,
+      "estimated_ai_cost_usd": "0.00",
+      "failures": 21
+    },
+    {
+      "mode": "ai_assisted",
+      "accuracy": 0.9585,
+      "precision": 0.8067,
+      "recall": 0.9011,
+      "f1": 0.8199,
+      "auto_resolution": 0.9664,
+      "human_review": 0.0336,
+      "throughput": 813.47,
+      "p95_latency_ms": 1.723,
+      "llm_calls": 0,
+      "tool_calls": 6462,
+      "estimated_ai_cost_usd": "0.00",
+      "failures": 21
+    }
+  ],
+  "survival_status": "CONTROLLER FAILED 21 CASES"
+}

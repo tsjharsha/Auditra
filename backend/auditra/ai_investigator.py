@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import time
 import uuid
+import os
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 from .agent_tools import InvestigationTools, ToolBudgetExceeded
-from .ai_provider import OfflineStructuredProvider, StructuredInvestigationProvider
+from .ai_provider import OfflineStructuredProvider, OpenAIProvider, StructuredInvestigationProvider
 from .models import (
     AIInvestigationResult,
     FeeRule,
@@ -28,7 +29,12 @@ class AIInvestigationAgent:
     """Evidence-first hypothesis agent that stays behind deterministic controls."""
 
     def __init__(self, provider: Optional[StructuredInvestigationProvider] = None):
-        self.provider = provider or OfflineStructuredProvider()
+        if provider is not None:
+            self.provider = provider
+        elif os.getenv("AUDITRA_USE_OPENAI_INVESTIGATOR") == "1":
+            self.provider = OpenAIProvider()
+        else:
+            self.provider = OfflineStructuredProvider()
 
     def investigate(
         self,

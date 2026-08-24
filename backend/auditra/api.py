@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from .financial_world import FinancialWorldSpec
 from .models import ReviewRequest, ScenarioMode, ScenarioRequest
 from .storage import AuditraStore
 
@@ -22,6 +23,16 @@ class EvaluationRunRequest(BaseModel):
     controller_run_id: Optional[str] = None
     mode: ScenarioMode = ScenarioMode.MIXED
     record_count: int = 1000
+    seed: int = 42
+
+
+class WorldPromptRequest(BaseModel):
+    prompt: str
+    seed: int = 42
+
+
+class SourceIngestionRequest(BaseModel):
+    payload: Dict[str, Any]
     seed: int = 42
 
 
@@ -79,6 +90,85 @@ def create_dataset(request: ScenarioRequest) -> Dict[str, Any]:
 @app.get("/datasets")
 def list_datasets() -> Dict[str, Any]:
     return {"datasets": [_public_dataset(dataset) for dataset in store.list_datasets()]}
+
+
+@app.post("/worlds/preview")
+def preview_world(request: WorldPromptRequest) -> Dict[str, Any]:
+    try:
+        preview = store.preview_world_from_prompt(request.prompt, seed=request.seed)
+        return {
+            "spec": preview["spec"].model_dump(mode="json"),
+            "schema_preview": preview["schema_preview"].model_dump(mode="json"),
+            "relationship_model": preview["relationship_model"].model_dump(mode="json"),
+            "understanding_steps": [item.model_dump(mode="json") for item in preview["understanding_steps"]],
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/worlds/build")
+def build_world(request: WorldPromptRequest) -> Dict[str, Any]:
+    try:
+        result = store.build_world_from_prompt(request.prompt, seed=request.seed)
+        return store.world_service.public_build_result(result)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/worlds/spec")
+def build_world_from_spec(spec: FinancialWorldSpec) -> Dict[str, Any]:
+    try:
+        result = store.build_world_from_spec(spec)
+        return store.world_service.public_build_result(result)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/worlds")
+def list_worlds() -> Dict[str, Any]:
+    return {
+        "worlds": [
+            store.world_service.public_build_result(result)
+            for result in store.list_worlds()
+        ]
+    }
+
+
+@app.post("/worlds/{world_id}/audit")
+def audit_world(world_id: str) -> Dict[str, Any]:
+    try:
+        world = store.get_world(world_id)
+        controller_run = store.run_controller(world.dataset_id)
+        evaluation = store.run_evaluation(world.dataset_id, controller_run.run_id)
+        comparison = store.compare_controllers(world.dataset_id)
+        return {
+            "world": store.world_service.public_build_result(world),
+            "controller_run": controller_run.model_dump(mode="json"),
+            "evaluation": evaluation.model_dump(mode="json"),
+            "comparison": comparison,
+            "survival_status": "CONTROLLER SURVIVED" if not evaluation.failures else f"CONTROLLER FAILED {len(evaluation.failures)} CASES",
+        }
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/worlds/{world_id}")
+def get_world(world_id: str) -> Dict[str, Any]:
+    try:
+        return store.world_service.public_build_result(store.get_world(world_id))
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/ingest/{adapter}")
+def ingest_source(adapter: str, request: SourceIngestionRequest) -> Dict[str, Any]:
+    try:
+        result = store.ingest_source(adapter, request.payload, seed=request.seed)
+        return store.world_service.public_ingestion_result(result)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/controller/runs")
@@ -190,7 +280,7 @@ def review_case(case_id: str, request: ReviewRequest, run_id: Optional[str] = Qu
                 "note": request.note,
                 "recorded": True,
             }
-            return event
+            return store.record_review(event)
     raise HTTPException(status_code=404, detail="case not found")
 
 
