@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Auditra</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #171717;
+        --muted: #66615b;
+        --line: #dedad3;
+        --paper: #fbfaf7;
+        --panel: #ffffff;
+        --mint: #0f766e;
+        --amber: #a16207;
+        --rose: #be123c;
+        --green: #15803d;
+        --violet: #6d28d9;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 18px 28px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.86);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: conic-gradient(from 190deg, var(--mint), #111827, var(--amber), var(--mint));
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.1;
+      }
+
+      .tagline {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 2px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      button, select, input {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--ink);
+        border-radius: 8px;
+        min-height: 36px;
+        padding: 0 12px;
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      button.primary {
+        background: var(--ink);
+        color: #fff;
+        border-color: var(--ink);
+      }
+
+      button.danger {
+        background: #fff1f2;
+        color: var(--rose);
+        border-color: #fecdd3;
+      }
+
+      main {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 22px 28px 40px;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(140px, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+      }
+
+      .metric label {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 24px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+        gap: 16px;
+        margin-top: 16px;
+        align-items: start;
+      }
+
+      section {
+        min-width: 0;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 22px 0 10px;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 15px;
+      }
+
+      .table-wrap {
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 900px;
+      }
+
+      th, td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        white-space: nowrap;
+        font-size: 13px;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0;
+        background: #f4f2ed;
+      }
+
+      tr {
+        cursor: pointer;
+      }
+
+      tr:hover td {
+        background: #faf6ed;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 4px 8px;
+        font-weight: 800;
+        font-size: 11px;
+        border: 1px solid var(--line);
+      }
+
+      .ok { color: var(--green); background: #f0fdf4; border-color: #bbf7d0; }
+      .warn { color: var(--amber); background: #fffbeb; border-color: #fde68a; }
+      .bad { color: var(--rose); background: #fff1f2; border-color: #fecdd3; }
+      .review { color: var(--violet); background: #f5f3ff; border-color: #ddd6fe; }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .timeline li {
+        border-left: 3px solid var(--mint);
+        padding-left: 10px;
+        color: #2f2b27;
+        font-size: 13px;
+      }
+
+      .graph {
+        width: 100%;
+        height: 320px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffdf9;
+      }
+
+      .failures {
+        display: grid;
+        gap: 10px;
+      }
+
+      .failure {
+        border: 1px solid #fecdd3;
+        background: #fff7f8;
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      @media (max-width: 980px) {
+        header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <div>
+          <h1>Auditra</h1>
+          <div class="tagline">Autonomous financial control you can verify.</div>
+        </div>
+      </div>
+      <div class="actions">
+        <select id="mode">
+          <option value="MIXED">Mixed</option>
+          <option value="NORMAL">Normal</option>
+          <option value="DIFFICULT">Difficult</option>
+          <option value="ADVERSARIAL">Adversarial</option>
+        </select>
+        <input id="records" type="number" min="10" max="10000" step="10" value="1000" />
+        <input id="seed" type="number" value="42" />
+        <button id="run" class="primary">Run</button>
+        <button id="break" class="danger">Break</button>
+      </div>
+    </header>
+
+    <main>
+      <div id="status" class="panel mono">Ready</div>
+
+      <div class="metrics" id="metrics"></div>
+
+      <div class="layout">
+        <section>
+          <div class="section-head">
+            <h2>Reconciliation</h2>
+            <select id="filter">
+              <option value="">All statuses</option>
+              <option value="MATCHED">Matched</option>
+              <option value="FEE_EXPLAINED">Fee explained</option>
+              <option value="REFUND_ADJUSTED">Refund adjusted</option>
+              <option value="AMOUNT_MISMATCH">Amount mismatch</option>
+              <option value="MISSING_SETTLEMENT">Missing settlement</option>
+              <option value="DUPLICATE">Duplicate</option>
+              <option value="TIMING_MISMATCH">Timing mismatch</option>
+              <option value="PARTIAL_MATCH">Partial match</option>
+              <option value="HUMAN_REVIEW">Human review</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Transaction</th>
+                  <th>Order</th>
+                  <th>Status</th>
+                  <th>Confidence</th>
+                  <th>Expected</th>
+                  <th>Actual</th>
+                  <th>Difference</th>
+                  <th>Impact</th>
+                </tr>
+              </thead>
+              <tbody id="caseRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-head">
+            <h2>Investigation</h2>
+            <span id="selected" class="mono"></span>
+          </div>
+          <div class="panel">
+            <svg id="graph" class="graph" viewBox="0 0 720 320" role="img"></svg>
+            <div class="section-head"><h2>Timeline</h2></div>
+            <ul id="timeline" class="timeline"></ul>
+          </div>
+
+          <div class="section-head">
+            <h2>Break The Controller</h2>
+            <span id="survival" class="pill warn">No run</span>
+          </div>
+          <div id="failures" class="failures"></div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const apiBase = "http://127.0.0.1:8000";
+      let latest = null;
+      let selectedCase = null;
+
+      const metricDefs = [
+        ["Records", data => data.controller_run.metrics.transactions_processed],
+        ["Volume", data => "INR " + data.controller_run.metrics.total_payment_volume],
+        ["Match rate", data => pct(data.controller_run.metrics.match_rate)],
+        ["Auto resolved", data => pct(data.controller_run.metrics.automatic_resolution_rate)],
+        ["Accuracy", data => pct(data.evaluation.metrics.accuracy)],
+        ["Throughput", data => data.evaluation.metrics.throughput_records_per_sec + "/sec"],
+      ];
+
+      function pct(value) {
+        return (Number(value) * 100).toFixed(1) + "%";
+      }
+
+      function badgeClass(status) {
+        if (["MATCHED", "FEE_EXPLAINED", "REFUND_ADJUSTED"].includes(status)) return "ok";
+        if (["HUMAN_REVIEW", "UNRESOLVED"].includes(status)) return "review";
+        if (["AMOUNT_MISMATCH", "MISSING_SETTLEMENT"].includes(status)) return "bad";
+        return "warn";
+      }
+
+      async function runDemo(modeOverride) {
+        const mode = modeOverride || document.getElementById("mode").value;
+        const record_count = Number(document.getElementById("records").value);
+        const seed = Number(document.getElementById("seed").value);
+        document.getElementById("status").textContent = "Running " + mode + " / " + record_count + " / seed " + seed;
+        const response = await fetch(apiBase + "/demo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode, record_count, seed }),
+        });
+        if (!response.ok) {
+          document.getElementById("status").textContent = "API error: " + response.status;
+          return;
+        }
+        latest = await response.json();
+        selectedCase = latest.evaluation.failures.length
+          ? latest.controller_run_id
+          : null;
+        document.getElementById("status").textContent = latest.dataset.dataset_id + " / " + latest.controller_run.run_id;
+        render();
+      }
+
+      async function hydrateCases() {
+        if (!latest || latest.cases) return;
+        const runId = latest.controller_run.run_id;
+        const response = await fetch(apiBase + "/reconciliation?run_id=" + encodeURIComponent(runId) + "&limit=1000");
+        const body = await response.json();
+        latest.cases = body.cases;
+        selectedCase = latest.cases[0] || null;
+      }
+
+      async function render() {
+        await hydrateCases();
+        renderMetrics();
+        renderCases();
+        renderSelected();
+        renderFailures();
+      }
+
+      function renderMetrics() {
+        const container = document.getElementById("metrics");
+        container.innerHTML = metricDefs.map(([label, getter]) => `
+          <div class="metric">
+            <label>${label}</label>
+            <strong>${getter(latest)}</strong>
+          </div>
+        `).join("");
+      }
+
+      function renderCases() {
+        const filter = document.getElementById("filter").value;
+        const rows = (latest.cases || []).filter(item => !filter || item.status === filter).slice(0, 200);
+        document.getElementById("caseRows").innerHTML = rows.map(item => `
+          <tr data-case="${item.case_id}">
+            <td class="mono">${item.payment_id}</td>
+            <td class="mono">${item.order_id || ""}</td>
+            <td><span class="pill ${badgeClass(item.status)}">${item.status}</span></td>
+            <td>${Number(item.decision.confidence_score * 100).toFixed(1)}% / ${item.decision.confidence_band}</td>
+            <td>${item.decision.expected_settlement || ""}</td>
+            <td>${item.decision.actual_settlement || ""}</td>
+            <td>${item.decision.difference || ""}</td>
+            <td>${item.decision.financial_impact}</td>
+          </tr>
+        `).join("");
+        document.querySelectorAll("tr[data-case]").forEach(row => {
+          row.addEventListener("click", () => {
+            selectedCase = latest.cases.find(item => item.case_id === row.dataset.case);
+            renderSelected();
+          });
+        });
+      }
+
+      function renderSelected() {
+        if (!selectedCase && latest.cases && latest.cases.length) selectedCase = latest.cases[0];
+        if (!selectedCase) return;
+        document.getElementById("selected").textContent = selectedCase.payment_id;
+        document.getElementById("timeline").innerHTML = selectedCase.investigation_timeline.map(item => `<li>${item}</li>`).join("");
+        drawGraph(selectedCase.graph);
+      }
+
+      function drawGraph(graph) {
+        const svg = document.getElementById("graph");
+        const nodes = graph.nodes || [];
+        const edges = graph.edges || [];
+        const positions = {};
+        nodes.forEach((node, index) => {
+          const col = index % 3;
+          const row = Math.floor(index / 3);
+          positions[node.id] = { x: 110 + col * 250, y: 70 + row * 85 };
+        });
+        const edgeMarkup = edges.map(edge => {
+          const a = positions[edge.source];
+          const b = positions[edge.target];
+          if (!a || !b) return "";
+          return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#8b8175" stroke-width="1.5" />`;
+        }).join("");
+        const nodeMarkup = nodes.map(node => {
+          const p = positions[node.id];
+          const fill = node.type === "payment" ? "#0f766e" : node.type === "settlement" ? "#a16207" : node.type === "refund" ? "#be123c" : "#171717";
+          return `
+            <g>
+              <circle cx="${p.x}" cy="${p.y}" r="18" fill="${fill}"></circle>
+              <text x="${p.x}" y="${p.y + 38}" text-anchor="middle" font-size="11" fill="#171717">${node.label}</text>
+            </g>
+          `;
+        }).join("");
+        svg.innerHTML = edgeMarkup + nodeMarkup;
+      }
+
+      function renderFailures() {
+        const survival = document.getElementById("survival");
+        survival.textContent = latest.survival_status;
+        survival.className = "pill " + (latest.evaluation.failures.length ? "bad" : "ok");
+        document.getElementById("failures").innerHTML = latest.evaluation.failures.slice(0, 5).map(item => `
+          <div class="failure">
+            <div class="mono">${item.case_id} / ${item.payment_id}</div>
+            <div>${item.expected} -> ${item.predicted}</div>
+            <div>${item.root_cause}</div>
+            <div>Impact INR ${item.financial_impact}</div>
+          </div>
+        `).join("");
+      }
+
+      document.getElementById("run").addEventListener("click", () => runDemo());
+      document.getElementById("break").addEventListener("click", () => runDemo("ADVERSARIAL"));
+      document.getElementById("filter").addEventListener("change", renderCases);
+    </script>
+  </body>
+</html>

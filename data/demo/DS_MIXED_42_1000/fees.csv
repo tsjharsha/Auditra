@@ -1,0 +1,7 @@
+active_from,active_to,currency,fee_rule_id,fixed_fee,ingested_at,merchant_id,original,percent_bps,source,source_record_id
+2025-01-05T09:30:00+00:00,,INR,FEE_RULE_01,0.00,2026-01-05T09:30:00+00:00,MCH_ZERO,"{'percent_bps': 0, 'fixed_fee': '0.00'}",0,generator,SRC_FEE_RULE_1
+2025-01-05T09:30:00+00:00,,INR,FEE_RULE_02,3.00,2026-01-05T09:30:00+00:00,MCH_SWIFT,"{'percent_bps': 180, 'fixed_fee': '3.00'}",180,generator,SRC_FEE_RULE_2
+2025-01-05T09:30:00+00:00,,INR,FEE_RULE_03,2.00,2026-01-05T09:30:00+00:00,MCH_CAFE,"{'percent_bps': 220, 'fixed_fee': '2.00'}",220,generator,SRC_FEE_RULE_3
+2025-01-05T09:30:00+00:00,,INR,FEE_RULE_04,5.00,2026-01-05T09:30:00+00:00,MCH_SAAS,"{'percent_bps': 250, 'fixed_fee': '5.00'}",250,generator,SRC_FEE_RULE_4
+2025-01-05T09:30:00+00:00,,INR,FEE_RULE_05,4.00,2026-01-05T09:30:00+00:00,MCH_HEALTH,"{'percent_bps': 200, 'fixed_fee': '4.00'}",200,generator,SRC_FEE_RULE_5
+2025-01-05T09:30:00+00:00,,INR,FEE_RULE_06,6.00,2026-01-05T09:30:00+00:00,MCH_TRAVEL,"{'percent_bps': 190, 'fixed_fee': '6.00'}",190,generator,SRC_FEE_RULE_6

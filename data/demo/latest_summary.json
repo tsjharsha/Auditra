@@ -1,0 +1,17 @@
+{
+  "dataset_id": "DS_MIXED_42_1000",
+  "controller_run_id": "RUN_f5251d616cfd",
+  "evaluation_run_id": "EVAL_bb2038b311b2",
+  "records": 1000,
+  "match_rate": 0.754,
+  "automatic_resolution_rate": 0.999,
+  "accuracy": 0.979,
+  "precision": 0.8387,
+  "recall": 0.8515,
+  "f1": 0.8439,
+  "false_positive_rate": 0.0131,
+  "false_negative_rate": 0.0,
+  "throughput_records_per_sec": 1721.49,
+  "failures": 21,
+  "output_dir": "C:\\Users\\Admin\\Desktop\\Auditra\\data\\demo\\DS_MIXED_42_1000"
+}

@@ -1,0 +1,456 @@
+{
+  "evaluation_run_id": "EVAL_bb2038b311b2",
+  "controller_run_id": "RUN_f5251d616cfd",
+  "dataset_id": "DS_MIXED_42_1000",
+  "created_at": "2026-08-24T16:24:24.525851+00:00",
+  "metrics": {
+    "accuracy": 0.979,
+    "precision": 0.8387,
+    "recall": 0.8515,
+    "f1": 0.8439,
+    "false_positive_rate": 0.0131,
+    "false_negative_rate": 0.0,
+    "match_rate": 0.754,
+    "automatic_resolution_rate": 0.999,
+    "escalation_rate": 0.001,
+    "unresolved_rate": 0.0,
+    "throughput_records_per_sec": 1721.49,
+    "median_latency_ms": 0.401,
+    "p95_latency_ms": 0.9806,
+    "financial_amount_correctly_reconciled": "44872629.75",
+    "financial_amount_incorrectly_classified": "837979.00",
+    "financial_impact_of_errors": "798096.50",
+    "confusion_matrix": {
+      "PARTIAL_MATCH": {
+        "PARTIAL_MATCH": 37,
+        "FEE_EXPLAINED": 0,
+        "MATCHED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "AMOUNT_MISMATCH": 0,
+        "TIMING_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 0,
+        "UNRESOLVED": 0
+      },
+      "FEE_EXPLAINED": {
+        "PARTIAL_MATCH": 0,
+        "FEE_EXPLAINED": 569,
+        "MATCHED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "AMOUNT_MISMATCH": 0,
+        "TIMING_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 5,
+        "UNRESOLVED": 0
+      },
+      "MATCHED": {
+        "PARTIAL_MATCH": 0,
+        "FEE_EXPLAINED": 0,
+        "MATCHED": 92,
+        "MISSING_SETTLEMENT": 0,
+        "AMOUNT_MISMATCH": 0,
+        "TIMING_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 2,
+        "UNRESOLVED": 0
+      },
+      "MISSING_SETTLEMENT": {
+        "PARTIAL_MATCH": 0,
+        "FEE_EXPLAINED": 0,
+        "MATCHED": 0,
+        "MISSING_SETTLEMENT": 43,
+        "AMOUNT_MISMATCH": 0,
+        "TIMING_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 0,
+        "UNRESOLVED": 0
+      },
+      "AMOUNT_MISMATCH": {
+        "PARTIAL_MATCH": 0,
+        "FEE_EXPLAINED": 0,
+        "MATCHED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "AMOUNT_MISMATCH": 81,
+        "TIMING_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 1,
+        "UNRESOLVED": 0
+      },
+      "TIMING_MISMATCH": {
+        "PARTIAL_MATCH": 0,
+        "FEE_EXPLAINED": 0,
+        "MATCHED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "AMOUNT_MISMATCH": 0,
+        "TIMING_MISMATCH": 36,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 0,
+        "UNRESOLVED": 0
+      },
+      "REFUND_ADJUSTED": {
+        "PARTIAL_MATCH": 0,
+        "FEE_EXPLAINED": 0,
+        "MATCHED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "AMOUNT_MISMATCH": 0,
+        "TIMING_MISMATCH": 0,
+        "REFUND_ADJUSTED": 93,
+        "HUMAN_REVIEW": 1,
+        "DUPLICATE": 2,
+        "UNRESOLVED": 0
+      },
+      "HUMAN_REVIEW": {
+        "PARTIAL_MATCH": 0,
+        "FEE_EXPLAINED": 0,
+        "MATCHED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "AMOUNT_MISMATCH": 0,
+        "TIMING_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 0,
+        "UNRESOLVED": 0
+      },
+      "DUPLICATE": {
+        "PARTIAL_MATCH": 0,
+        "FEE_EXPLAINED": 0,
+        "MATCHED": 0,
+        "MISSING_SETTLEMENT": 10,
+        "AMOUNT_MISMATCH": 0,
+        "TIMING_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 28,
+        "UNRESOLVED": 0
+      },
+      "UNRESOLVED": {
+        "PARTIAL_MATCH": 0,
+        "FEE_EXPLAINED": 0,
+        "MATCHED": 0,
+        "MISSING_SETTLEMENT": 0,
+        "AMOUNT_MISMATCH": 0,
+        "TIMING_MISMATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "HUMAN_REVIEW": 0,
+        "DUPLICATE": 0,
+        "UNRESOLVED": 0
+      }
+    }
+  },
+  "failures": [
+    {
+      "case_id": "CASE_PAY_000077",
+      "payment_id": "PAY_000077",
+      "expected": "DUPLICATE",
+      "predicted": "MISSING_SETTLEMENT",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000077",
+        "EVD_ORDER_ORD_000076",
+        "EVD_FEE_RULE_FEE_RULE_02"
+      ],
+      "failure_category": "CLASSIFICATION_ERROR",
+      "financial_impact": "58483.00"
+    },
+    {
+      "case_id": "CASE_PAY_000076",
+      "payment_id": "PAY_000076",
+      "expected": "FEE_EXPLAINED",
+      "predicted": "DUPLICATE",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000076",
+        "EVD_ORDER_ORD_000076",
+        "EVD_SETTLEMENT_SET_000076",
+        "EVD_FEE_RULE_FEE_RULE_02"
+      ],
+      "failure_category": "FALSE_EXCEPTION",
+      "financial_impact": "58483.00"
+    },
+    {
+      "case_id": "CASE_PAY_000194",
+      "payment_id": "PAY_000194",
+      "expected": "DUPLICATE",
+      "predicted": "MISSING_SETTLEMENT",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000194",
+        "EVD_ORDER_ORD_000193",
+        "EVD_FEE_RULE_FEE_RULE_01"
+      ],
+      "failure_category": "CLASSIFICATION_ERROR",
+      "financial_impact": "12046.00"
+    },
+    {
+      "case_id": "CASE_PAY_000193",
+      "payment_id": "PAY_000193",
+      "expected": "MATCHED",
+      "predicted": "DUPLICATE",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000193",
+        "EVD_ORDER_ORD_000193",
+        "EVD_SETTLEMENT_SET_000193",
+        "EVD_FEE_RULE_FEE_RULE_01"
+      ],
+      "failure_category": "FALSE_EXCEPTION",
+      "financial_impact": "12046.00"
+    },
+    {
+      "case_id": "CASE_PAY_000274",
+      "payment_id": "PAY_000274",
+      "expected": "DUPLICATE",
+      "predicted": "MISSING_SETTLEMENT",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000274",
+        "EVD_ORDER_ORD_000273",
+        "EVD_FEE_RULE_FEE_RULE_02"
+      ],
+      "failure_category": "CLASSIFICATION_ERROR",
+      "financial_impact": "1135.25"
+    },
+    {
+      "case_id": "CASE_PAY_000273",
+      "payment_id": "PAY_000273",
+      "expected": "FEE_EXPLAINED",
+      "predicted": "DUPLICATE",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000273",
+        "EVD_ORDER_ORD_000273",
+        "EVD_SETTLEMENT_SET_000273",
+        "EVD_FEE_RULE_FEE_RULE_02"
+      ],
+      "failure_category": "FALSE_EXCEPTION",
+      "financial_impact": "1135.25"
+    },
+    {
+      "case_id": "CASE_PAY_000391",
+      "payment_id": "PAY_000391",
+      "expected": "DUPLICATE",
+      "predicted": "MISSING_SETTLEMENT",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000391",
+        "EVD_ORDER_ORD_000390",
+        "EVD_FEE_RULE_FEE_RULE_04"
+      ],
+      "failure_category": "CLASSIFICATION_ERROR",
+      "financial_impact": "58520.50"
+    },
+    {
+      "case_id": "CASE_PAY_000390",
+      "payment_id": "PAY_000390",
+      "expected": "FEE_EXPLAINED",
+      "predicted": "DUPLICATE",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000390",
+        "EVD_ORDER_ORD_000390",
+        "EVD_SETTLEMENT_SET_000390",
+        "EVD_FEE_RULE_FEE_RULE_04"
+      ],
+      "failure_category": "FALSE_EXCEPTION",
+      "financial_impact": "58520.50"
+    },
+    {
+      "case_id": "CASE_PAY_000694",
+      "payment_id": "PAY_000694",
+      "expected": "DUPLICATE",
+      "predicted": "MISSING_SETTLEMENT",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000694",
+        "EVD_ORDER_ORD_000693",
+        "EVD_FEE_RULE_FEE_RULE_04"
+      ],
+      "failure_category": "CLASSIFICATION_ERROR",
+      "financial_impact": "8556.50"
+    },
+    {
+      "case_id": "CASE_PAY_000693",
+      "payment_id": "PAY_000693",
+      "expected": "REFUND_ADJUSTED",
+      "predicted": "DUPLICATE",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000693",
+        "EVD_ORDER_ORD_000693",
+        "EVD_SETTLEMENT_SET_000693",
+        "EVD_REFUND_REFUND_000693",
+        "EVD_FEE_RULE_FEE_RULE_04"
+      ],
+      "failure_category": "FALSE_EXCEPTION",
+      "financial_impact": "8556.50"
+    },
+    {
+      "case_id": "CASE_PAY_000702",
+      "payment_id": "PAY_000702",
+      "expected": "DUPLICATE",
+      "predicted": "MISSING_SETTLEMENT",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000702",
+        "EVD_ORDER_ORD_000701",
+        "EVD_FEE_RULE_FEE_RULE_03"
+      ],
+      "failure_category": "CLASSIFICATION_ERROR",
+      "financial_impact": "28248.00"
+    },
+    {
+      "case_id": "CASE_PAY_000701",
+      "payment_id": "PAY_000701",
+      "expected": "FEE_EXPLAINED",
+      "predicted": "DUPLICATE",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000701",
+        "EVD_ORDER_ORD_000701",
+        "EVD_SETTLEMENT_SET_000701",
+        "EVD_FEE_RULE_FEE_RULE_03"
+      ],
+      "failure_category": "FALSE_EXCEPTION",
+      "financial_impact": "28248.00"
+    },
+    {
+      "case_id": "CASE_PAY_000733",
+      "payment_id": "PAY_000733",
+      "expected": "DUPLICATE",
+      "predicted": "MISSING_SETTLEMENT",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000733",
+        "EVD_ORDER_ORD_000732",
+        "EVD_FEE_RULE_FEE_RULE_05"
+      ],
+      "failure_category": "CLASSIFICATION_ERROR",
+      "financial_impact": "27132.00"
+    },
+    {
+      "case_id": "CASE_PAY_000732",
+      "payment_id": "PAY_000732",
+      "expected": "FEE_EXPLAINED",
+      "predicted": "DUPLICATE",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000732",
+        "EVD_ORDER_ORD_000732",
+        "EVD_SETTLEMENT_SET_000732",
+        "EVD_FEE_RULE_FEE_RULE_05"
+      ],
+      "failure_category": "FALSE_EXCEPTION",
+      "financial_impact": "27132.00"
+    },
+    {
+      "case_id": "CASE_PAY_000761",
+      "payment_id": "PAY_000761",
+      "expected": "REFUND_ADJUSTED",
+      "predicted": "HUMAN_REVIEW",
+      "root_cause": "Controller escalated instead of resolving deterministically.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000761",
+        "EVD_ORDER_ORD_000761",
+        "EVD_SETTLEMENT_SET_000761",
+        "EVD_REFUND_REFUND_000761",
+        "EVD_FEE_RULE_FEE_RULE_01"
+      ],
+      "failure_category": "OVER_ESCALATION",
+      "financial_impact": "0.00"
+    },
+    {
+      "case_id": "CASE_PAY_000864",
+      "payment_id": "PAY_000864",
+      "expected": "DUPLICATE",
+      "predicted": "MISSING_SETTLEMENT",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000864",
+        "EVD_ORDER_ORD_000863",
+        "EVD_FEE_RULE_FEE_RULE_05"
+      ],
+      "failure_category": "CLASSIFICATION_ERROR",
+      "financial_impact": "86546.00"
+    },
+    {
+      "case_id": "CASE_PAY_000863",
+      "payment_id": "PAY_000863",
+      "expected": "REFUND_ADJUSTED",
+      "predicted": "DUPLICATE",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000863",
+        "EVD_ORDER_ORD_000863",
+        "EVD_SETTLEMENT_SET_000863",
+        "EVD_REFUND_REFUND_000863",
+        "EVD_FEE_RULE_FEE_RULE_05"
+      ],
+      "failure_category": "FALSE_EXCEPTION",
+      "financial_impact": "86546.00"
+    },
+    {
+      "case_id": "CASE_PAY_000885",
+      "payment_id": "PAY_000885",
+      "expected": "DUPLICATE",
+      "predicted": "MISSING_SETTLEMENT",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000885",
+        "EVD_ORDER_ORD_000884",
+        "EVD_FEE_RULE_FEE_RULE_04"
+      ],
+      "failure_category": "CLASSIFICATION_ERROR",
+      "financial_impact": "85316.00"
+    },
+    {
+      "case_id": "CASE_PAY_000884",
+      "payment_id": "PAY_000884",
+      "expected": "AMOUNT_MISMATCH",
+      "predicted": "DUPLICATE",
+      "root_cause": "Amount-difference rule selected the wrong exception class.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000884",
+        "EVD_ORDER_ORD_000884",
+        "EVD_SETTLEMENT_SET_000884",
+        "EVD_FEE_RULE_FEE_RULE_04"
+      ],
+      "failure_category": "CLASSIFICATION_ERROR",
+      "financial_impact": "85316.00"
+    },
+    {
+      "case_id": "CASE_PAY_000970",
+      "payment_id": "PAY_000970",
+      "expected": "DUPLICATE",
+      "predicted": "MISSING_SETTLEMENT",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000970",
+        "EVD_ORDER_ORD_000969",
+        "EVD_FEE_RULE_FEE_RULE_01"
+      ],
+      "failure_category": "CLASSIFICATION_ERROR",
+      "financial_impact": "33065.00"
+    },
+    {
+      "case_id": "CASE_PAY_000969",
+      "payment_id": "PAY_000969",
+      "expected": "MATCHED",
+      "predicted": "DUPLICATE",
+      "root_cause": "Classification differed from hidden scenario label.",
+      "evidence_available": [
+        "EVD_PAYMENT_PAY_000969",
+        "EVD_ORDER_ORD_000969",
+        "EVD_SETTLEMENT_SET_000969",
+        "EVD_FEE_RULE_FEE_RULE_01"
+      ],
+      "failure_category": "FALSE_EXCEPTION",
+      "financial_impact": "33065.00"
+    }
+  ]
+}
