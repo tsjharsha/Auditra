@@ -81,6 +81,11 @@ interface AuditraContextValue {
 const AuditraContext = createContext<AuditraContextValue | null>(null);
 const PAGE_IDS: PageId[] = [
   "home",
+  "worlds",
+  "audits",
+  "review",
+  "insights",
+  "settings",
   "world-builder",
   "world-explorer",
   "reconciliation",
@@ -466,7 +471,25 @@ function firstAiModel(cases: ReconciliationCase[]) {
 function pageFromUrl(): PageId | null {
   const params = new URLSearchParams(window.location.search);
   const page = params.get("page");
-  return PAGE_IDS.includes(page as PageId) ? (page as PageId) : null;
+  const aliases: Record<string, PageId> = {
+    home: "home",
+    worlds: "worlds",
+    "world-builder": "worlds",
+    "world-explorer": "worlds",
+    audits: "audits",
+    reconciliation: "audits",
+    review: "review",
+    investigations: "review",
+    "human-review": "review",
+    "evidence-graph": "review",
+    insights: "insights",
+    "evaluation-lab": "insights",
+    "controller-runs": "insights",
+    "audit-trail": "insights",
+    settings: "settings",
+  };
+  const resolved = page ? aliases[page] ?? page : null;
+  return PAGE_IDS.includes(resolved as PageId) ? (resolved as PageId) : null;
 }
 
 function createControlledSpec(settings: ControlledEvaluationSettings): FinancialWorldSpec {

@@ -1,224 +1,244 @@
 import { useMemo, useState } from "react";
+import { ArrowRight, Search, ShieldAlert } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
-import { Button } from "../../components/ui/Button";
 import { Card, SectionHeader } from "../../components/ui/Card";
 import { type Column, DataTable } from "../../components/ui/DataTable";
 import { Tabs } from "../../components/ui/Tabs";
 import { EmptyState } from "../../components/ui/State";
 import { compact, jsonPreview, money, shortId, titleCase } from "../../lib/format";
-import type { PrimitiveRecord, VisibleDataset, WorldBuildResult } from "../../types/auditra";
+import { caseShortExplanation, caseTitle } from "../../lib/product";
+import { riskTone, statusTone } from "../../lib/status";
+import { SchemaRelationshipFlow } from "../graph/RelationshipFlow";
+import type { PrimitiveRecord, ReconciliationCase, WorldBuildResult } from "../../types/auditra";
 
-type EntityTab = "overview" | "orders" | "payments" | "settlements" | "refunds" | "fees" | "anomalies";
-type RecordTab = "orders" | "payments" | "settlements" | "refunds";
+type ExplorerTab = "overview" | "activity" | "exceptions" | "relationships";
 
-const tabs: Array<{ id: EntityTab; label: string }> = [
+const tabs: Array<{ id: ExplorerTab; label: string }> = [
   { id: "overview", label: "Overview" },
-  { id: "orders", label: "Orders" },
-  { id: "payments", label: "Payments" },
-  { id: "settlements", label: "Settlements" },
-  { id: "refunds", label: "Refunds" },
-  { id: "fees", label: "Fees" },
-  { id: "anomalies", label: "Anomalies" },
+  { id: "activity", label: "Activity" },
+  { id: "exceptions", label: "Exceptions" },
+  { id: "relationships", label: "Relationships" },
 ];
 
-export function WorldRecordExplorer({ world }: { world?: WorldBuildResult | null }) {
-  const [active, setActive] = useState<EntityTab>("overview");
+export function WorldRecordExplorer({
+  world,
+  cases = [],
+  onSelectCase,
+}: {
+  world?: WorldBuildResult | null;
+  cases?: ReconciliationCase[];
+  onSelectCase?: (caseId: string) => void;
+}) {
+  const [active, setActive] = useState<ExplorerTab>("overview");
   const [detail, setDetail] = useState<PrimitiveRecord | null>(null);
   const records = world?.dataset?.records;
-
-  const tabCounts = tabs.map((tab) => ({
-    ...tab,
-    count:
-      tab.id === "overview"
-        ? undefined
-        : tab.id === "fees"
-          ? records?.fee_rules.length
-          : tab.id === "anomalies"
-            ? world?.summary.anomalies
-            : recordRowsFor(tab.id, records).length,
-  }));
-
-  const tableRows = useMemo(() => {
-    return recordRowsFor(active, records);
-  }, [active, records]);
+  const activityRows = useMemo(() => records?.payments ?? [], [records]);
+  const exceptionRows = useMemo(
+    () => cases.filter((item) => !["MATCHED", "FEE_EXPLAINED", "REFUND_ADJUSTED"].includes(item.status)).slice(0, 8),
+    [cases],
+  );
 
   if (!world) {
-    return <EmptyState title="No world generated" detail="Build a financial world to inspect records, schema and anomaly mix." />;
+    return <EmptyState title="No world generated" detail="Describe a financial world and Auditra will build one for you." />;
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="min-w-0 space-y-4">
-        <Tabs tabs={tabCounts} active={active} onChange={setActive} />
-        {active === "overview" ? <Overview world={world} /> : null}
-        {active === "anomalies" ? <AnomalyPanel world={world} /> : null}
-        {!["overview", "anomalies"].includes(active) ? (
+    <div className="space-y-4">
+      <Tabs
+        tabs={tabs.map((tab) => ({
+          ...tab,
+          count:
+            tab.id === "activity"
+              ? activityRows.length
+              : tab.id === "exceptions"
+                ? exceptionRows.length
+                : undefined,
+        }))}
+        active={active}
+        onChange={setActive}
+      />
+
+      {active === "overview" ? <Overview world={world} /> : null}
+
+      {active === "activity" ? (
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
           <DataTable
-            rows={tableRows}
-            columns={columnsFor(active)}
-            getRowId={(row) => String(row[primaryKeyFor(active)] ?? JSON.stringify(row))}
+            rows={activityRows}
+            columns={activityColumns}
+            getRowId={(row) => String(row.payment_id ?? JSON.stringify(row))}
             onRowClick={setDetail}
-            emptyTitle={`No ${active} records`}
+            emptyTitle="No payment activity"
           />
-        ) : null}
-      </div>
-      <Card>
-        <SectionHeader title="Record Detail" kicker={detail ? String(detail[primaryKeyFor(active)] ?? "selected record") : "Click a row"} />
-        {detail ? (
-          <>
-            <div className="mb-3 flex flex-wrap gap-2">
-              {Object.entries(detail)
-                .slice(0, 4)
-                .map(([key, value]) => (
-                  <Badge key={key} tone="muted">
-                    {key}: {shortId(String(value), 20)}
-                  </Badge>
-                ))}
-            </div>
-            <pre className="max-h-[520px] overflow-auto rounded-lg bg-slate-950 p-3 text-xs leading-5 text-slate-100">
-              {jsonPreview(detail, 2600)}
-            </pre>
-          </>
+          <Card>
+            <SectionHeader title="Transaction detail" kicker={detail ? String(detail.payment_id ?? "Selected payment") : "Choose a payment"} />
+            {detail ? (
+              <pre className="max-h-[520px] overflow-auto rounded-2xl bg-slate-950 p-4 text-xs leading-6 text-slate-100">
+                {jsonPreview(detail, 2600)}
+              </pre>
+            ) : (
+              <EmptyState title="No activity selected" detail="Open a transaction to inspect the generated record." />
+            )}
+          </Card>
+        </div>
+      ) : null}
+
+      {active === "exceptions" ? (
+        exceptionRows.length ? (
+          <div className="grid gap-3 lg:grid-cols-2">
+            {exceptionRows.map((item) => (
+              <button
+                key={item.case_id}
+                className="rounded-[24px] border border-line bg-white/90 p-5 text-left shadow-panel transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(15,23,42,0.08)]"
+                onClick={() => onSelectCase?.(item.case_id)}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="grid h-10 w-10 place-items-center rounded-2xl bg-amber-50 text-amber-600">
+                        <ShieldAlert className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <div className="text-sm font-semibold text-slate-950">{caseTitle(item)}</div>
+                        <div className="text-sm text-muted">{shortId(item.payment_id, 26)}</div>
+                      </div>
+                    </div>
+                    <p className="mt-4 text-sm leading-6 text-muted">{caseShortExplanation(item)}</p>
+                  </div>
+                  <Badge tone={statusTone(item.status)}>{titleCase(item.status)}</Badge>
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <Badge tone={riskTone(item.risk_score)}>Risk {item.risk_score.toFixed(1)}</Badge>
+                  <Badge tone={Number(item.decision.financial_impact) > 0 ? "warning" : "muted"}>{money(item.decision.financial_impact)}</Badge>
+                  <span className="inline-flex items-center gap-1 text-sm font-medium text-indigo-700">
+                    Review case
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
         ) : (
-          <EmptyState title="No record selected" detail="Search, sort and open a generated source record." />
-        )}
-      </Card>
+          <EmptyState title="No exceptions yet" detail="Run an audit to surface the transactions that need attention." />
+        )
+      ) : null}
+
+      {active === "relationships" ? (
+        <div className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
+          <Card>
+            <SectionHeader title="Relationship summary" kicker="How financial activity connects in this world" />
+            <div className="space-y-3">
+              {[
+                ["Orders", compact(world.summary.orders)],
+                ["Payments", compact(world.summary.payments)],
+                ["Settlements", compact(world.summary.settlements)],
+                ["Refunds", compact(world.summary.refunds)],
+                ["Fee rules", compact(world.summary.fee_rules)],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between rounded-2xl border border-line bg-slate-50/80 px-4 py-3">
+                  <span className="text-sm font-medium text-slate-700">{label}</span>
+                  <span className="text-sm font-semibold text-slate-950">{value}</span>
+                </div>
+              ))}
+              <div className="rounded-2xl border border-dashed border-line bg-white px-4 py-4 text-sm leading-6 text-muted">
+                Orders lead to payments, payments lead to settlements, and refunds or fee rules explain the differences that matter.
+              </div>
+            </div>
+          </Card>
+          <SchemaRelationshipFlow model={world.relationship_model} />
+        </div>
+      ) : null}
     </div>
   );
 }
 
 function Overview({ world }: { world: WorldBuildResult }) {
-  const summary = world.summary;
   return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-      {[
-        ["Merchant", summary.merchant],
-        ["Payment volume", money(summary.payment_volume)],
-        ["Orders", compact(summary.orders)],
-        ["Payments", compact(summary.payments)],
-        ["Settlements", compact(summary.settlements)],
-        ["Refunds", compact(summary.refunds)],
-        ["Fee", summary.fee],
-        ["Settlement", summary.settlement],
-        ["Currencies", summary.currencies.join(" / ")],
-      ].map(([label, value]) => (
-        <Card key={label}>
-          <div className="text-xs font-bold uppercase text-muted">{label}</div>
-          <div className="mt-2 text-xl font-bold text-ink">{value}</div>
-        </Card>
-      ))}
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
+      <Card className="overflow-hidden bg-[linear-gradient(135deg,rgba(79,70,229,0.10),rgba(14,165,233,0.08),rgba(255,255,255,0.95))]">
+        <SectionHeader title="Financial setup" kicker="A clear summary of the world Auditra built from your description" />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {[
+            ["Merchant", world.summary.merchant],
+            ["Financial activity", money(world.summary.payment_volume)],
+            ["Orders", compact(world.summary.orders)],
+            ["Payments", compact(world.summary.payments)],
+            ["Settlements", compact(world.summary.settlements)],
+            ["Refunds", compact(world.summary.refunds)],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-2xl border border-white/80 bg-white/90 p-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
+              <div className="mt-2 text-lg font-semibold tracking-tight text-slate-950">{value}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <SectionHeader title="Health" kicker="Validation and anomaly coverage for this generated world" />
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Validation</div>
+            <div className="mt-2 text-lg font-semibold text-emerald-900">{world.validation.valid ? "Ready for audit" : "Needs attention"}</div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-line bg-slate-50/70 p-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Anomalies</div>
+              <div className="mt-2 text-lg font-semibold text-slate-950">{compact(world.summary.anomalies)}</div>
+            </div>
+            <div className="rounded-2xl border border-line bg-slate-50/70 p-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Currencies</div>
+              <div className="mt-2 text-lg font-semibold text-slate-950">{world.summary.currencies.join(" / ")}</div>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {world.validation.checks.slice(0, 5).map((check) => (
+              <Badge key={check.check_id} tone={check.status === "PASSED" ? "success" : check.status === "WARNING" ? "warning" : "danger"}>
+                {titleCase(check.check_id)}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }
 
-function AnomalyPanel({ world }: { world: WorldBuildResult }) {
-  const entries = Object.entries(world.summary.anomaly_mix);
-  return (
-    <Card>
-      <SectionHeader title="Controlled Anomalies" kicker="Counts are reported as aggregate evaluation setup, not per-record controller labels." />
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {entries.map(([label, count]) => (
-          <div key={label} className="rounded-lg border border-line bg-slate-50 p-3">
-            <div className="text-xs font-bold uppercase text-muted">{titleCase(label)}</div>
-            <div className="mt-2 text-2xl font-black text-ink">{count}</div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {world.validation.checks.map((check) => (
-          <Badge key={check.check_id} tone={check.status === "PASSED" ? "success" : check.status === "WARNING" ? "warning" : "danger"}>
-            {check.check_id}: {check.status}
-          </Badge>
-        ))}
-      </div>
-    </Card>
-  );
-}
-
-function columnsFor(active: EntityTab): Column<PrimitiveRecord>[] {
-  if (active === "orders") {
-    return [
-      col("order_id", "Order"),
-      col("merchant_id", "Merchant"),
-      col("customer_id", "Customer"),
-      moneyCol("amount", "Amount"),
-      col("currency", "Currency"),
-      col("created_at", "Created"),
-    ];
-  }
-  if (active === "payments") {
-    return [
-      col("payment_id", "Payment"),
-      col("order_id", "Order"),
-      col("payment_method", "Method"),
-      moneyCol("amount", "Amount"),
-      col("currency", "Currency"),
-      col("captured_at", "Captured"),
-    ];
-  }
-  if (active === "settlements") {
-    return [
-      col("settlement_id", "Settlement"),
-      col("payment_id", "Payment"),
-      col("batch_id", "Batch"),
-      moneyCol("amount", "Amount"),
-      col("currency", "Currency"),
-      col("settled_at", "Settled"),
-    ];
-  }
-  if (active === "refunds") {
-    return [
-      col("refund_id", "Refund"),
-      col("payment_id", "Payment"),
-      moneyCol("amount", "Amount"),
-      col("currency", "Currency"),
-      col("reason", "Reason"),
-      col("refunded_at", "Refunded"),
-    ];
-  }
-  return [
-    col("fee_rule_id", "Fee Rule"),
-    col("merchant_id", "Merchant"),
-    col("currency", "Currency"),
-    col("percent_bps", "BPS"),
-    moneyCol("fixed_fee", "Fixed"),
-    col("active_from", "Active From"),
-  ];
-}
-
-function recordRowsFor(tab: EntityTab, records: VisibleDataset["records"] | undefined): PrimitiveRecord[] {
-  if (!records || tab === "overview" || tab === "anomalies") return [];
-  if (tab === "fees") return records.fee_rules;
-  return records[tab as RecordTab] ?? [];
-}
-
-function col(key: string, header: string): Column<PrimitiveRecord> {
-  return {
-    key,
-    header,
-    value: (row) => shortId(String(row[key] ?? ""), 30),
-    sortValue: (row) => String(row[key] ?? ""),
-    className: key.endsWith("_id") ? "font-mono text-xs" : "",
-  };
-}
-
-function moneyCol(key: string, header: string): Column<PrimitiveRecord> {
-  return {
-    key,
-    header,
-    value: (row) => money(String(row[key] ?? "")),
-    sortValue: (row) => Number(row[key] ?? 0),
-  };
-}
-
-function primaryKeyFor(active: EntityTab) {
-  return {
-    overview: "dataset_id",
-    orders: "order_id",
-    payments: "payment_id",
-    settlements: "settlement_id",
-    refunds: "refund_id",
-    fees: "fee_rule_id",
-    anomalies: "check_id",
-  }[active];
-}
+const activityColumns: Column<PrimitiveRecord>[] = [
+  {
+    key: "payment",
+    header: "Payment",
+    value: (row) => shortId(String(row.payment_id ?? ""), 26),
+    sortValue: (row) => String(row.payment_id ?? ""),
+    className: "font-mono text-xs",
+  },
+  {
+    key: "order",
+    header: "Order",
+    value: (row) => shortId(String(row.order_id ?? ""), 24),
+    sortValue: (row) => String(row.order_id ?? ""),
+    className: "font-mono text-xs",
+  },
+  {
+    key: "method",
+    header: "Method",
+    value: (row) => String(row.payment_method ?? "-"),
+    sortValue: (row) => String(row.payment_method ?? ""),
+  },
+  {
+    key: "amount",
+    header: "Amount",
+    value: (row) => money(row.amount as string | number | null),
+    sortValue: (row) => Number(row.amount ?? 0),
+  },
+  {
+    key: "captured",
+    header: "Captured",
+    value: (row) => shortId(String(row.captured_at ?? row.created_at ?? ""), 18),
+    sortValue: (row) => String(row.captured_at ?? row.created_at ?? ""),
+  },
+  {
+    key: "search",
+    header: "Trace",
+    value: () => <Search className="h-4 w-4 text-slate-400" />,
+  },
+];

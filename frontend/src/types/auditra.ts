@@ -414,6 +414,11 @@ export interface AuditWorldResult {
 
 export type PageId =
   | "home"
+  | "worlds"
+  | "audits"
+  | "review"
+  | "insights"
+  | "settings"
   | "world-builder"
   | "world-explorer"
   | "reconciliation"
@@ -423,3 +428,5 @@ export type PageId =
   | "evaluation-lab"
   | "controller-runs"
   | "audit-trail";
+
+export type PrimaryPageId = "home" | "worlds" | "audits" | "review" | "insights" | "settings";

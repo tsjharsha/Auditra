@@ -67,6 +67,7 @@ app.add_middleware(
         ).split(",")
         if origin.strip()
     ],
+    allow_origin_regex=os.getenv("AUDITRA_CORS_REGEX", r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"),
     allow_methods=["*"],
     allow_headers=["*"],
 )

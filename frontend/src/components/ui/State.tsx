@@ -34,15 +34,20 @@ export function LoadingState({ title = "Working", detail }: { title?: string; de
 }
 
 export function ErrorState({ title = "Request failed", error, onRetry }: { title?: string; error?: unknown; onRetry?: () => void }) {
+  const detail = error instanceof Error ? error.message : String(error ?? "Unknown error");
   return (
     <Card className="border-rose-200 bg-rose-50/80">
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 h-5 w-5 text-rose" />
         <div className="min-w-0">
           <div className="text-sm font-bold text-rose">{title}</div>
-          <p className="mt-1 break-words text-sm leading-6 text-rose/80">
-            {error instanceof Error ? error.message : String(error ?? "Unknown error")}
-          </p>
+          <p className="mt-1 break-words text-sm leading-6 text-rose/80">Auditra couldn't complete this step.</p>
+          {detail ? (
+            <details className="mt-3 rounded-lg border border-rose-200 bg-white/80 p-3 text-sm text-rose/80">
+              <summary className="cursor-pointer font-semibold text-rose">View technical details</summary>
+              <p className="mt-2 break-words leading-6">{detail}</p>
+            </details>
+          ) : null}
           {onRetry ? <Button className="mt-3" variant="danger" onClick={onRetry}>Retry</Button> : null}
         </div>
       </div>
