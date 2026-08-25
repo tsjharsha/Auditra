@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 venv/
 .env
+.tmp-chrome-phase-d/
 node_modules/
 dist/
 .DS_Store

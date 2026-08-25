@@ -1,69 +1,96 @@
 # Benchmarks
 
-Benchmarks are measured, not hardcoded.
+Date: 2026-08-25
+
+Benchmarks are measured from local artifacts and should not be edited after a run.
 
 ## Commands
 
 ```powershell
 python scripts/world_demo.py --seed 42
-python scripts/benchmark.py --counts 100 500 1000 --mode MIXED --seed 42
 python scripts/ai_value_benchmark.py --records 1000 --seed 42
+python scripts/phase_c_heldout.py --records-per-slice 200 --seed 42000
+python scripts/phase_c_benchmark.py --counts 100 500 1000 5000 10000 50000 --mode MIXED --seed 42 --output phase_c_benchmark.json
+python scripts/phase_c_concurrency.py --levels 1 5 10 25 50 --records 120 --seed 9000
+python scripts/phase_c_demo_reliability.py --runs 10 --seed 42 --records 500
 ```
 
-## World Demo, Seed 42
+## Frozen Demo
 
+Artifact: `data/world_demo/latest_world_summary.json`
+
+- World ID: `FW_0a7d61b20d15`
+- Dataset ID: `WORLD_FW_0a7d61b20d15`
+- Seed: `42`
 - Orders: 500
 - Payments: 506
 - Settlements: 486
 - Refunds: 60
 - Controlled anomalies: 112
-- Payment volume: INR 2145335.29
-- Accuracy: 0.9960
-- Precision: 0.9868
-- Recall: 0.9953
-- F1: 0.9907
-- Automatic resolution: 0.9921
-- Human escalation: 0.0079
-- AI-assisted throughput: 629.88 records/sec
-- AI-assisted P95 latency: 2.2599 ms
+- Payment volume: INR 2148789.81
 - LLM calls: 0 by default
-- Agent tool calls: 6276
 - Estimated AI cost: USD 0.00 by default
 
-## AI vs Baseline, Same World
+## AI-Assisted Demo Metrics
 
-| Mode | Accuracy | F1 | Auto Resolution | Human Review | Throughput | Tool Calls | Failures |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| deterministic_only | 0.9704 | 0.8951 | 0.9664 | 0.0336 | 994.01/sec | 5020 | 15 |
-| ai_assisted | 0.9960 | 0.9907 | 0.9921 | 0.0079 | 629.88/sec | 6276 | 2 |
+| Metric | Value |
+| --- | ---: |
+| Accuracy | 0.9960 |
+| Precision | 0.9868 |
+| Recall | 0.9953 |
+| F1 | 0.9907 |
+| Auto-resolution | 0.9921 |
+| Human escalation | 0.0079 |
+| Unresolved | 0.0000 |
+| Throughput | 647.36 records/sec |
+| P50 latency | 0.9167 ms |
+| P95 latency | 2.1279 ms |
+| P99 latency | 3.2324 ms |
+| Financial error impact | INR 647.36 |
 
-AI-assisted mode reduced refund-mismatch over-escalation after deterministic invariant verification. It did not change conflicting-evidence cases that failed merchant-consistency controls.
+## AI Vs Baseline, Frozen Demo
 
-## Phase A AI-Value Benchmark
+| Metric | Baseline | Auditra AI |
+| --- | ---: | ---: |
+| Accuracy | 0.9704 | 0.9960 |
+| Precision | 0.8913 | 0.9868 |
+| Recall | 0.9646 | 0.9953 |
+| F1 | 0.8951 | 0.9907 |
+| Auto-resolution | 0.9664 | 0.9921 |
+| Human review | 0.0336 | 0.0079 |
+| P95 latency | 1.8545 ms | 2.1279 ms |
+| Cost / 1K | USD 0.00 | USD 0.00 |
+| Failures | 15 | 2 |
 
-Command:
+## Held-Out Benchmark
 
-```powershell
-python scripts/ai_value_benchmark.py --records 1000 --seed 42
-```
+Artifact: `evaluation/phase_c_heldout.json`
 
-| Mode | Accuracy | F1 | Failures | Escalation | AI Invocation | P95 Latency | Tool Calls | LLM Calls |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| deterministic_only | 0.9726 | 0.9134 | 28 | 0.0382 | 0.0000 | 1.2069 ms | 10118 | 0 |
-| ai_assisted | 0.9971 | 0.9930 | 3 | 0.0137 | 0.2153 | 1.9602 ms | 12606 | 0 |
+| Mode | Records | Weighted accuracy | Weighted F1 | Failures | Error impact | Incorrect amount |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| deterministic_only | 1221 | 0.9771 | 0.9503 | 28 | INR 24665.77 | INR 105728.82 |
+| ai_assisted | 1221 | 0.9992 | 0.9985 | 1 | INR 242.03 | INR 742.18 |
 
-Key lift:
+## Scale Benchmark
 
-- Accuracy: +0.0245
-- F1: +0.0796
-- AMOUNT_MISMATCH recall: 0.6923 -> 0.9670
-- Failures reduced: 25
-- Financial error impact reduced by INR 16084.52
+Artifact: `evaluation/phase_c_benchmark.json`
 
-## Synthetic Benchmark, MIXED Seed 42
+| Records | Mode | Status | Throughput r/s | Accuracy | F1 | Failures |
+| ---: | --- | --- | ---: | ---: | ---: | ---: |
+| 100 | deterministic_only | completed | 138.79 | 0.9600 | 0.8867 | 4 |
+| 100 | ai_assisted | completed | 123.99 | 0.9600 | 0.8867 | 4 |
+| 500 | deterministic_only | completed | 146.85 | 0.9480 | 0.8925 | 26 |
+| 500 | ai_assisted | completed | 86.83 | 0.9480 | 0.8925 | 26 |
+| 1000 | deterministic_only | completed | 129.96 | 0.9790 | 0.8439 | 21 |
+| 1000 | ai_assisted | completed | 125.57 | 0.9790 | 0.8439 | 21 |
+| 5000 | deterministic_only | completed | 144.42 | 0.9636 | 0.8053 | 182 |
+| 5000 | ai_assisted | completed | 120.66 | 0.9636 | 0.8053 | 182 |
+| 10000 | deterministic_only | completed | 143.29 | 0.9655 | 0.8122 | 345 |
+| 10000 | ai_assisted | completed | 118.04 | 0.9656 | 0.8122 | 344 |
+| 50000 | not_run | rejected_by_input_contract | - | - | - | - |
 
-| Records | Throughput | P95 Latency | Accuracy | Failures | AI Investigations |
-| ---: | ---: | ---: | ---: | ---: | ---: |
-| 100 | 876.42/sec | 1.9466 ms | 0.9600 | 4 | 27 |
-| 500 | 863.80/sec | 1.8671 ms | 0.9480 | 26 | 132 |
-| 1000 | 615.51/sec | 2.1989 ms | 0.9790 | 21 | 246 |
+## Demo Reliability
+
+Artifact: `evaluation/phase_c_demo_reliability.json`
+
+The final demo completed 10 of 10 runs with zero system failures. Average duration was 908.88 ms. Every run produced 506 records, 0.9960 accuracy, 0.9907 F1, and 2 evaluation failures.

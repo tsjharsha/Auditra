@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">Auditra Architecture</title>
+  <desc id="desc">Prompt to world builder, schema, synthetic data, graph, deterministic controls, AI investigation, evidence, verification, human review, and evaluation.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#334155" />
+    </marker>
+    <style>
+      .bg { fill: #f8fafc; }
+      .lane { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; }
+      .node { fill: #ffffff; stroke: #0f172a; stroke-width: 1.8; }
+      .ai { fill: #ecfeff; stroke: #0891b2; }
+      .safe { fill: #f0fdf4; stroke: #16a34a; }
+      .review { fill: #fff7ed; stroke: #ea580c; }
+      .eval { fill: #fef2f2; stroke: #dc2626; }
+      .title { font: 700 30px Arial, sans-serif; fill: #0f172a; }
+      .label { font: 700 18px Arial, sans-serif; fill: #0f172a; }
+      .small { font: 500 13px Arial, sans-serif; fill: #475569; }
+      .laneText { font: 700 14px Arial, sans-serif; fill: #64748b; letter-spacing: 1px; }
+      .line { stroke: #334155; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .dashed { stroke: #64748b; stroke-width: 2; stroke-dasharray: 8 8; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect class="bg" width="1280" height="760" rx="0" />
+  <text class="title" x="48" y="58">AUDITRA: From Financial Intent To Verified Control</text>
+  <text class="small" x="48" y="84">Controlled finance world generation, deterministic controls, bounded AI investigation, evidence verification, and independent evaluation.</text>
+
+  <rect class="lane" x="40" y="122" width="1200" height="128" rx="8" />
+  <text class="laneText" x="60" y="150">CREATE</text>
+  <rect class="node ai" x="76" y="174" width="180" height="48" rx="8" />
+  <text class="label" x="116" y="204">Prompt</text>
+  <rect class="node ai" x="326" y="174" width="190" height="48" rx="8" />
+  <text class="label" x="363" y="204">World Builder</text>
+  <rect class="node" x="586" y="174" width="190" height="48" rx="8" />
+  <text class="label" x="613" y="204">Schema/Ontology</text>
+  <rect class="node" x="846" y="174" width="190" height="48" rx="8" />
+  <text class="label" x="884" y="204">Synthetic Data</text>
+  <path class="line" d="M256 198 H326" />
+  <path class="line" d="M516 198 H586" />
+  <path class="line" d="M776 198 H846" />
+
+  <rect class="lane" x="40" y="286" width="1200" height="128" rx="8" />
+  <text class="laneText" x="60" y="314">AUDIT</text>
+  <rect class="node" x="166" y="338" width="190" height="48" rx="8" />
+  <text class="label" x="196" y="368">Financial Graph</text>
+  <rect class="node safe" x="466" y="338" width="220" height="48" rx="8" />
+  <text class="label" x="500" y="368">Deterministic Controls</text>
+  <rect class="node ai" x="796" y="338" width="210" height="48" rx="8" />
+  <text class="label" x="830" y="368">AI Investigation</text>
+  <path class="line" d="M941 222 V262 H261 V338" />
+  <path class="line" d="M356 362 H466" />
+  <path class="line" d="M686 362 H796" />
+
+  <rect class="lane" x="40" y="450" width="1200" height="128" rx="8" />
+  <text class="laneText" x="60" y="478">PROVE</text>
+  <rect class="node" x="116" y="502" width="170" height="48" rx="8" />
+  <text class="label" x="161" y="532">Evidence</text>
+  <rect class="node safe" x="386" y="502" width="180" height="48" rx="8" />
+  <text class="label" x="426" y="532">Verification</text>
+  <rect class="node review" x="666" y="502" width="180" height="48" rx="8" />
+  <text class="label" x="704" y="532">Human Review</text>
+  <rect class="node eval" x="946" y="502" width="170" height="48" rx="8" />
+  <text class="label" x="987" y="532">Evaluation</text>
+  <path class="line" d="M901 386 V442 H201 V502" />
+  <path class="line" d="M286 526 H386" />
+  <path class="line" d="M566 526 H666" />
+  <path class="line" d="M846 526 H946" />
+
+  <rect class="node eval" x="442" y="636" width="396" height="62" rx="8" />
+  <text class="label" x="474" y="662">Hidden Ground Truth</text>
+  <text class="small" x="474" y="684">Used only after the controller run for independent measurement</text>
+  <path class="dashed" d="M1031 550 V636 H838" />
+  <path class="dashed" d="M640 636 V578" />
+</svg>

@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { auditraApi } from "../api/client";
 import type {
   AnomalyMode,
@@ -79,9 +79,21 @@ interface AuditraContextValue {
 }
 
 const AuditraContext = createContext<AuditraContextValue | null>(null);
+const PAGE_IDS: PageId[] = [
+  "home",
+  "world-builder",
+  "world-explorer",
+  "reconciliation",
+  "investigations",
+  "evidence-graph",
+  "human-review",
+  "evaluation-lab",
+  "controller-runs",
+  "audit-trail",
+];
 
 export function AuditraProvider({ children }: { children: ReactNode }) {
-  const [activePage, setActivePage] = useState<PageId>("home");
+  const [activePage, setActivePage] = useState<PageId>(() => pageFromUrl() ?? "home");
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [seed, setSeed] = useState(42);
   const [preview, setPreview] = useState<WorldPreview | null>(null);
@@ -94,6 +106,7 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
   const [statusMessage, setStatusMessage] = useState("Ready");
   const [error, setError] = useState<unknown>(null);
   const [manualBusyLabel, setManualBusyLabel] = useState("");
+  const demoDeepLinkStarted = useRef(false);
 
   const health = useQuery({
     queryKey: ["health"],
@@ -350,6 +363,22 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
             ? "Reviewing"
             : manualBusyLabel;
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("demo") !== "1" || demoDeepLinkStarted.current) return;
+    demoDeepLinkStarted.current = true;
+    const targetPage = pageFromUrl();
+    const stress = params.get("stress") === "1";
+    void runFiveMinuteDemo().then(async () => {
+      if (stress) {
+        await breakController("ADVERSARIAL", 500);
+      }
+      if (targetPage) {
+        setActivePage(targetPage);
+      }
+    });
+  }, []);
+
   const value = useMemo<AuditraContextValue>(
     () => ({
       activePage,
@@ -432,6 +461,12 @@ function firstDifficultCase(result: AuditWorldResult) {
 
 function firstAiModel(cases: ReconciliationCase[]) {
   return cases.find((item) => item.ai_investigation)?.ai_investigation?.model ?? "offline";
+}
+
+function pageFromUrl(): PageId | null {
+  const params = new URLSearchParams(window.location.search);
+  const page = params.get("page");
+  return PAGE_IDS.includes(page as PageId) ? (page as PageId) : null;
 }
 
 function createControlledSpec(settings: ControlledEvaluationSettings): FinancialWorldSpec {
