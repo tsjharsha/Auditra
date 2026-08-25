@@ -47,6 +47,20 @@ class FinancialWorldTests(unittest.TestCase):
         self.assertNotIn('"scenario"', public_payload)
         self.assertNotIn('"anomaly":', visible_dataset_payload)
 
+    def test_world_public_result_exposes_safe_source_records(self) -> None:
+        service = FinancialWorldService()
+        result = service.build_from_prompt(PROMPT, seed=11)
+        public_dataset = service.public_build_result(result)["dataset"]
+        public_payload = json.dumps(public_dataset)
+
+        self.assertIn("records", public_dataset)
+        self.assertEqual(len(public_dataset["records"]["payments"]), len(result.dataset.payments))
+        self.assertEqual(len(public_dataset["records"]["orders"]), len(result.dataset.orders))
+        self.assertNotIn("ground_truth", public_payload)
+        self.assertNotIn("expected_status", public_payload)
+        self.assertNotIn('"scenario"', public_payload)
+        self.assertNotIn('"anomaly":', public_payload)
+
     def test_financial_world_spec_rejects_unsupported_tokens(self) -> None:
         with self.assertRaises(ValueError):
             FinancialWorldSpec(currencies=["BTC"])

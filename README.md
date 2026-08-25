@@ -53,16 +53,25 @@ $env:PYTHONPATH="$PWD\backend"
 uvicorn auditra.api:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Open the app:
+Run the React product app:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open the Vite localhost URL:
 
 ```text
 http://127.0.0.1:5173/
 ```
 
-If you only need the static file:
+If the API is not on port 8000, start Vite with the matching base URL:
 
-```text
-frontend/index.html
+```powershell
+$env:VITE_AUDITRA_API_BASE="http://127.0.0.1:8001"
+npm run dev
 ```
 
 Run the final product demo from CLI:
@@ -171,6 +180,8 @@ Without a database URL, Auditra uses in-memory storage for the local demo.
 - [Benchmarks](docs/benchmarks.md)
 - [Phase A Baseline](docs/phase_a_baseline.md)
 - [Phase A Report](docs/phase_a_report.md)
+- [Phase B Baseline](docs/phase_b_baseline.md)
+- [Phase B Report](docs/phase_b_report.md)
 - [Security](docs/security.md)
 - [Demo Script](docs/demo_script.md)
 - [Galarix Integration Boundary](docs/galarix_integration.md)

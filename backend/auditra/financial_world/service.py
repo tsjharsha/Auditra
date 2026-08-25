@@ -87,4 +87,12 @@ class FinancialWorldService:
                 "refunds": len(dataset.refunds),
                 "fee_rules": len(dataset.fee_rules),
             },
+            "records": {
+                "merchants": [item.model_dump(mode="json") for item in dataset.merchants],
+                "orders": [item.model_dump(mode="json") for item in dataset.orders],
+                "payments": [item.model_dump(mode="json") for item in dataset.payments],
+                "settlements": [item.model_dump(mode="json") for item in dataset.settlements],
+                "refunds": [item.model_dump(mode="json") for item in dataset.refunds],
+                "fee_rules": [item.model_dump(mode="json") for item in dataset.fee_rules],
+            },
         }
