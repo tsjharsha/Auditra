@@ -20,6 +20,7 @@ Controller and evaluation outputs include:
 - financial amount incorrectly classified
 - financial impact of errors
 - confusion matrix
+- class-level precision, recall and F1
 - failure taxonomy
 
 ## Commands
@@ -34,6 +35,12 @@ Compare deterministic-only and AI-assisted controller modes on the same dataset:
 
 ```powershell
 python scripts/compare_controllers.py --records 1000 --mode MIXED --seed 42
+```
+
+Measure Phase A AI value on a prompt-built financial world:
+
+```powershell
+python scripts/ai_value_benchmark.py --records 1000 --seed 42
 ```
 
 Run a compact demo artifact export:

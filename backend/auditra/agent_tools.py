@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import re
+import time
 import uuid
 from datetime import timedelta
 from decimal import Decimal
@@ -20,6 +23,10 @@ from .models import (
 
 
 class ToolBudgetExceeded(RuntimeError):
+    pass
+
+
+class ToolValidationError(ValueError):
     pass
 
 
@@ -77,11 +84,21 @@ class InvestigationTools:
         "request_human_review",
     }
 
-    def __init__(self, index: DatasetIndex, run_id: str, case_id: str, max_calls: int = 64):
+    def __init__(
+        self,
+        index: DatasetIndex,
+        run_id: str,
+        case_id: str,
+        max_calls: int = 64,
+        tool_timeout_ms: int = 1000,
+        max_result_bytes: int = 4096,
+    ):
         self.index = index
         self.run_id = run_id
         self.case_id = case_id
         self.max_calls = max_calls
+        self.tool_timeout_ms = tool_timeout_ms
+        self.max_result_bytes = max_result_bytes
         self.calls: List[AgentToolCall] = []
 
     def _record(self, tool_name: str, inputs: Dict[str, Any], func: Callable[[], Any], output_mapper: Callable[[Any], Dict[str, Any]]) -> Any:
@@ -92,14 +109,27 @@ class InvestigationTools:
             raise ToolBudgetExceeded("agent exceeded tool-call budget")
 
         started = now_utc()
+        started_perf = time.perf_counter()
         success = True
+        error_type = None
+        original_error: Optional[Exception] = None
+        result_size = 0
         try:
+            self._validate_inputs(tool_name, inputs)
             result = func()
             output = output_mapper(result)
+            duration_ms = round((time.perf_counter() - started_perf) * 1000, 4)
+            if duration_ms > self.tool_timeout_ms:
+                raise TimeoutError(f"{tool_name} exceeded {self.tool_timeout_ms}ms tool timeout")
+            output, result_size = self._summarize_output(output)
         except Exception as exc:
             success = False
+            original_error = exc
             result = None
             output = {"error": str(exc)}
+            output, result_size = self._summarize_output(output)
+            error_type = type(exc).__name__
+            duration_ms = round((time.perf_counter() - started_perf) * 1000, 4)
         finished = now_utc()
         self.calls.append(
             AgentToolCall(
@@ -112,11 +142,65 @@ class InvestigationTools:
                 started_at=started,
                 finished_at=finished,
                 success=success,
+                duration_ms=duration_ms,
+                result_size_bytes=result_size,
+                error_type=error_type,
             )
         )
         if not success:
+            if isinstance(original_error, ToolValidationError):
+                raise ToolValidationError(output["error"]) from original_error
+            if isinstance(original_error, ToolBudgetExceeded):
+                raise original_error
             raise RuntimeError(output["error"])
         return result
+
+    def _validate_inputs(self, tool_name: str, inputs: Dict[str, Any]) -> None:
+        self._validate_value("tool_name", tool_name, depth=0)
+        self._validate_value("inputs", inputs, depth=0)
+
+    def _validate_value(self, key: str, value: Any, depth: int) -> None:
+        if depth > 4:
+            raise ToolValidationError("tool input nesting is too deep")
+        if value is None or isinstance(value, (bool, int, float, Decimal)):
+            return
+        if hasattr(value, "model_dump"):
+            return
+        if isinstance(value, str):
+            if len(value) > 256:
+                raise ToolValidationError(f"{key} exceeds maximum string length")
+            lowered = value.lower()
+            if re.search(r"\b(select|insert|update|delete|drop|alter|truncate|union|exec)\b|;--|/\*|\*/", lowered):
+                raise ToolValidationError(f"{key} contains disallowed query syntax")
+            if any(char in value for char in ("\x00", "\r", "\n")):
+                raise ToolValidationError(f"{key} contains disallowed control characters")
+            id_like = key.endswith("_id") or key in {"entity_id", "payment_id", "order_id", "merchant_id", "hypothesis_id"}
+            if id_like and (".." in value or "/" in value or "\\" in value):
+                raise ToolValidationError(f"{key} contains disallowed path characters")
+            return
+        if isinstance(value, list):
+            if len(value) > 100:
+                raise ToolValidationError(f"{key} contains too many items")
+            for item in value:
+                self._validate_value(key, item, depth + 1)
+            return
+        if isinstance(value, dict):
+            if len(value) > 100:
+                raise ToolValidationError(f"{key} contains too many fields")
+            for child_key, child_value in value.items():
+                if not isinstance(child_key, str) or len(child_key) > 64:
+                    raise ToolValidationError("tool input keys must be short strings")
+                self._validate_value(child_key, child_value, depth + 1)
+            return
+        raise ToolValidationError(f"{key} has unsupported type {type(value).__name__}")
+
+    def _summarize_output(self, output: Dict[str, Any]) -> tuple[Dict[str, Any], int]:
+        encoded = json.dumps(output, default=str, sort_keys=True)
+        size = len(encoded.encode("utf-8"))
+        if size <= self.max_result_bytes:
+            return output, size
+        budget = max(80, self.max_result_bytes - 120)
+        return {"truncated": True, "result_size_bytes": size, "summary": encoded[:budget]}, size
 
     def find_payment(self, payment_id: str) -> Optional[Payment]:
         return self._record(
@@ -333,7 +417,9 @@ class InvestigationTools:
             settlements = self.index.settlements_by_payment.get(payment_id, [])
             refunds = self.index.refunds_by_payment.get(payment_id, [])
             order_id = payment.order_id if payment.order_id in self.index.orders_by_id else None
-            related = self.find_related_records(payment)
+            key = (payment.merchant_id, payment.order_id, payment.customer_id, payment.currency, str(payment.amount))
+            duplicates = self.index.payments_by_composite.get(key, [])
+            duplicate_payment_ids = [item.payment_id for item in duplicates if item.payment_id != payment.payment_id]
             return {
                 "center": f"PAYMENT:{payment.payment_id}",
                 "nodes": [
@@ -343,14 +429,14 @@ class InvestigationTools:
                     *([f"ORDER:{order_id}"] if order_id else []),
                     *[f"SETTLEMENT:{item.settlement_id}" for item in settlements],
                     *[f"REFUND:{item.refund_id}" for item in refunds],
-                    *[f"PAYMENT:{item}" for item in related.get("duplicate_payment_ids", [])],
+                    *[f"PAYMENT:{item}" for item in duplicate_payment_ids],
                 ],
                 "relationships": [
                     "BELONGS_TO",
                     *(['CREATED'] if order_id else []),
                     *(['SETTLED'] if settlements else []),
                     *(['REFUNDED'] if refunds else []),
-                    *(['RELATED_TO'] if related.get("duplicate_payment_ids") else []),
+                    *(['RELATED_TO'] if duplicate_payment_ids else []),
                 ],
             }
 
@@ -419,6 +505,7 @@ class InvestigationTools:
     def request_human_review(self, reason: str) -> Dict[str, Any]:
         started = now_utc()
         output = {"requested": True, "reason": reason}
+        result_size = len(json.dumps(output, default=str, sort_keys=True).encode("utf-8"))
         self.calls.append(
             AgentToolCall(
                 call_id=f"TOOL_{uuid.uuid4().hex[:10]}",
@@ -430,6 +517,8 @@ class InvestigationTools:
                 started_at=started,
                 finished_at=now_utc(),
                 success=True,
+                duration_ms=0.0,
+                result_size_bytes=result_size,
             )
         )
         return output

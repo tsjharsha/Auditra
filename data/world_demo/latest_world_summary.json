@@ -1,6 +1,6 @@
 {
   "world": {
-    "world_id": "FW_07128d95be6d",
+    "world_id": "FW_0a7d61b20d15",
     "world_version": 1,
     "prompt": "Generate an Indian e-commerce merchant with 500 orders, UPI and card payments, 2% platform fees, T+2 settlement, refunds, partial settlements and realistic reconciliation anomalies.",
     "spec": {
@@ -33,6 +33,9 @@
         "TIMING_MISMATCH": "0.0300",
         "CONFLICTING_EVIDENCE": "0.0100"
       },
+      "temporal_rules": {},
+      "relationships": [],
+      "constraints": [],
       "start_at": "2026-01-05T09:30:00+00:00",
       "source": "prompt",
       "understanding_source": "deterministic_parser",
@@ -388,7 +391,7 @@
       }
     ],
     "validation": {
-      "world_id": "FW_07128d95be6d",
+      "world_id": "FW_0a7d61b20d15",
       "valid": true,
       "checks": [
         {
@@ -436,7 +439,7 @@
       ]
     },
     "summary": {
-      "world_id": "FW_07128d95be6d",
+      "world_id": "FW_0a7d61b20d15",
       "world_version": 1,
       "merchant": "Demo Commerce India",
       "orders": 500,
@@ -469,9 +472,9 @@
         "REFUND_MISMATCH": 13
       }
     },
-    "dataset_id": "WORLD_FW_07128d95be6d",
+    "dataset_id": "WORLD_FW_0a7d61b20d15",
     "dataset": {
-      "dataset_id": "WORLD_FW_07128d95be6d",
+      "dataset_id": "WORLD_FW_0a7d61b20d15",
       "mode": "DIFFICULT",
       "seed": 42,
       "requested_records": 506,
@@ -486,188 +489,260 @@
       }
     }
   },
-  "controller_run_id": "RUN_fabad81efb9b",
-  "evaluation_run_id": "EVAL_1a7c644e2daf",
+  "controller_run_id": "RUN_45502c11bab0",
+  "evaluation_run_id": "EVAL_4e2d8ca1c359",
   "evaluation": {
-    "accuracy": 0.9585,
-    "precision": 0.8067,
-    "recall": 0.9011,
-    "f1": 0.8199,
-    "false_positive_rate": 0.0076,
+    "accuracy": 0.996,
+    "precision": 0.9868,
+    "recall": 0.9953,
+    "f1": 0.9907,
+    "false_positive_rate": 0.0,
     "false_negative_rate": 0.0,
-    "match_rate": 0.7727,
-    "automatic_resolution_rate": 0.9664,
-    "escalation_rate": 0.0336,
+    "match_rate": 0.7787,
+    "automatic_resolution_rate": 0.9921,
+    "escalation_rate": 0.0079,
     "unresolved_rate": 0.0,
-    "throughput_records_per_sec": 813.47,
-    "median_latency_ms": 0.6386,
-    "p95_latency_ms": 1.723,
-    "p99_latency_ms": 3.1859,
+    "throughput_records_per_sec": 629.88,
+    "median_latency_ms": 0.8863,
+    "p95_latency_ms": 2.2599,
+    "p99_latency_ms": 3.0461,
     "llm_calls": 0,
-    "agent_tool_calls": 6462,
+    "agent_tool_calls": 6276,
     "estimated_ai_cost_usd": "0.00",
-    "financial_amount_correctly_reconciled": "2065299.19",
-    "financial_amount_incorrectly_classified": "80036.10",
-    "financial_impact_of_errors": "39687.93",
+    "financial_amount_correctly_reconciled": "2142244.72",
+    "financial_amount_incorrectly_classified": "3090.57",
+    "financial_impact_of_errors": "647.36",
     "confusion_matrix": {
-      "TIMING_MISMATCH": {
-        "TIMING_MISMATCH": 18,
-        "UNRESOLVED": 0,
-        "MISSING_SETTLEMENT": 0,
-        "FEE_EXPLAINED": 0,
+      "DUPLICATE": {
+        "DUPLICATE": 6,
         "AMOUNT_MISMATCH": 0,
-        "REFUND_ADJUSTED": 0,
         "HUMAN_REVIEW": 0,
-        "DUPLICATE": 0,
-        "MATCHED": 0,
-        "PARTIAL_MATCH": 0
-      },
-      "UNRESOLVED": {
+        "FEE_EXPLAINED": 0,
         "TIMING_MISMATCH": 0,
         "UNRESOLVED": 0,
-        "MISSING_SETTLEMENT": 0,
-        "FEE_EXPLAINED": 0,
-        "AMOUNT_MISMATCH": 0,
-        "REFUND_ADJUSTED": 0,
-        "HUMAN_REVIEW": 0,
-        "DUPLICATE": 0,
         "MATCHED": 0,
-        "PARTIAL_MATCH": 0
-      },
-      "MISSING_SETTLEMENT": {
-        "TIMING_MISMATCH": 0,
-        "UNRESOLVED": 0,
-        "MISSING_SETTLEMENT": 14,
-        "FEE_EXPLAINED": 0,
-        "AMOUNT_MISMATCH": 0,
+        "PARTIAL_MATCH": 0,
         "REFUND_ADJUSTED": 0,
-        "HUMAN_REVIEW": 0,
-        "DUPLICATE": 0,
-        "MATCHED": 0,
-        "PARTIAL_MATCH": 0
-      },
-      "FEE_EXPLAINED": {
-        "TIMING_MISMATCH": 0,
-        "UNRESOLVED": 0,
-        "MISSING_SETTLEMENT": 0,
-        "FEE_EXPLAINED": 356,
-        "AMOUNT_MISMATCH": 0,
-        "REFUND_ADJUSTED": 0,
-        "HUMAN_REVIEW": 0,
-        "DUPLICATE": 3,
-        "MATCHED": 0,
-        "PARTIAL_MATCH": 0
+        "MISSING_SETTLEMENT": 0
       },
       "AMOUNT_MISMATCH": {
-        "TIMING_MISMATCH": 0,
-        "UNRESOLVED": 0,
-        "MISSING_SETTLEMENT": 0,
-        "FEE_EXPLAINED": 0,
-        "AMOUNT_MISMATCH": 38,
-        "REFUND_ADJUSTED": 0,
-        "HUMAN_REVIEW": 13,
         "DUPLICATE": 0,
-        "MATCHED": 0,
-        "PARTIAL_MATCH": 2
-      },
-      "REFUND_ADJUSTED": {
-        "TIMING_MISMATCH": 0,
-        "UNRESOLVED": 0,
-        "MISSING_SETTLEMENT": 0,
-        "FEE_EXPLAINED": 0,
-        "AMOUNT_MISMATCH": 0,
-        "REFUND_ADJUSTED": 35,
+        "AMOUNT_MISMATCH": 51,
         "HUMAN_REVIEW": 0,
-        "DUPLICATE": 0,
+        "FEE_EXPLAINED": 0,
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
         "MATCHED": 0,
-        "PARTIAL_MATCH": 0
+        "PARTIAL_MATCH": 2,
+        "REFUND_ADJUSTED": 0,
+        "MISSING_SETTLEMENT": 0
       },
       "HUMAN_REVIEW": {
-        "TIMING_MISMATCH": 0,
-        "UNRESOLVED": 0,
-        "MISSING_SETTLEMENT": 0,
-        "FEE_EXPLAINED": 0,
-        "AMOUNT_MISMATCH": 0,
-        "REFUND_ADJUSTED": 0,
-        "HUMAN_REVIEW": 4,
         "DUPLICATE": 0,
-        "MATCHED": 0,
-        "PARTIAL_MATCH": 0
-      },
-      "DUPLICATE": {
+        "AMOUNT_MISMATCH": 0,
+        "HUMAN_REVIEW": 4,
+        "FEE_EXPLAINED": 0,
         "TIMING_MISMATCH": 0,
         "UNRESOLVED": 0,
-        "MISSING_SETTLEMENT": 3,
-        "FEE_EXPLAINED": 0,
-        "AMOUNT_MISMATCH": 0,
-        "REFUND_ADJUSTED": 0,
-        "HUMAN_REVIEW": 0,
-        "DUPLICATE": 3,
         "MATCHED": 0,
-        "PARTIAL_MATCH": 0
+        "PARTIAL_MATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "MISSING_SETTLEMENT": 0
+      },
+      "FEE_EXPLAINED": {
+        "DUPLICATE": 0,
+        "AMOUNT_MISMATCH": 0,
+        "HUMAN_REVIEW": 0,
+        "FEE_EXPLAINED": 359,
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "MISSING_SETTLEMENT": 0
+      },
+      "TIMING_MISMATCH": {
+        "DUPLICATE": 0,
+        "AMOUNT_MISMATCH": 0,
+        "HUMAN_REVIEW": 0,
+        "FEE_EXPLAINED": 0,
+        "TIMING_MISMATCH": 18,
+        "UNRESOLVED": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "MISSING_SETTLEMENT": 0
+      },
+      "UNRESOLVED": {
+        "DUPLICATE": 0,
+        "AMOUNT_MISMATCH": 0,
+        "HUMAN_REVIEW": 0,
+        "FEE_EXPLAINED": 0,
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "MISSING_SETTLEMENT": 0
       },
       "MATCHED": {
+        "DUPLICATE": 0,
+        "AMOUNT_MISMATCH": 0,
+        "HUMAN_REVIEW": 0,
+        "FEE_EXPLAINED": 0,
         "TIMING_MISMATCH": 0,
         "UNRESOLVED": 0,
-        "MISSING_SETTLEMENT": 0,
-        "FEE_EXPLAINED": 0,
-        "AMOUNT_MISMATCH": 0,
-        "REFUND_ADJUSTED": 0,
-        "HUMAN_REVIEW": 0,
-        "DUPLICATE": 0,
         "MATCHED": 0,
-        "PARTIAL_MATCH": 0
+        "PARTIAL_MATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "MISSING_SETTLEMENT": 0
       },
       "PARTIAL_MATCH": {
+        "DUPLICATE": 0,
+        "AMOUNT_MISMATCH": 0,
+        "HUMAN_REVIEW": 0,
+        "FEE_EXPLAINED": 0,
         "TIMING_MISMATCH": 0,
         "UNRESOLVED": 0,
-        "MISSING_SETTLEMENT": 0,
-        "FEE_EXPLAINED": 0,
-        "AMOUNT_MISMATCH": 0,
-        "REFUND_ADJUSTED": 0,
-        "HUMAN_REVIEW": 0,
-        "DUPLICATE": 0,
         "MATCHED": 0,
-        "PARTIAL_MATCH": 17
+        "PARTIAL_MATCH": 17,
+        "REFUND_ADJUSTED": 0,
+        "MISSING_SETTLEMENT": 0
+      },
+      "REFUND_ADJUSTED": {
+        "DUPLICATE": 0,
+        "AMOUNT_MISMATCH": 0,
+        "HUMAN_REVIEW": 0,
+        "FEE_EXPLAINED": 0,
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0,
+        "REFUND_ADJUSTED": 35,
+        "MISSING_SETTLEMENT": 0
+      },
+      "MISSING_SETTLEMENT": {
+        "DUPLICATE": 0,
+        "AMOUNT_MISMATCH": 0,
+        "HUMAN_REVIEW": 0,
+        "FEE_EXPLAINED": 0,
+        "TIMING_MISMATCH": 0,
+        "UNRESOLVED": 0,
+        "MATCHED": 0,
+        "PARTIAL_MATCH": 0,
+        "REFUND_ADJUSTED": 0,
+        "MISSING_SETTLEMENT": 14
+      }
+    },
+    "class_metrics": {
+      "AMOUNT_MISMATCH": {
+        "support": 53.0,
+        "true_positive": 51.0,
+        "false_positive": 0.0,
+        "false_negative": 2.0,
+        "precision": 1.0,
+        "recall": 0.9623,
+        "f1": 0.9808
+      },
+      "DUPLICATE": {
+        "support": 6.0,
+        "true_positive": 6.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "FEE_EXPLAINED": {
+        "support": 359.0,
+        "true_positive": 359.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "HUMAN_REVIEW": {
+        "support": 4.0,
+        "true_positive": 4.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "MISSING_SETTLEMENT": {
+        "support": 14.0,
+        "true_positive": 14.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "PARTIAL_MATCH": {
+        "support": 17.0,
+        "true_positive": 17.0,
+        "false_positive": 2.0,
+        "false_negative": 0.0,
+        "precision": 0.8947,
+        "recall": 1.0,
+        "f1": 0.9444
+      },
+      "REFUND_ADJUSTED": {
+        "support": 35.0,
+        "true_positive": 35.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "TIMING_MISMATCH": {
+        "support": 18.0,
+        "true_positive": 18.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
       }
     },
     "failure_taxonomy": {
-      "OVER_ESCALATION": 13,
-      "CLASSIFICATION_ERROR": 5,
-      "FALSE_EXCEPTION": 3
+      "CLASSIFICATION_ERROR": 2
     }
   },
   "comparison": [
     {
       "mode": "deterministic_only",
-      "accuracy": 0.9585,
-      "precision": 0.8067,
-      "recall": 0.9011,
-      "f1": 0.8199,
+      "accuracy": 0.9704,
+      "precision": 0.8913,
+      "recall": 0.9646,
+      "f1": 0.8951,
       "auto_resolution": 0.9664,
       "human_review": 0.0336,
-      "throughput": 1078.87,
-      "p95_latency_ms": 1.3153,
+      "throughput": 994.01,
+      "p95_latency_ms": 1.1685,
       "llm_calls": 0,
       "tool_calls": 5020,
       "estimated_ai_cost_usd": "0.00",
-      "failures": 21
+      "failures": 15
     },
     {
       "mode": "ai_assisted",
-      "accuracy": 0.9585,
-      "precision": 0.8067,
-      "recall": 0.9011,
-      "f1": 0.8199,
-      "auto_resolution": 0.9664,
-      "human_review": 0.0336,
-      "throughput": 813.47,
-      "p95_latency_ms": 1.723,
+      "accuracy": 0.996,
+      "precision": 0.9868,
+      "recall": 0.9953,
+      "f1": 0.9907,
+      "auto_resolution": 0.9921,
+      "human_review": 0.0079,
+      "throughput": 629.88,
+      "p95_latency_ms": 2.2599,
       "llm_calls": 0,
-      "tool_calls": 6462,
+      "tool_calls": 6276,
       "estimated_ai_cost_usd": "0.00",
-      "failures": 21
+      "failures": 2
     }
   ],
-  "survival_status": "CONTROLLER FAILED 21 CASES"
+  "survival_status": "CONTROLLER FAILED 2 CASES"
 }

@@ -14,6 +14,8 @@ Environment flags:
 - `AUDITRA_USE_OPENAI_INVESTIGATOR=1`
 - `OPENAI_API_KEY`
 - `AUDITRA_OPENAI_MODEL`
+- `AUDITRA_WORLD_LLM_TIMEOUT`
+- `AUDITRA_INVESTIGATION_LLM_MAX_RETRIES`
 
 ## Dependency-Free Frontend
 
@@ -25,4 +27,4 @@ The brief requested React/Vite/Tailwind. The existing repo had a static frontend
 
 ## AI vs Baseline Is Honest
 
-In the measured seed-42 world demo, AI-assisted mode did not improve classification accuracy. It added investigation traceability, hypotheses, evidence links, and tool activity at a throughput cost. The product reports that directly.
+Phase A reports AI value only where the measured dataset proves it. The prompt-built refund-conflict world improved from 15 failures to 2 in the seed-42 demo, and the 1000-record AI-value benchmark improved from 28 failures to 3. The legacy `ScenarioGenerator` mixed benchmark remains flat, so docs keep that distinction explicit.

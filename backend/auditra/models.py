@@ -286,6 +286,9 @@ class AgentToolCall(AuditraModel):
     started_at: datetime
     finished_at: datetime
     success: bool = True
+    duration_ms: float = 0.0
+    result_size_bytes: int = 0
+    error_type: Optional[str] = None
 
 
 class VerificationResult(AuditraModel):
@@ -328,9 +331,12 @@ class InvestigationHypothesis(AuditraModel):
 class AIInvestigationResult(AuditraModel):
     investigation_id: str
     payment_id: str
+    case_id: Optional[str] = None
+    objective: str = ""
     provider: str = "offline_structured"
     model: str = "auditra-hypothesis-agent-v1"
     mode: str = "ai_assisted"
+    prompt_version: str = "investigation-plan-v2"
     started_at: datetime
     finished_at: datetime
     duration_ms: float
@@ -338,6 +344,14 @@ class AIInvestigationResult(AuditraModel):
     input_tokens: int = 0
     output_tokens: int = 0
     estimated_cost_usd: Decimal = Decimal("0.00")
+    ai_unavailable: bool = False
+    provider_error: Optional[str] = None
+    provider_attempts: int = 0
+    provider_latency_ms: float = 0.0
+    available_tools: List[str] = Field(default_factory=list)
+    verification_requirements: List[str] = Field(default_factory=list)
+    max_tool_calls: int = 0
+    max_llm_calls: int = 1
     hypotheses: List[InvestigationHypothesis] = Field(default_factory=list)
     selected_hypothesis_id: Optional[str] = None
     recommendation: ReconciliationStatus
@@ -458,6 +472,7 @@ class RunMetrics(AuditraModel):
     llm_calls: int = 0
     agent_tool_calls: int = 0
     estimated_ai_cost_usd: Decimal = Decimal("0.00")
+    ai_invocation_rate: float = 0.0
     average_risk_score: float = 0.0
 
     @field_validator("total_payment_volume", "reconciled_amount", "estimated_ai_cost_usd")
@@ -504,6 +519,7 @@ class EvaluationMetrics(AuditraModel):
     financial_amount_incorrectly_classified: Decimal
     financial_impact_of_errors: Decimal
     confusion_matrix: Dict[str, Dict[str, int]] = Field(default_factory=dict)
+    class_metrics: Dict[str, Dict[str, float]] = Field(default_factory=dict)
     failure_taxonomy: Dict[str, int] = Field(default_factory=dict)
 
     @field_validator(

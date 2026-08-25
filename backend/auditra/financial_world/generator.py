@@ -151,6 +151,7 @@ class FinancialWorldGenerator:
                     refund_amount = self._refund_amount(payment.amount, rng)
                     refunds.append(self._refund(world_id, idx, payment, merchant, refund_amount))
                     expected_settlement = money(payment.amount - expected_fee - refund_amount)
+                self._make_refund_conflicting(refunds, payment, merchant)
                 actual_settlement = money(payment.amount - expected_fee)
                 expected_status = ReconciliationStatus.HUMAN_REVIEW
                 financial_impact = abs(actual_settlement - expected_settlement)
@@ -174,7 +175,7 @@ class FinancialWorldGenerator:
                         currency=currency,
                         settled_at=settlement_time,
                         batch_id=f"BATCH_{world_id[-6:]}_{idx // 25:04d}",
-                        original={"world_id": world_id, "anomaly": anomaly},
+                        original={"world_id": world_id},
                     )
                 )
 
@@ -192,7 +193,7 @@ class FinancialWorldGenerator:
                     update={
                         "source_record_id": f"{world_id}_PAYMENT_DUP_{idx:05d}",
                         "payment_id": f"PAY_{world_id[-6:]}_DUP_{idx:05d}",
-                        "captured_at": payment.captured_at + timedelta(minutes=1),
+                        "captured_at": previous_payment.captured_at + timedelta(minutes=1),
                         "original": {"world_id": world_id, "duplicate_of": previous_payment.payment_id},
                     }
                 )
@@ -257,6 +258,16 @@ class FinancialWorldGenerator:
             reason="customer_request",
             original={"world_id": world_id},
         )
+
+    def _make_refund_conflicting(self, refunds: List[Refund], payment: Payment, merchant: Merchant) -> None:
+        conflict_merchant_id = f"{merchant.merchant_id}_CONFLICT"
+        for idx in range(len(refunds) - 1, -1, -1):
+            refund = refunds[idx]
+            if refund.payment_id == payment.payment_id:
+                refunds[idx] = refund.model_copy(
+                    update={"merchant_id": conflict_merchant_id, "reason": "merchant_dispute", "original": {"world_id": refund.original.get("world_id")}}
+                )
+                return
 
     def _anomaly_plan(self, spec: FinancialWorldSpec, rng: random.Random) -> List[str]:
         names = ["NORMAL"]

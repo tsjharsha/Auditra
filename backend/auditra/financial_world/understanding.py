@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import json
 import os
 import re
-import urllib.request
 from decimal import Decimal
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from pydantic import ValidationError
 
+from ..llm import LLMInvalidResponse, LLMProvider, LLMProviderConfig, LLMUnavailable, OpenAIProvider as OpenAILLMProvider
 from .models import AnomalyMode, FinancialWorldSpec, UnderstandingStep, rate
 
 
@@ -184,77 +183,57 @@ class DeterministicPromptParser:
 
 
 class OpenAIWorldSpecProvider:
-    def __init__(self, model: str | None = None):
-        self.model = model or os.getenv("AUDITRA_OPENAI_MODEL", "gpt-5-mini")
+    prompt_version = "world-spec-v2"
+
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+        self.llm_provider = llm_provider or OpenAILLMProvider(config=config or LLMProviderConfig.from_env("AUDITRA_WORLD_LLM"))
+        self.model = self.llm_provider.config.model
 
     def parse(self, prompt: str, seed: int = 42) -> Tuple[FinancialWorldSpec, List[UnderstandingStep]]:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise PromptUnderstandingError("OPENAI_API_KEY is not configured")
-        schema = FinancialWorldSpec.model_json_schema()
-        body = {
-            "model": self.model,
-            "input": [
-                {
-                    "role": "system",
-                    "content": "Convert the user prompt into a valid Auditra FinancialWorldSpec JSON object. Do not generate records.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            "text": {
-                "format": {
-                    "type": "json_schema",
-                    "name": "FinancialWorldSpec",
-                    "schema": schema,
-                    "strict": False,
-                }
-            },
-        }
-        request = urllib.request.Request(
-            "https://api.openai.com/v1/responses",
-            data=json.dumps(body).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=30) as response:
-                payload = json.loads(response.read().decode("utf-8"))
-        except Exception as exc:
-            raise PromptUnderstandingError(f"OpenAI world builder failed: {exc}") from exc
-        parsed = self._extract_json(payload)
-        parsed.setdefault("prompt", prompt)
-        parsed.setdefault("seed", seed)
-        parsed["understanding_source"] = f"openai:{self.model}"
-        try:
-            spec = FinancialWorldSpec.model_validate(parsed)
-        except ValidationError as exc:
-            raise PromptUnderstandingError(f"OpenAI returned invalid FinancialWorldSpec: {exc}") from exc
-        steps = [
-            UnderstandingStep(step="Understand intent", detail=f"LLM provider {self.model} produced a validated world specification."),
-            UnderstandingStep(step="Validate structured output", detail="Pydantic schema validation passed before generation."),
-        ]
-        return spec, steps
-
-    def _extract_json(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        if "output_text" in payload:
-            return json.loads(payload["output_text"])
-        for item in payload.get("output", []):
-            for content in item.get("content", []):
-                text = content.get("text")
-                if text:
-                    return json.loads(text)
-        raise PromptUnderstandingError("OpenAI response did not contain JSON text")
+        last_error: Optional[Exception] = None
+        for _ in range(2):
+            try:
+                response = self.llm_provider.generate_structured(
+                    schema_name="FinancialWorldSpec",
+                    schema=FinancialWorldSpec.model_json_schema(),
+                    system_prompt=(
+                        "Convert the user prompt into a valid Auditra FinancialWorldSpec JSON object. "
+                        "Do not generate financial records. The record generator remains deterministic. "
+                        "Only use supported currencies, payment methods and anomaly names from the schema."
+                    ),
+                    user_payload={"prompt": prompt, "seed": seed},
+                )
+                parsed = dict(response.output)
+                parsed.setdefault("prompt", prompt)
+                parsed.setdefault("seed", seed)
+                parsed["understanding_source"] = f"openai:{self.model}"
+                spec = FinancialWorldSpec.model_validate(parsed)
+                steps = [
+                    UnderstandingStep(step="Understand intent", detail=f"LLM provider {self.model} produced a validated world specification."),
+                    UnderstandingStep(step="Validate structured output", detail="Pydantic schema validation passed before deterministic generation."),
+                    UnderstandingStep(
+                        step="Record AI usage",
+                        detail=(
+                            f"calls={response.llm_calls}, input_tokens={response.input_tokens}, "
+                            f"output_tokens={response.output_tokens}, cost_usd={response.estimated_cost_usd}"
+                        ),
+                    ),
+                ]
+                return spec, steps
+            except (LLMInvalidResponse, ValidationError, ValueError) as exc:
+                last_error = exc
+            except LLMUnavailable as exc:
+                raise PromptUnderstandingError(f"OpenAI world builder unavailable: {exc}") from exc
+        raise PromptUnderstandingError(f"OpenAI returned invalid FinancialWorldSpec: {last_error}")
 
 
 class WorldUnderstandingService:
-    def __init__(self):
+    def __init__(self, openai: Optional[OpenAIWorldSpecProvider] = None):
         self.parser = DeterministicPromptParser()
-        self.openai = OpenAIWorldSpecProvider()
+        self.openai = openai or OpenAIWorldSpecProvider()
 
     def understand(self, prompt: str, seed: int = 42) -> Tuple[FinancialWorldSpec, List[UnderstandingStep]]:
-        if os.getenv("AUDITRA_USE_OPENAI_WORLD_BUILDER") == "1":
+        provider = os.getenv("AUDITRA_WORLD_LLM_PROVIDER", os.getenv("AUDITRA_LLM_PROVIDER", "")).lower()
+        if os.getenv("AUDITRA_USE_OPENAI_WORLD_BUILDER") == "1" or provider == "openai":
             return self.openai.parse(prompt, seed=seed)
         return self.parser.parse(prompt, seed=seed)

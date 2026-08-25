@@ -1,13 +1,13 @@
 [
   {
     "mode": "deterministic_only",
-    "controller_run_id": "RUN_229afb89d522",
+    "controller_run_id": "RUN_2cfd1b95dbe8",
     "records": 1000,
-    "duration_ms": 976.71,
-    "throughput_records_per_sec": 1023.84,
-    "median_latency_ms": 0.6715,
-    "p95_latency_ms": 1.3356,
-    "p99_latency_ms": 2.5963,
+    "duration_ms": 993.63,
+    "throughput_records_per_sec": 1006.41,
+    "median_latency_ms": 0.8198,
+    "p95_latency_ms": 1.1784,
+    "p99_latency_ms": 1.9821,
     "accuracy": 0.979,
     "precision": 0.8387,
     "recall": 0.8515,
@@ -18,7 +18,91 @@
       "FALSE_EXCEPTION": 9,
       "OVER_ESCALATION": 1
     },
+    "class_metrics": {
+      "AMOUNT_MISMATCH": {
+        "support": 82.0,
+        "true_positive": 81.0,
+        "false_positive": 0.0,
+        "false_negative": 1.0,
+        "precision": 1.0,
+        "recall": 0.9878,
+        "f1": 0.9939
+      },
+      "DUPLICATE": {
+        "support": 38.0,
+        "true_positive": 28.0,
+        "false_positive": 10.0,
+        "false_negative": 10.0,
+        "precision": 0.7368,
+        "recall": 0.7368,
+        "f1": 0.7368
+      },
+      "FEE_EXPLAINED": {
+        "support": 574.0,
+        "true_positive": 569.0,
+        "false_positive": 0.0,
+        "false_negative": 5.0,
+        "precision": 1.0,
+        "recall": 0.9913,
+        "f1": 0.9956
+      },
+      "HUMAN_REVIEW": {
+        "support": 0.0,
+        "true_positive": 0.0,
+        "false_positive": 1.0,
+        "false_negative": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "MATCHED": {
+        "support": 94.0,
+        "true_positive": 92.0,
+        "false_positive": 0.0,
+        "false_negative": 2.0,
+        "precision": 1.0,
+        "recall": 0.9787,
+        "f1": 0.9892
+      },
+      "MISSING_SETTLEMENT": {
+        "support": 43.0,
+        "true_positive": 43.0,
+        "false_positive": 10.0,
+        "false_negative": 0.0,
+        "precision": 0.8113,
+        "recall": 1.0,
+        "f1": 0.8958
+      },
+      "PARTIAL_MATCH": {
+        "support": 37.0,
+        "true_positive": 37.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "REFUND_ADJUSTED": {
+        "support": 96.0,
+        "true_positive": 93.0,
+        "false_positive": 0.0,
+        "false_negative": 3.0,
+        "precision": 1.0,
+        "recall": 0.9688,
+        "f1": 0.9841
+      },
+      "TIMING_MISMATCH": {
+        "support": 36.0,
+        "true_positive": 36.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      }
+    },
     "ai_investigations": 0,
+    "ai_invocation_rate": 0.0,
     "llm_calls": 0,
     "agent_tool_calls": 9838,
     "estimated_ai_cost_usd": "0.00",
@@ -26,13 +110,13 @@
   },
   {
     "mode": "ai_assisted",
-    "controller_run_id": "RUN_2ab3b40d9ba2",
+    "controller_run_id": "RUN_03735d436084",
     "records": 1000,
-    "duration_ms": 1218.39,
-    "throughput_records_per_sec": 820.76,
-    "median_latency_ms": 0.6647,
-    "p95_latency_ms": 2.2387,
-    "p99_latency_ms": 3.8204,
+    "duration_ms": 1281.16,
+    "throughput_records_per_sec": 780.54,
+    "median_latency_ms": 0.8627,
+    "p95_latency_ms": 2.0331,
+    "p99_latency_ms": 2.7359,
     "accuracy": 0.979,
     "precision": 0.8387,
     "recall": 0.8515,
@@ -43,10 +127,94 @@
       "FALSE_EXCEPTION": 9,
       "OVER_ESCALATION": 1
     },
+    "class_metrics": {
+      "AMOUNT_MISMATCH": {
+        "support": 82.0,
+        "true_positive": 81.0,
+        "false_positive": 0.0,
+        "false_negative": 1.0,
+        "precision": 1.0,
+        "recall": 0.9878,
+        "f1": 0.9939
+      },
+      "DUPLICATE": {
+        "support": 38.0,
+        "true_positive": 28.0,
+        "false_positive": 10.0,
+        "false_negative": 10.0,
+        "precision": 0.7368,
+        "recall": 0.7368,
+        "f1": 0.7368
+      },
+      "FEE_EXPLAINED": {
+        "support": 574.0,
+        "true_positive": 569.0,
+        "false_positive": 0.0,
+        "false_negative": 5.0,
+        "precision": 1.0,
+        "recall": 0.9913,
+        "f1": 0.9956
+      },
+      "HUMAN_REVIEW": {
+        "support": 0.0,
+        "true_positive": 0.0,
+        "false_positive": 1.0,
+        "false_negative": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "MATCHED": {
+        "support": 94.0,
+        "true_positive": 92.0,
+        "false_positive": 0.0,
+        "false_negative": 2.0,
+        "precision": 1.0,
+        "recall": 0.9787,
+        "f1": 0.9892
+      },
+      "MISSING_SETTLEMENT": {
+        "support": 43.0,
+        "true_positive": 43.0,
+        "false_positive": 10.0,
+        "false_negative": 0.0,
+        "precision": 0.8113,
+        "recall": 1.0,
+        "f1": 0.8958
+      },
+      "PARTIAL_MATCH": {
+        "support": 37.0,
+        "true_positive": 37.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "REFUND_ADJUSTED": {
+        "support": 96.0,
+        "true_positive": 93.0,
+        "false_positive": 0.0,
+        "false_negative": 3.0,
+        "precision": 1.0,
+        "recall": 0.9688,
+        "f1": 0.9841
+      },
+      "TIMING_MISMATCH": {
+        "support": 36.0,
+        "true_positive": 36.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      }
+    },
     "ai_investigations": 246,
+    "ai_invocation_rate": 0.246,
     "llm_calls": 0,
-    "agent_tool_calls": 12650,
+    "agent_tool_calls": 12293,
     "estimated_ai_cost_usd": "0.00",
-    "average_risk_score": 10.9383
+    "average_risk_score": 10.9423
   }
 ]

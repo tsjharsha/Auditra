@@ -5,9 +5,10 @@ Auditra now runs a deterministic finance controller with an evidence-first AI in
 ## Authority Model
 
 - Deterministic code performs all money arithmetic, duplicate checks, fee calculations, timing checks, invariant evaluation, status classification, and verification.
-- The AI investigation layer proposes and ranks hypotheses, selects tools dynamically, summarizes support/contradiction, and recommends review context.
-- AI output cannot override deterministic arithmetic or mutate source records.
+- The AI investigation layer returns a structured plan containing candidate hypotheses, typed tool calls, self-challenge prompts, and verification requirements.
+- AI output cannot override deterministic arithmetic or mutate source records. It can only support a refinement when deterministic verification passes.
 - Human review remains the required path for unresolved conflicts, failed verification, or insufficient evidence.
+- Provider failure or repeatedly malformed structured output becomes `ai_unavailable=True` and escalates to `HUMAN_REVIEW`.
 
 ## Investigation Flow
 
@@ -21,25 +22,28 @@ visible source records
   -> deterministic verification remains final authority
 ```
 
-## Tool Surface
+## Model-Selectable Tool Surface
 
-The agent is limited to allowlisted, logged tools:
+The model can request only these mapped tools:
 
 - `find_payment`
 - `find_order`
-- `find_merchant`
 - `find_settlement`
 - `find_refunds`
 - `find_fee_rules`
+- `find_merchant`
 - `get_transaction_history`
+- `get_graph_neighborhood`
+- `find_related_transactions`
 - `compare_amounts`
 - `check_temporal_relationship`
-- `find_related_records`
-- `find_related_transactions`
 - `check_fee_applicability`
 - `check_duplicate`
-- `get_graph_neighborhood`
 - `get_evidence`
+
+Controller-internal tools such as `create_hypothesis`, `verify_hypothesis`, `create_reconciliation_case`, `request_human_review` and `find_related_records` remain logged but are not directly model-selectable.
+
+Every tool call records input, summarized output, timestamps, duration, result size, success state and error type. Inputs are validated for path traversal, query-shaped strings, excessive length, deep nesting and oversized collections.
 - `create_hypothesis`
 - `verify_hypothesis`
 - `create_reconciliation_case`
@@ -68,4 +72,4 @@ Each hypothesis records:
 
 ## Provider Boundary
 
-`OfflineStructuredProvider` is the default and performs no network calls. `OpenAIProvider` is present only as an explicit adapter boundary and is intentionally disabled in the local offline demo unless a production integration is added.
+`OfflineStructuredProvider` is the default and performs no network calls. `OpenAIProvider` is opt-in and uses structured output validation. Configure model, timeout, retries, max tokens and token-cost assumptions with environment variables such as `AUDITRA_WORLD_LLM_MODEL`, `AUDITRA_INVESTIGATION_LLM_TIMEOUT` and `AUDITRA_INVESTIGATION_LLM_MAX_RETRIES`.

@@ -18,6 +18,7 @@ from .models import (
     ControllerRun,
     DatasetBundle,
     FeeRule,
+    HypothesisStatus,
     InvariantResult,
     Payment,
     ReconciliationCase,
@@ -337,8 +338,74 @@ class ReconciliationEngine:
             timeline.append(f"AI investigation considered {len(ai_investigation.hypotheses)} hypothesis path(s)")
             supporting.extend(ai_investigation.supporting_evidence_ids)
             contradicting.extend(ai_investigation.contradicting_evidence_ids)
-            confidence = self._blend_ai_confidence(confidence, ai_investigation.confidence_factors, ai_investigation.negative_factors)
+            if ai_investigation.ai_unavailable:
+                reason_codes.append("AI_UNAVAILABLE")
+                status = ReconciliationStatus.HUMAN_REVIEW
+                impact = impact if impact > 0 else payment.amount
+                confidence = min(confidence, 0.55)
+                confidence_factors["ai_available"] = 0.0
+                timeline.append("Configured AI provider unavailable; escalated to human review")
+                verification = self._verify(
+                    status=status,
+                    payment=payment,
+                    fee_rule=fee_rule,
+                    settlements_present=bool(settlements),
+                    refunds_present=bool(refunds),
+                    refund_total=refund_total,
+                    amount_within_tolerance=bool(amount_result.get("within_tolerance")),
+                    temporal_valid=bool(temporal_result.get("valid")),
+                    is_duplicate=is_duplicate,
+                    difference=difference,
+                    expected_settlement=expected_settlement,
+                    actual_settlement=actual_settlement,
+                    refunds_before_settlement=self._refunds_before_settlement(refunds, settlements),
+                )
+            else:
+                confidence = self._blend_ai_confidence(confidence, ai_investigation.confidence_factors, ai_investigation.negative_factors)
+                refined_status, refined_impact, refined_verification, refined = self._apply_ai_verified_refinement(
+                    status=status,
+                    impact=impact,
+                    payment=payment,
+                    fee_rule=fee_rule,
+                    settlements_present=bool(settlements),
+                    refunds_present=bool(refunds),
+                    refund_total=refund_total,
+                    amount_within_tolerance=bool(amount_result.get("within_tolerance")),
+                    temporal_valid=bool(temporal_result.get("valid")),
+                    is_duplicate=is_duplicate,
+                    difference=difference,
+                    expected_settlement=expected_settlement,
+                    actual_settlement=actual_settlement,
+                    refunds_before_settlement=self._refunds_before_settlement(refunds, settlements),
+                    reason_codes=reason_codes,
+                    invariants=invariants,
+                    ai_investigation=ai_investigation,
+                )
+                if refined:
+                    status = refined_status
+                    impact = refined_impact
+                    verification = refined_verification
+                    reason_codes.append("AI_VERIFIED_REFUND_MISMATCH")
+                    confidence = max(confidence, 0.78)
+                    confidence_factors["ai_verified_refinement"] = 1.0
+                    confidence_factors["verification_passed"] = 1.0 if verification.passed else 0.0
+                    ai_investigation.recommendation = status
+                    ai_investigation.verification_summary["controller_refinement"] = status.value
+                    timeline.append("AI-supported refund mismatch was verified by deterministic controls")
+                confidence_factors["ai_available"] = 1.0
             band = self._confidence_band(confidence)
+
+        risk_score, risk_factors = self._risk_score(
+            payment=payment,
+            index=index,
+            status=status,
+            impact=impact,
+            confidence=confidence,
+            invariants=invariants,
+            settlements_present=bool(settlements),
+            is_duplicate=is_duplicate,
+            contradictions=len(contradicting),
+        )
 
         graph = build_graph(
             payment,
@@ -597,6 +664,79 @@ class ReconciliationEngine:
         lift = 0.03 if selected >= 0.75 and verification >= 1.0 else 0.0
         return max(0.0, min(0.995, confidence + lift - penalty))
 
+    def _apply_ai_verified_refinement(
+        self,
+        status: ReconciliationStatus,
+        impact: Decimal,
+        payment: Payment,
+        fee_rule: Optional[FeeRule],
+        settlements_present: bool,
+        refunds_present: bool,
+        refund_total: Decimal,
+        amount_within_tolerance: bool,
+        temporal_valid: bool,
+        is_duplicate: bool,
+        difference: Optional[Decimal],
+        expected_settlement: Optional[Decimal],
+        actual_settlement: Optional[Decimal],
+        refunds_before_settlement: bool,
+        reason_codes: List[str],
+        invariants: List[InvariantResult],
+        ai_investigation,
+    ) -> Tuple[ReconciliationStatus, Decimal, VerificationResult, bool]:
+        current_verification = self._verify(
+            status=status,
+            payment=payment,
+            fee_rule=fee_rule,
+            settlements_present=settlements_present,
+            refunds_present=refunds_present,
+            refund_total=refund_total,
+            amount_within_tolerance=amount_within_tolerance,
+            temporal_valid=temporal_valid,
+            is_duplicate=is_duplicate,
+            difference=difference,
+            expected_settlement=expected_settlement,
+            actual_settlement=actual_settlement,
+            refunds_before_settlement=refunds_before_settlement,
+        )
+        if status != ReconciliationStatus.HUMAN_REVIEW:
+            return status, impact, current_verification, False
+        if "REFUND_CONFLICT" not in reason_codes or difference is None:
+            return status, impact, current_verification, False
+
+        failed_rules = {item.rule_id for item in invariants if str(item.status) == "FAILED"}
+        blocking_rules = failed_rules - {"SETTLEMENT_NET_AMOUNT"}
+        if blocking_rules:
+            return status, impact, current_verification, False
+
+        supported_labels = {
+            hypothesis.label
+            for hypothesis in ai_investigation.hypotheses
+            if str(hypothesis.status) == HypothesisStatus.SUPPORTED.value
+        }
+        if not supported_labels.intersection({"refund_adjustment", "partial_or_incorrect_settlement", "fee_discrepancy"}):
+            return status, impact, current_verification, False
+
+        refined_status = ReconciliationStatus.AMOUNT_MISMATCH
+        refined_verification = self._verify(
+            status=refined_status,
+            payment=payment,
+            fee_rule=fee_rule,
+            settlements_present=settlements_present,
+            refunds_present=refunds_present,
+            refund_total=refund_total,
+            amount_within_tolerance=amount_within_tolerance,
+            temporal_valid=temporal_valid,
+            is_duplicate=is_duplicate,
+            difference=difference,
+            expected_settlement=expected_settlement,
+            actual_settlement=actual_settlement,
+            refunds_before_settlement=refunds_before_settlement,
+        )
+        if not refined_verification.passed:
+            return status, impact, current_verification, False
+        return refined_status, money(abs(difference)), refined_verification, True
+
     def _risk_score(
         self,
         payment: Payment,
@@ -716,5 +856,6 @@ class ReconciliationEngine:
             llm_calls=sum(case.ai_investigation.llm_calls for case in ai_cases if case.ai_investigation is not None),
             agent_tool_calls=sum(len(case.tool_calls) for case in cases),
             estimated_ai_cost_usd=ai_cost,
+            ai_invocation_rate=round(len(ai_cases) / max(total, 1), 4),
             average_risk_score=round(sum(case.risk_score for case in cases) / max(total, 1), 4),
         )

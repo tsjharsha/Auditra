@@ -75,6 +75,7 @@ Run benchmarks:
 
 ```powershell
 python scripts/benchmark.py --counts 100 500 1000 --mode MIXED --seed 42
+python scripts/ai_value_benchmark.py --records 1000 --seed 42
 ```
 
 ## Measured Seed-42 World Demo
@@ -93,13 +94,13 @@ Result:
 - 60 refunds
 - 112 controlled anomalies
 - INR 2145335.29 payment volume
-- 95.85% accuracy
-- 96.64% automatic resolution
-- 3.36% human escalation
-- 813.47 records/sec AI-assisted throughput in the latest acceptance run
+- 99.60% AI-assisted accuracy
+- 99.21% automatic resolution
+- 0.79% human escalation
+- 629.88 records/sec AI-assisted throughput in the latest acceptance run
 - 0 external LLM calls by default
 
-AI-assisted mode added evidence depth and investigation traceability in this run. It did not improve classification accuracy versus deterministic baseline, and Auditra reports that honestly.
+AI-assisted mode reduced failures from 15 to 2 on this prompt-built world by resolving refund-mismatch over-escalations only after deterministic invariant verification. The separate Phase A AI-value benchmark reduced 28 failures to 3 on a 1022-payment world.
 
 ## API Surface
 
@@ -138,6 +139,8 @@ $env:OPENAI_API_KEY="..."
 $env:AUDITRA_USE_OPENAI_WORLD_BUILDER="1"
 $env:AUDITRA_USE_OPENAI_INVESTIGATOR="1"
 $env:AUDITRA_OPENAI_MODEL="gpt-5-mini"
+$env:AUDITRA_WORLD_LLM_TIMEOUT="30"
+$env:AUDITRA_INVESTIGATION_LLM_MAX_RETRIES="1"
 ```
 
 LLMs produce structured specs or investigation plans only. Deterministic systems generate records, compute money, verify decisions, and evaluate results.
@@ -166,6 +169,8 @@ Without a database URL, Auditra uses in-memory storage for the local demo.
 - [Data Model](docs/data_model.md)
 - [Evaluation](docs/evaluation.md)
 - [Benchmarks](docs/benchmarks.md)
+- [Phase A Baseline](docs/phase_a_baseline.md)
+- [Phase A Report](docs/phase_a_report.md)
 - [Security](docs/security.md)
 - [Demo Script](docs/demo_script.md)
 - [Galarix Integration Boundary](docs/galarix_integration.md)

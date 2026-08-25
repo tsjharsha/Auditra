@@ -11,9 +11,13 @@ Scenario ground truth exists only for evaluation. `DatasetIndex` strips `ground_
 ## Agent Boundaries
 
 - Tools are allowlisted.
-- Every tool call is logged with input, output, timestamps, and success state.
+- Model-selected tools are mapped to current visible records instead of arbitrary data access.
+- Every tool call is logged with input, summarized output, timestamps, duration, result size, success state, and error type.
 - Tool-call budgets trigger human review.
-- AI investigation output is explanatory and cannot override deterministic arithmetic.
+- Tool inputs reject path traversal, query-shaped strings, excessive nesting, long strings, and oversized arrays/maps.
+- Tool result logs are capped to avoid oversized model-facing payloads.
+- AI investigation output is advisory and cannot override deterministic arithmetic.
+- AI provider failure or repeatedly malformed output escalates to `HUMAN_REVIEW` with `ai_unavailable=True`.
 - Source records are not mutated during reconciliation.
 
 ## Secret Handling

@@ -41,6 +41,7 @@ def main() -> int:
                 "accuracy": evaluation.metrics.accuracy,
                 "failures": len(evaluation.failures),
                 "ai_investigations": run.metrics.ai_investigation_count,
+                "ai_invocation_rate": run.metrics.ai_invocation_rate,
                 "llm_calls": run.metrics.llm_calls,
                 "agent_tool_calls": run.metrics.agent_tool_calls,
                 "cost_estimate_usd": str(run.metrics.estimated_ai_cost_usd),

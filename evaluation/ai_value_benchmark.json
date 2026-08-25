@@ -1,0 +1,356 @@
+{
+  "benchmark": "phase_a_ai_value",
+  "prompt": "Generate an Indian e-commerce merchant with 1000 orders, UPI and card payments, 2% platform fees, T+2 settlement, refunds, refund mismatches, partial settlements, duplicates, timing issues and conflicting evidence.",
+  "seed": 42,
+  "world_id": "FW_3be92154f491",
+  "dataset_id": "WORLD_FW_3be92154f491",
+  "world_summary": {
+    "world_id": "FW_3be92154f491",
+    "world_version": 1,
+    "merchant": "Demo Commerce India",
+    "orders": 1000,
+    "payments": 1022,
+    "settlements": 971,
+    "refunds": 128,
+    "fee_rules": 1,
+    "payment_volume": "4285730.54",
+    "reconciled_amount": "3828221.76",
+    "unresolved_amount": "321168.09",
+    "human_review_amount": "55706.56",
+    "currencies": [
+      "INR"
+    ],
+    "payment_methods": [
+      "UPI",
+      "CARD"
+    ],
+    "settlement": "T+2",
+    "fee": "2.00%",
+    "anomalies": 220,
+    "anomaly_mix": {
+      "AMOUNT_MISMATCH": 38,
+      "MISSING_SETTLEMENT": 29,
+      "DUPLICATE_PAYMENT": 22,
+      "PARTIAL_SETTLEMENT": 37,
+      "TIMING_MISMATCH": 27,
+      "CONFLICTING_EVIDENCE": 14,
+      "FEE_MISMATCH": 33,
+      "REFUND_MISMATCH": 20
+    }
+  },
+  "deterministic_only": {
+    "records": 1022,
+    "accuracy": 0.9726,
+    "precision": 0.9105,
+    "recall": 0.9615,
+    "f1": 0.9134,
+    "failures": 28,
+    "failure_taxonomy": {
+      "OVER_ESCALATION": 25,
+      "CLASSIFICATION_ERROR": 3
+    },
+    "class_metrics": {
+      "AMOUNT_MISMATCH": {
+        "support": 91.0,
+        "true_positive": 63.0,
+        "false_positive": 0.0,
+        "false_negative": 28.0,
+        "precision": 1.0,
+        "recall": 0.6923,
+        "f1": 0.8182
+      },
+      "DUPLICATE": {
+        "support": 22.0,
+        "true_positive": 22.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "FEE_EXPLAINED": {
+        "support": 728.0,
+        "true_positive": 728.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "HUMAN_REVIEW": {
+        "support": 14.0,
+        "true_positive": 14.0,
+        "false_positive": 25.0,
+        "false_negative": 0.0,
+        "precision": 0.359,
+        "recall": 1.0,
+        "f1": 0.5283
+      },
+      "MISSING_SETTLEMENT": {
+        "support": 29.0,
+        "true_positive": 29.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "PARTIAL_MATCH": {
+        "support": 37.0,
+        "true_positive": 37.0,
+        "false_positive": 3.0,
+        "false_negative": 0.0,
+        "precision": 0.925,
+        "recall": 1.0,
+        "f1": 0.961
+      },
+      "REFUND_ADJUSTED": {
+        "support": 74.0,
+        "true_positive": 74.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "TIMING_MISMATCH": {
+        "support": 27.0,
+        "true_positive": 27.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      }
+    },
+    "match_rate": 0.7847,
+    "automatic_resolution_rate": 0.9618,
+    "escalation_rate": 0.0382,
+    "unresolved_rate": 0.0,
+    "throughput_records_per_sec": 891.22,
+    "median_latency_ms": 0.853,
+    "p95_latency_ms": 1.2069,
+    "p99_latency_ms": 2.1091,
+    "ai_investigations": 0,
+    "ai_invocation_rate": 0.0,
+    "llm_calls": 0,
+    "agent_tool_calls": 10118,
+    "estimated_ai_cost_usd": "0.00",
+    "financial_amount_incorrectly_classified": "100299.14",
+    "financial_impact_of_errors": "16872.66"
+  },
+  "ai_assisted": {
+    "records": 1022,
+    "accuracy": 0.9971,
+    "precision": 0.9906,
+    "recall": 0.9959,
+    "f1": 0.993,
+    "failures": 3,
+    "failure_taxonomy": {
+      "CLASSIFICATION_ERROR": 3
+    },
+    "class_metrics": {
+      "AMOUNT_MISMATCH": {
+        "support": 91.0,
+        "true_positive": 88.0,
+        "false_positive": 0.0,
+        "false_negative": 3.0,
+        "precision": 1.0,
+        "recall": 0.967,
+        "f1": 0.9832
+      },
+      "DUPLICATE": {
+        "support": 22.0,
+        "true_positive": 22.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "FEE_EXPLAINED": {
+        "support": 728.0,
+        "true_positive": 728.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "HUMAN_REVIEW": {
+        "support": 14.0,
+        "true_positive": 14.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "MISSING_SETTLEMENT": {
+        "support": 29.0,
+        "true_positive": 29.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "PARTIAL_MATCH": {
+        "support": 37.0,
+        "true_positive": 37.0,
+        "false_positive": 3.0,
+        "false_negative": 0.0,
+        "precision": 0.925,
+        "recall": 1.0,
+        "f1": 0.961
+      },
+      "REFUND_ADJUSTED": {
+        "support": 74.0,
+        "true_positive": 74.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "TIMING_MISMATCH": {
+        "support": 27.0,
+        "true_positive": 27.0,
+        "false_positive": 0.0,
+        "false_negative": 0.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      }
+    },
+    "match_rate": 0.7847,
+    "automatic_resolution_rate": 0.9863,
+    "escalation_rate": 0.0137,
+    "unresolved_rate": 0.0,
+    "throughput_records_per_sec": 700.92,
+    "median_latency_ms": 0.8568,
+    "p95_latency_ms": 1.9602,
+    "p99_latency_ms": 2.6984,
+    "ai_investigations": 220,
+    "ai_invocation_rate": 0.2153,
+    "llm_calls": 0,
+    "agent_tool_calls": 12606,
+    "estimated_ai_cost_usd": "0.00",
+    "financial_amount_incorrectly_classified": "5328.17",
+    "financial_impact_of_errors": "788.14"
+  },
+  "lift": {
+    "accuracy": 0.0245,
+    "precision": 0.0801,
+    "recall": 0.0344,
+    "f1": 0.0796,
+    "failures_reduced": 25,
+    "failure_rate_reduction": 0.8929,
+    "escalation_rate_reduction": 0.0245,
+    "financial_error_impact_reduction": "16084.52",
+    "incorrectly_classified_amount_reduction": "94970.97",
+    "p95_latency_ms_delta": 0.7533,
+    "tool_call_delta": 2488,
+    "llm_call_delta": 0,
+    "ai_invocation_rate": 0.2153,
+    "estimated_ai_cost_usd": "0.00"
+  },
+  "class_lift": {
+    "AMOUNT_MISMATCH": {
+      "support": 91.0,
+      "baseline_precision": 1.0,
+      "ai_precision": 1.0,
+      "precision_lift": 0.0,
+      "baseline_recall": 0.6923,
+      "ai_recall": 0.967,
+      "recall_lift": 0.2747,
+      "baseline_f1": 0.8182,
+      "ai_f1": 0.9832,
+      "f1_lift": 0.165
+    },
+    "DUPLICATE": {
+      "support": 22.0,
+      "baseline_precision": 1.0,
+      "ai_precision": 1.0,
+      "precision_lift": 0.0,
+      "baseline_recall": 1.0,
+      "ai_recall": 1.0,
+      "recall_lift": 0.0,
+      "baseline_f1": 1.0,
+      "ai_f1": 1.0,
+      "f1_lift": 0.0
+    },
+    "FEE_EXPLAINED": {
+      "support": 728.0,
+      "baseline_precision": 1.0,
+      "ai_precision": 1.0,
+      "precision_lift": 0.0,
+      "baseline_recall": 1.0,
+      "ai_recall": 1.0,
+      "recall_lift": 0.0,
+      "baseline_f1": 1.0,
+      "ai_f1": 1.0,
+      "f1_lift": 0.0
+    },
+    "HUMAN_REVIEW": {
+      "support": 14.0,
+      "baseline_precision": 0.359,
+      "ai_precision": 1.0,
+      "precision_lift": 0.641,
+      "baseline_recall": 1.0,
+      "ai_recall": 1.0,
+      "recall_lift": 0.0,
+      "baseline_f1": 0.5283,
+      "ai_f1": 1.0,
+      "f1_lift": 0.4717
+    },
+    "MISSING_SETTLEMENT": {
+      "support": 29.0,
+      "baseline_precision": 1.0,
+      "ai_precision": 1.0,
+      "precision_lift": 0.0,
+      "baseline_recall": 1.0,
+      "ai_recall": 1.0,
+      "recall_lift": 0.0,
+      "baseline_f1": 1.0,
+      "ai_f1": 1.0,
+      "f1_lift": 0.0
+    },
+    "PARTIAL_MATCH": {
+      "support": 37.0,
+      "baseline_precision": 0.925,
+      "ai_precision": 0.925,
+      "precision_lift": 0.0,
+      "baseline_recall": 1.0,
+      "ai_recall": 1.0,
+      "recall_lift": 0.0,
+      "baseline_f1": 0.961,
+      "ai_f1": 0.961,
+      "f1_lift": 0.0
+    },
+    "REFUND_ADJUSTED": {
+      "support": 74.0,
+      "baseline_precision": 1.0,
+      "ai_precision": 1.0,
+      "precision_lift": 0.0,
+      "baseline_recall": 1.0,
+      "ai_recall": 1.0,
+      "recall_lift": 0.0,
+      "baseline_f1": 1.0,
+      "ai_f1": 1.0,
+      "f1_lift": 0.0
+    },
+    "TIMING_MISMATCH": {
+      "support": 27.0,
+      "baseline_precision": 1.0,
+      "ai_precision": 1.0,
+      "precision_lift": 0.0,
+      "baseline_recall": 1.0,
+      "ai_recall": 1.0,
+      "recall_lift": 0.0,
+      "baseline_f1": 1.0,
+      "ai_f1": 1.0,
+      "f1_lift": 0.0
+    }
+  }
+}

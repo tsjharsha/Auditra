@@ -39,10 +39,10 @@ Click `Audit This World`.
 
 Show controller metrics:
 
-- 95.85% accuracy
-- 96.64% automatic resolution
-- 3.36% human escalation
-- 813.47 records/sec in AI-assisted mode in the latest acceptance run
+- 99.60% accuracy
+- 99.21% automatic resolution
+- 0.79% human escalation
+- 629.88 records/sec in AI-assisted mode in the latest acceptance run
 - 0 external LLM calls by default
 
 ## 2:00-3:00
@@ -70,13 +70,13 @@ Open Evaluation Lab and show Break The Controller results.
 
 Seed-42 world demo result:
 
-- controller failed 21 cases
-- failure taxonomy: over-escalation, classification error, false exception
-- incorrectly classified amount: INR 80036.10
-- financial error impact: INR 39687.93
+- controller failed 2 cases
+- failure taxonomy: classification error
+- incorrectly classified amount: INR 3090.57
+- financial error impact: INR 647.36
 
 ## 4:30-5:00
 
 Show AI vs deterministic baseline.
 
-For the measured seed-42 world demo, AI added richer investigation evidence but did not improve accuracy. The UI shows that honestly.
+For the measured seed-42 world demo, AI reduced failures from 15 to 2 by resolving refund-mismatch over-escalation only when deterministic invariant verification passed. Conflicting evidence still stays in human review.

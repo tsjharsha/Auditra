@@ -24,6 +24,7 @@ The prompt becomes `FinancialWorldSpec`:
 - refund rate
 - anomaly mode
 - anomaly rates
+- temporal rules, relationship notes, and constraints
 
 ## Generation
 
@@ -43,6 +44,8 @@ The generator creates:
 - fee rules
 - hidden ground truth cases
 
+Optional OpenAI world understanding can produce the `FinancialWorldSpec`, but it does not generate records. The structured output is validated before generation, malformed output is retried once, and invalid specs fail the build.
+
 ## Validation
 
 Before exposure, the validator checks:
@@ -56,3 +59,5 @@ Before exposure, the validator checks:
 - duplicate constraints
 
 Controlled anomalies are warnings when they are intentionally injected and tracked in hidden truth.
+
+The spec layer rejects unsupported currencies, unsupported payment methods, unsupported anomaly names, negative rates, and combined anomaly rates above the configured safety bound.

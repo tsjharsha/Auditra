@@ -3,11 +3,13 @@ from __future__ import annotations
 import json
 import sys
 import unittest
+from decimal import Decimal
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from auditra.financial_world import FinancialWorldService
+from auditra.financial_world.models import FinancialWorldSpec
 from auditra.reconciliation import ReconciliationEngine
 
 
@@ -38,18 +40,30 @@ class FinancialWorldTests(unittest.TestCase):
         service = FinancialWorldService()
         result = service.build_from_prompt(PROMPT, seed=7)
         public_payload = json.dumps(service.public_build_result(result))
+        visible_dataset_payload = json.dumps(result.dataset.model_dump(mode="json", exclude={"ground_truth"}))
 
         self.assertNotIn("ground_truth", public_payload)
         self.assertNotIn("expected_status", public_payload)
         self.assertNotIn('"scenario"', public_payload)
+        self.assertNotIn('"anomaly":', visible_dataset_payload)
+
+    def test_financial_world_spec_rejects_unsupported_tokens(self) -> None:
+        with self.assertRaises(ValueError):
+            FinancialWorldSpec(currencies=["BTC"])
+        with self.assertRaises(ValueError):
+            FinancialWorldSpec(payment_methods=["cash"])
+        with self.assertRaises(ValueError):
+            FinancialWorldSpec(anomaly_rates={"UNKNOWN": Decimal("0.0100")})
 
     def test_generated_world_can_be_audited(self) -> None:
         result = FinancialWorldService().build_from_prompt(PROMPT, seed=42)
         run = ReconciliationEngine(enable_ai=True).run(result.dataset)
+        run_payload = json.dumps(run.model_dump(mode="json"))
 
         self.assertEqual(len(run.cases), len(result.dataset.payments))
         self.assertGreater(run.metrics.agent_tool_calls, 0)
         self.assertGreaterEqual(run.metrics.ai_investigation_count, 1)
+        self.assertNotIn('"anomaly":', run_payload)
 
     def test_json_ingestion_creates_auditable_dataset(self) -> None:
         payload = {

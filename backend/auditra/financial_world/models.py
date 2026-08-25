@@ -11,6 +11,20 @@ from ..models import AuditraModel, DatasetBundle, money
 
 
 RATE_QUANT = Decimal("0.0001")
+SUPPORTED_CURRENCIES = {"INR", "USD", "EUR"}
+SUPPORTED_PAYMENT_METHODS = {"UPI", "CARD", "WALLET", "NETBANKING"}
+SUPPORTED_ANOMALIES = {
+    "AMOUNT_MISMATCH",
+    "MISSING_SETTLEMENT",
+    "DUPLICATE_PAYMENT",
+    "FEE_MISMATCH",
+    "REFUND_MISMATCH",
+    "PARTIAL_SETTLEMENT",
+    "TIMING_MISMATCH",
+    "CURRENCY_MISMATCH",
+    "CONFLICTING_EVIDENCE",
+    "ENTITY_LINK_FAILURE",
+}
 
 
 def rate(value: Any) -> Decimal:
@@ -41,6 +55,9 @@ class FinancialWorldSpec(AuditraModel):
     partial_settlement_rate: Decimal = Decimal("0.0300")
     anomaly_mode: AnomalyMode = AnomalyMode.STRESSED
     anomaly_rates: Dict[str, Decimal] = Field(default_factory=dict)
+    temporal_rules: Dict[str, Any] = Field(default_factory=dict)
+    relationships: List[str] = Field(default_factory=list)
+    constraints: List[str] = Field(default_factory=list)
     start_at: datetime = Field(default_factory=lambda: datetime(2026, 1, 5, 9, 30, tzinfo=timezone.utc))
     source: str = "prompt"
     understanding_source: str = "deterministic_parser"
@@ -51,6 +68,22 @@ class FinancialWorldSpec(AuditraModel):
     def normalize_tokens(cls, value: List[str]) -> List[str]:
         normalized = [str(item).strip().upper() for item in value if str(item).strip()]
         return list(dict.fromkeys(normalized)) or ["INR"]
+
+    @field_validator("currencies")
+    @classmethod
+    def validate_currencies(cls, value: List[str]) -> List[str]:
+        unsupported = sorted(set(value) - SUPPORTED_CURRENCIES)
+        if unsupported:
+            raise ValueError(f"unsupported currencies: {', '.join(unsupported)}")
+        return value
+
+    @field_validator("payment_methods")
+    @classmethod
+    def validate_payment_methods(cls, value: List[str]) -> List[str]:
+        unsupported = sorted(set(value) - SUPPORTED_PAYMENT_METHODS)
+        if unsupported:
+            raise ValueError(f"unsupported payment methods: {', '.join(unsupported)}")
+        return value
 
     @field_validator("fee_rate", "refund_rate", "partial_settlement_rate")
     @classmethod
@@ -77,7 +110,15 @@ class FinancialWorldSpec(AuditraModel):
     @field_validator("anomaly_rates")
     @classmethod
     def normalize_anomaly_rates(cls, value: Dict[str, Decimal]) -> Dict[str, Decimal]:
-        return {str(key).upper(): rate(raw) for key, raw in value.items()}
+        normalized = {str(key).upper(): rate(raw) for key, raw in value.items()}
+        unsupported = sorted(set(normalized) - SUPPORTED_ANOMALIES)
+        if unsupported:
+            raise ValueError(f"unsupported anomaly types: {', '.join(unsupported)}")
+        if any(item < 0 for item in normalized.values()):
+            raise ValueError("anomaly rates cannot be negative")
+        if sum(normalized.values(), Decimal("0.0000")) > Decimal("0.8000"):
+            raise ValueError("combined anomaly rates cannot exceed 0.8")
+        return normalized
 
 
 class SchemaField(AuditraModel):

@@ -91,6 +91,7 @@ class IndependentEvaluator:
                 failure_taxonomy[category] = failure_taxonomy.get(category, 0) + 1
 
         precision, recall, f1 = self._macro_scores(confusion)
+        class_metrics = self._class_metrics(confusion)
         accuracy = correct / max(total, 1)
         escalation_count = sum(1 for case in controller_run.cases if str(case.status) in TERMINAL_REVIEW_VALUES)
         unresolved_count = sum(1 for case in controller_run.cases if str(case.status) == ReconciliationStatus.UNRESOLVED.value)
@@ -117,6 +118,7 @@ class IndependentEvaluator:
             financial_amount_incorrectly_classified=money(incorrect_amount),
             financial_impact_of_errors=money(error_impact),
             confusion_matrix=confusion,
+            class_metrics=class_metrics,
             failure_taxonomy=failure_taxonomy,
         )
 
@@ -154,6 +156,35 @@ class IndependentEvaluator:
         if not active_labels:
             return 0.0, 0.0, 0.0
         return sum(precisions) / len(precisions), sum(recalls) / len(recalls), sum(f1s) / len(f1s)
+
+    def _class_metrics(self, confusion: Dict[str, Dict[str, int]]) -> Dict[str, Dict[str, float]]:
+        metrics: Dict[str, Dict[str, float]] = {}
+        active_labels = set()
+        for expected, predictions in confusion.items():
+            if sum(predictions.values()) > 0:
+                active_labels.add(expected)
+            for predicted, count in predictions.items():
+                if count > 0:
+                    active_labels.add(predicted)
+
+        for label in sorted(active_labels):
+            tp = confusion.get(label, {}).get(label, 0)
+            fp = sum(predictions.get(label, 0) for expected, predictions in confusion.items() if expected != label)
+            fn = sum(count for predicted, count in confusion.get(label, {}).items() if predicted != label)
+            support = sum(confusion.get(label, {}).values())
+            precision = tp / max(tp + fp, 1)
+            recall = tp / max(tp + fn, 1)
+            f1 = (2 * precision * recall / max(precision + recall, 1e-12)) if (precision + recall) else 0.0
+            metrics[label] = {
+                "support": float(support),
+                "true_positive": float(tp),
+                "false_positive": float(fp),
+                "false_negative": float(fn),
+                "precision": round(precision, 4),
+                "recall": round(recall, 4),
+                "f1": round(f1, 4),
+            }
+        return metrics
 
     def _root_cause(self, expected: str, predicted: str, reason_codes: List[str]) -> str:
         if predicted == ReconciliationStatus.HUMAN_REVIEW.value and expected != predicted:

@@ -4,9 +4,10 @@ Date: 2026-08-25
 
 ## Acceptance Evidence
 
-- `python -m unittest discover -s tests -v`: 16 tests discovered, 14 passed, 2 skipped because FastAPI is not installed in the default interpreter.
+- `python -m unittest discover -s tests -v`: 24 tests discovered, 22 passed, 2 skipped because FastAPI is not installed in the default interpreter.
 - `py -3.13 -m unittest discover -s tests -p test_api.py -v`: 2 passed.
 - `python scripts/world_demo.py --seed 42`: completed prompt -> world -> audit -> evaluation -> AI-vs-baseline.
+- `python scripts/ai_value_benchmark.py --records 1000 --seed 42`: completed deterministic vs AI-assisted value measurement.
 - `python scripts/benchmark.py --counts 100 500 1000 --mode MIXED --seed 42`: completed.
 
 ## Category Evidence
@@ -15,7 +16,7 @@ Date: 2026-08-25
 | --- | --- | --- |
 | Financial correctness | Decimal money models, invariant tests, validation checks, deterministic verification | More adversarial currency/entity-link tuning needed |
 | AI depth | Structured world-spec provider, OpenAI opt-in path, hypotheses, tool selection, self-challenge | Local run uses offline provider unless API key is configured |
-| Agent quality | Allowlisted tools, dynamic hypothesis paths, evidence IDs, tool logs | AI-assisted mode did not improve accuracy in seed-42 world demo |
+| Agent quality | Allowlisted tools, model-selected typed tool plans, evidence IDs, tool logs, fail-closed AI unavailable state | Legacy mixed benchmark remains flat |
 | Evidence quality | Evidence graph includes source records, investigation, decision, and evidence nodes | UI graph is compact rather than deeply filterable |
 | Verification | Rule-specific verification and invariant engine | More counter-checks can be added per anomaly family |
 | Evaluation rigor | Independent evaluator, confusion matrix, failure taxonomy, AI-vs-baseline | Held-out scenario split is not yet separate |
@@ -44,17 +45,26 @@ Seed-42 prompt world:
 
 AI-assisted controller:
 
-- Accuracy: 0.9585
-- Precision: 0.8067
-- Recall: 0.9011
-- F1: 0.8199
-- Automatic resolution: 0.9664
-- Human escalation: 0.0336
-- Throughput: 813.47 records/sec
-- P95 latency: 1.723 ms
-- Tool calls: 6462
-- Failures: 21
+- Accuracy: 0.9960
+- Precision: 0.9868
+- Recall: 0.9953
+- F1: 0.9907
+- Automatic resolution: 0.9921
+- Human escalation: 0.0079
+- Throughput: 629.88 records/sec
+- P95 latency: 2.2599 ms
+- Tool calls: 6276
+- Failures: 2
+
+Phase A AI-value benchmark:
+
+- Deterministic failures: 28
+- AI-assisted failures: 3
+- Accuracy lift: +0.0245
+- F1 lift: +0.0796
+- AMOUNT_MISMATCH recall: 0.6923 -> 0.9670
+- AI invocation rate: 0.2153
 
 ## Final Assessment
 
-Auditra now credibly demonstrates an AI-native financial control loop with its own controlled evaluation environment. It does not claim that AI improves every metric; it proves the result with measured comparison.
+Auditra now credibly demonstrates an AI-native financial control loop with its own controlled evaluation environment. It proves AI lift on the prompt-built refund-conflict dataset and keeps the legacy mixed benchmark result explicit rather than generalizing beyond the measured evidence.
