@@ -46,6 +46,18 @@ class ApiTests(unittest.TestCase):
         self.assertTrue(body["validation"]["valid"])
         self.assertNotIn("ground_truth", body)
 
+    def test_controller_run_rejects_oversized_record_count(self) -> None:
+        client = TestClient(app)
+        response = client.post("/controller/runs", json={"mode": "MIXED", "record_count": 50000, "seed": 42})
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_ingestion_rejects_oversized_entity_payload(self) -> None:
+        client = TestClient(app)
+        response = client.post("/ingest/json", json={"payload": {"orders": [{} for _ in range(10001)]}, "seed": 42})
+
+        self.assertEqual(response.status_code, 422)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,1187 @@
+{
+  "benchmark": "phase_c_heldout",
+  "created_at": "2026-08-25T06:09:43Z",
+  "total_records_per_mode": 1221,
+  "note": "Fixed seeds and specs are treated as held-out. Do not tune controller thresholds against this file.",
+  "aggregate": {
+    "deterministic_only": {
+      "records": 1221,
+      "weighted_accuracy": 0.9771,
+      "weighted_precision": 0.9648,
+      "weighted_recall": 0.9684,
+      "weighted_f1": 0.9503,
+      "failures": 28,
+      "financial_impact_of_errors": "24665.77",
+      "incorrectly_classified_amount": "105728.82",
+      "estimated_ai_cost_usd": "0.00",
+      "llm_calls": 0,
+      "agent_tool_calls": 12100
+    },
+    "ai_assisted": {
+      "records": 1221,
+      "weighted_accuracy": 0.9992,
+      "weighted_precision": 0.9979,
+      "weighted_recall": 0.9991,
+      "weighted_f1": 0.9985,
+      "failures": 1,
+      "financial_impact_of_errors": "242.03",
+      "incorrectly_classified_amount": "742.18",
+      "estimated_ai_cost_usd": "0.00",
+      "llm_calls": 0,
+      "agent_tool_calls": 15229
+    }
+  },
+  "rows": [
+    {
+      "slice": "Heldout Normal",
+      "slice_index": 1,
+      "mode": "deterministic_only",
+      "world_id": "FW_da3f5a17b162",
+      "dataset_id": "WORLD_FW_da3f5a17b162",
+      "records": 200,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "failures": 0,
+      "failure_taxonomy": {},
+      "class_metrics": {
+        "FEE_EXPLAINED": {
+          "support": 184.0,
+          "true_positive": 184.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 16.0,
+          "true_positive": 16.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "financial_impact_of_errors": "0.00",
+      "incorrectly_classified_amount": "0.00",
+      "human_review_rate": 0.0,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 2000,
+      "estimated_ai_cost_usd": "0.00",
+      "p50_latency_ms": 0.8704,
+      "p95_latency_ms": 1.7902,
+      "p99_latency_ms": 2.6176,
+      "financial_confusion": {
+        "correctly_resolved": "880744.33",
+        "falsely_resolved": "0.00",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "0.00"
+      }
+    },
+    {
+      "slice": "Heldout Normal",
+      "slice_index": 1,
+      "mode": "ai_assisted",
+      "world_id": "FW_da3f5a17b162",
+      "dataset_id": "WORLD_FW_da3f5a17b162",
+      "records": 200,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "failures": 0,
+      "failure_taxonomy": {},
+      "class_metrics": {
+        "FEE_EXPLAINED": {
+          "support": 184.0,
+          "true_positive": 184.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 16.0,
+          "true_positive": 16.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "financial_impact_of_errors": "0.00",
+      "incorrectly_classified_amount": "0.00",
+      "human_review_rate": 0.0,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 2000,
+      "estimated_ai_cost_usd": "0.00",
+      "p50_latency_ms": 0.8724,
+      "p95_latency_ms": 1.7401,
+      "p99_latency_ms": 2.5927,
+      "financial_confusion": {
+        "correctly_resolved": "880744.33",
+        "falsely_resolved": "0.00",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "0.00"
+      }
+    },
+    {
+      "slice": "Heldout Easy",
+      "slice_index": 2,
+      "mode": "deterministic_only",
+      "world_id": "FW_c3a14f9c3461",
+      "dataset_id": "WORLD_FW_c3a14f9c3461",
+      "records": 201,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "failures": 0,
+      "failure_taxonomy": {},
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 5.0,
+          "true_positive": 5.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DUPLICATE": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 174.0,
+          "true_positive": 174.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 5.0,
+          "true_positive": 5.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 13.0,
+          "true_positive": 13.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "financial_impact_of_errors": "0.00",
+      "incorrectly_classified_amount": "0.00",
+      "human_review_rate": 0.005,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 1998,
+      "estimated_ai_cost_usd": "0.00",
+      "p50_latency_ms": 0.7858,
+      "p95_latency_ms": 1.4172,
+      "p99_latency_ms": 2.1876,
+      "financial_confusion": {
+        "correctly_resolved": "801538.89",
+        "falsely_resolved": "0.00",
+        "correctly_escalated": "6493.31",
+        "incorrectly_escalated": "0.00"
+      }
+    },
+    {
+      "slice": "Heldout Easy",
+      "slice_index": 2,
+      "mode": "ai_assisted",
+      "world_id": "FW_c3a14f9c3461",
+      "dataset_id": "WORLD_FW_c3a14f9c3461",
+      "records": 201,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "failures": 0,
+      "failure_taxonomy": {},
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 5.0,
+          "true_positive": 5.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DUPLICATE": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 174.0,
+          "true_positive": 174.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 5.0,
+          "true_positive": 5.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 13.0,
+          "true_positive": 13.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "financial_impact_of_errors": "0.00",
+      "incorrectly_classified_amount": "0.00",
+      "human_review_rate": 0.005,
+      "ai_invocation_rate": 0.0697,
+      "llm_calls": 0,
+      "agent_tool_calls": 2136,
+      "estimated_ai_cost_usd": "0.00",
+      "p50_latency_ms": 0.7181,
+      "p95_latency_ms": 1.4955,
+      "p99_latency_ms": 2.3003,
+      "financial_confusion": {
+        "correctly_resolved": "801538.89",
+        "falsely_resolved": "0.00",
+        "correctly_escalated": "6493.31",
+        "incorrectly_escalated": "0.00"
+      }
+    },
+    {
+      "slice": "Heldout Hard",
+      "slice_index": 3,
+      "mode": "deterministic_only",
+      "world_id": "FW_d73eae233720",
+      "dataset_id": "WORLD_FW_d73eae233720",
+      "records": 201,
+      "accuracy": 0.9701,
+      "precision": 0.8833,
+      "recall": 0.9674,
+      "f1": 0.8854,
+      "failures": 6,
+      "failure_taxonomy": {
+        "OVER_ESCALATION": 5,
+        "CLASSIFICATION_ERROR": 1
+      },
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 23.0,
+          "true_positive": 17.0,
+          "false_positive": 0.0,
+          "false_negative": 6.0,
+          "precision": 1.0,
+          "recall": 0.7391,
+          "f1": 0.85
+        },
+        "DUPLICATE": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 145.0,
+          "true_positive": 145.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 5.0,
+          "false_negative": 0.0,
+          "precision": 0.1667,
+          "recall": 1.0,
+          "f1": 0.2857
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 9.0,
+          "true_positive": 9.0,
+          "false_positive": 1.0,
+          "false_negative": 0.0,
+          "precision": 0.9,
+          "recall": 1.0,
+          "f1": 0.9474
+        },
+        "REFUND_ADJUSTED": {
+          "support": 13.0,
+          "true_positive": 13.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 8.0,
+          "true_positive": 8.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "financial_impact_of_errors": "6272.70",
+      "incorrectly_classified_amount": "28213.17",
+      "human_review_rate": 0.0299,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 2006,
+      "estimated_ai_cost_usd": "0.00",
+      "p50_latency_ms": 0.726,
+      "p95_latency_ms": 1.5001,
+      "p99_latency_ms": 1.7448,
+      "financial_confusion": {
+        "correctly_resolved": "823640.02",
+        "falsely_resolved": "742.18",
+        "correctly_escalated": "3413.12",
+        "incorrectly_escalated": "27470.99"
+      }
+    },
+    {
+      "slice": "Heldout Hard",
+      "slice_index": 3,
+      "mode": "ai_assisted",
+      "world_id": "FW_d73eae233720",
+      "dataset_id": "WORLD_FW_d73eae233720",
+      "records": 201,
+      "accuracy": 0.995,
+      "precision": 0.9875,
+      "recall": 0.9946,
+      "f1": 0.9906,
+      "failures": 1,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 1
+      },
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 23.0,
+          "true_positive": 22.0,
+          "false_positive": 0.0,
+          "false_negative": 1.0,
+          "precision": 1.0,
+          "recall": 0.9565,
+          "f1": 0.9778
+        },
+        "DUPLICATE": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 145.0,
+          "true_positive": 145.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 9.0,
+          "true_positive": 9.0,
+          "false_positive": 1.0,
+          "false_negative": 0.0,
+          "precision": 0.9,
+          "recall": 1.0,
+          "f1": 0.9474
+        },
+        "REFUND_ADJUSTED": {
+          "support": 13.0,
+          "true_positive": 13.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 8.0,
+          "true_positive": 8.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "financial_impact_of_errors": "242.03",
+      "incorrectly_classified_amount": "742.18",
+      "human_review_rate": 0.005,
+      "ai_invocation_rate": 0.2139,
+      "llm_calls": 0,
+      "agent_tool_calls": 2523,
+      "estimated_ai_cost_usd": "0.00",
+      "p50_latency_ms": 1.0342,
+      "p95_latency_ms": 3.386,
+      "p99_latency_ms": 8.11,
+      "financial_confusion": {
+        "correctly_resolved": "851111.01",
+        "falsely_resolved": "742.18",
+        "correctly_escalated": "3413.12",
+        "incorrectly_escalated": "0.00"
+      }
+    },
+    {
+      "slice": "Heldout Adversarial",
+      "slice_index": 4,
+      "mode": "deterministic_only",
+      "world_id": "FW_5df3ad2e015b",
+      "dataset_id": "WORLD_FW_5df3ad2e015b",
+      "records": 213,
+      "accuracy": 0.9953,
+      "precision": 0.9844,
+      "recall": 0.9896,
+      "f1": 0.9862,
+      "failures": 1,
+      "failure_taxonomy": {
+        "OVER_ESCALATION": 1
+      },
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 12.0,
+          "true_positive": 11.0,
+          "false_positive": 0.0,
+          "false_negative": 1.0,
+          "precision": 1.0,
+          "recall": 0.9167,
+          "f1": 0.9565
+        },
+        "DUPLICATE": {
+          "support": 13.0,
+          "true_positive": 13.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 148.0,
+          "true_positive": 148.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 7.0,
+          "true_positive": 7.0,
+          "false_positive": 1.0,
+          "false_negative": 0.0,
+          "precision": 0.875,
+          "recall": 1.0,
+          "f1": 0.9333
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 11.0,
+          "true_positive": 11.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 10.0,
+          "true_positive": 10.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 11.0,
+          "true_positive": 11.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "financial_impact_of_errors": "1336.21",
+      "incorrectly_classified_amount": "3988.91",
+      "human_review_rate": 0.0376,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 2082,
+      "estimated_ai_cost_usd": "0.00",
+      "p50_latency_ms": 0.7418,
+      "p95_latency_ms": 1.0821,
+      "p99_latency_ms": 1.8683,
+      "financial_confusion": {
+        "correctly_resolved": "872527.11",
+        "falsely_resolved": "0.00",
+        "correctly_escalated": "34981.75",
+        "incorrectly_escalated": "3988.91"
+      }
+    },
+    {
+      "slice": "Heldout Adversarial",
+      "slice_index": 4,
+      "mode": "ai_assisted",
+      "world_id": "FW_5df3ad2e015b",
+      "dataset_id": "WORLD_FW_5df3ad2e015b",
+      "records": 213,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "failures": 0,
+      "failure_taxonomy": {},
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 12.0,
+          "true_positive": 12.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DUPLICATE": {
+          "support": 13.0,
+          "true_positive": 13.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 148.0,
+          "true_positive": 148.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 7.0,
+          "true_positive": 7.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 11.0,
+          "true_positive": 11.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 10.0,
+          "true_positive": 10.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 11.0,
+          "true_positive": 11.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "financial_impact_of_errors": "0.00",
+      "incorrectly_classified_amount": "0.00",
+      "human_review_rate": 0.0329,
+      "ai_invocation_rate": 0.2582,
+      "llm_calls": 0,
+      "agent_tool_calls": 2612,
+      "estimated_ai_cost_usd": "0.00",
+      "p50_latency_ms": 0.7915,
+      "p95_latency_ms": 1.8626,
+      "p99_latency_ms": 2.5442,
+      "financial_confusion": {
+        "correctly_resolved": "876516.02",
+        "falsely_resolved": "0.00",
+        "correctly_escalated": "34981.75",
+        "incorrectly_escalated": "0.00"
+      }
+    },
+    {
+      "slice": "Heldout Multi Factor",
+      "slice_index": 5,
+      "mode": "deterministic_only",
+      "world_id": "FW_d7377be1f27c",
+      "dataset_id": "WORLD_FW_d7377be1f27c",
+      "records": 205,
+      "accuracy": 0.9415,
+      "precision": 0.9444,
+      "recall": 0.9651,
+      "f1": 0.944,
+      "failures": 12,
+      "failure_taxonomy": {
+        "OVER_ESCALATION": 12
+      },
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 43.0,
+          "true_positive": 31.0,
+          "false_positive": 0.0,
+          "false_negative": 12.0,
+          "precision": 1.0,
+          "recall": 0.7209,
+          "f1": 0.8378
+        },
+        "DUPLICATE": {
+          "support": 5.0,
+          "true_positive": 5.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 109.0,
+          "true_positive": 109.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 15.0,
+          "true_positive": 15.0,
+          "false_positive": 12.0,
+          "false_negative": 0.0,
+          "precision": 0.5556,
+          "recall": 1.0,
+          "f1": 0.7143
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 10.0,
+          "true_positive": 10.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 9.0,
+          "true_positive": 9.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 8.0,
+          "true_positive": 8.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 6.0,
+          "true_positive": 6.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "financial_impact_of_errors": "12092.24",
+      "incorrectly_classified_amount": "47005.39",
+      "human_review_rate": 0.1317,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 2020,
+      "estimated_ai_cost_usd": "0.00",
+      "p50_latency_ms": 0.7086,
+      "p95_latency_ms": 1.4354,
+      "p99_latency_ms": 1.5954,
+      "financial_confusion": {
+        "correctly_resolved": "796369.75",
+        "falsely_resolved": "0.00",
+        "correctly_escalated": "63149.97",
+        "incorrectly_escalated": "47005.39"
+      }
+    },
+    {
+      "slice": "Heldout Multi Factor",
+      "slice_index": 5,
+      "mode": "ai_assisted",
+      "world_id": "FW_d7377be1f27c",
+      "dataset_id": "WORLD_FW_d7377be1f27c",
+      "records": 205,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "failures": 0,
+      "failure_taxonomy": {},
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 43.0,
+          "true_positive": 43.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DUPLICATE": {
+          "support": 5.0,
+          "true_positive": 5.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 109.0,
+          "true_positive": 109.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 15.0,
+          "true_positive": 15.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 10.0,
+          "true_positive": 10.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 9.0,
+          "true_positive": 9.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 8.0,
+          "true_positive": 8.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 6.0,
+          "true_positive": 6.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "financial_impact_of_errors": "0.00",
+      "incorrectly_classified_amount": "0.00",
+      "human_review_rate": 0.0732,
+      "ai_invocation_rate": 0.4293,
+      "llm_calls": 0,
+      "agent_tool_calls": 3098,
+      "estimated_ai_cost_usd": "0.00",
+      "p50_latency_ms": 0.8762,
+      "p95_latency_ms": 1.9374,
+      "p99_latency_ms": 2.3904,
+      "financial_confusion": {
+        "correctly_resolved": "843375.14",
+        "falsely_resolved": "0.00",
+        "correctly_escalated": "63149.97",
+        "incorrectly_escalated": "0.00"
+      }
+    },
+    {
+      "slice": "Heldout Ambiguous Unresolved",
+      "slice_index": 6,
+      "mode": "deterministic_only",
+      "world_id": "FW_6c54684ec203",
+      "dataset_id": "WORLD_FW_6c54684ec203",
+      "records": 201,
+      "accuracy": 0.9552,
+      "precision": 0.9761,
+      "recall": 0.8875,
+      "f1": 0.8845,
+      "failures": 9,
+      "failure_taxonomy": {
+        "OVER_ESCALATION": 9
+      },
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 10.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 9.0,
+          "precision": 1.0,
+          "recall": 0.1,
+          "f1": 0.1818
+        },
+        "DUPLICATE": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 127.0,
+          "true_positive": 127.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 38.0,
+          "true_positive": 38.0,
+          "false_positive": 9.0,
+          "false_negative": 0.0,
+          "precision": 0.8085,
+          "recall": 1.0,
+          "f1": 0.8941
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 7.0,
+          "true_positive": 7.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 10.0,
+          "true_positive": 10.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 7.0,
+          "true_positive": 7.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "financial_impact_of_errors": "4964.62",
+      "incorrectly_classified_amount": "26521.35",
+      "human_review_rate": 0.2338,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 1994,
+      "estimated_ai_cost_usd": "0.00",
+      "p50_latency_ms": 0.7684,
+      "p95_latency_ms": 1.1366,
+      "p99_latency_ms": 1.7212,
+      "financial_confusion": {
+        "correctly_resolved": "748787.09",
+        "falsely_resolved": "0.00",
+        "correctly_escalated": "178125.26",
+        "incorrectly_escalated": "26521.35"
+      }
+    },
+    {
+      "slice": "Heldout Ambiguous Unresolved",
+      "slice_index": 6,
+      "mode": "ai_assisted",
+      "world_id": "FW_6c54684ec203",
+      "dataset_id": "WORLD_FW_6c54684ec203",
+      "records": 201,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "failures": 0,
+      "failure_taxonomy": {},
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 10.0,
+          "true_positive": 10.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DUPLICATE": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 127.0,
+          "true_positive": 127.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 38.0,
+          "true_positive": 38.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 7.0,
+          "true_positive": 7.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 10.0,
+          "true_positive": 10.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 7.0,
+          "true_positive": 7.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "financial_impact_of_errors": "0.00",
+      "incorrectly_classified_amount": "0.00",
+      "human_review_rate": 0.1891,
+      "ai_invocation_rate": 0.3184,
+      "llm_calls": 0,
+      "agent_tool_calls": 2860,
+      "estimated_ai_cost_usd": "0.00",
+      "p50_latency_ms": 0.776,
+      "p95_latency_ms": 1.9929,
+      "p99_latency_ms": 2.5348,
+      "financial_confusion": {
+        "correctly_resolved": "775308.44",
+        "falsely_resolved": "0.00",
+        "correctly_escalated": "178125.26",
+        "incorrectly_escalated": "0.00"
+      }
+    }
+  ]
+}

@@ -149,6 +149,8 @@ export interface RunMetrics {
   transactions_processed: number;
   total_payment_volume: string;
   reconciled_amount: string;
+  normalization_ms: number;
+  ai_investigation_ms: number;
   match_rate: number;
   automatic_resolution_rate: number;
   exception_rate: number;

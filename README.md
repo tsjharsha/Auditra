@@ -102,11 +102,11 @@ Result:
 - 486 settlements
 - 60 refunds
 - 112 controlled anomalies
-- INR 2145335.29 payment volume
+- INR 2148789.81 payment volume
 - 99.60% AI-assisted accuracy
 - 99.21% automatic resolution
 - 0.79% human escalation
-- 629.88 records/sec AI-assisted throughput in the latest acceptance run
+- 647.36 records/sec AI-assisted throughput in the latest acceptance run
 - 0 external LLM calls by default
 
 AI-assisted mode reduced failures from 15 to 2 on this prompt-built world by resolving refund-mismatch over-escalations only after deterministic invariant verification. The separate Phase A AI-value benchmark reduced 28 failures to 3 on a 1022-payment world.
@@ -182,6 +182,7 @@ Without a database URL, Auditra uses in-memory storage for the local demo.
 - [Phase A Report](docs/phase_a_report.md)
 - [Phase B Baseline](docs/phase_b_baseline.md)
 - [Phase B Report](docs/phase_b_report.md)
+- [Phase C Failure Report](docs/phase_c_failure_report.md)
 - [Security](docs/security.md)
 - [Demo Script](docs/demo_script.md)
 - [Galarix Integration Boundary](docs/galarix_integration.md)

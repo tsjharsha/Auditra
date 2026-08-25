@@ -1,0 +1,1006 @@
+{
+  "benchmark": "phase_c_scale",
+  "created_at": "2026-08-25T06:16:14Z",
+  "database_note": "AUDITRA_DATABASE_URL not configured; database_ms is 0.0 for direct in-memory benchmarks.",
+  "rows": [
+    {
+      "records": 100,
+      "mode": "deterministic_only",
+      "status": "completed",
+      "seed": 42,
+      "scenario_mode": "MIXED",
+      "generation_ms": 39.2113,
+      "generation_peak_kb": 716.64,
+      "normalization_ms": 0.3081,
+      "controller_reported_normalization_ms": 1.5528,
+      "reconciliation_ms": 722.0622,
+      "ai_investigation_ms": 0.0,
+      "database_ms": 0.0,
+      "database_enabled": false,
+      "evaluation_ms": 2.7477,
+      "total_ms": 764.1693,
+      "throughput_records_per_sec": 138.79,
+      "peak_memory_kb": 9198.99,
+      "accuracy": 0.96,
+      "precision": 0.881,
+      "recall": 0.8935,
+      "f1": 0.8867,
+      "failures": 4,
+      "review_count": 0,
+      "ai_investigations": 0,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 982,
+      "estimated_ai_cost_usd": "0.00",
+      "cost_per_case_usd": "0.00",
+      "cost_per_1000_cases_usd": "0.00",
+      "p50_latency_ms": 6.4751,
+      "p95_latency_ms": 11.8393,
+      "p99_latency_ms": 35.858,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 3,
+        "FALSE_EXCEPTION": 1
+      },
+      "class_confusion": {
+        "AMOUNT_MISMATCH": {
+          "tp": 8,
+          "tn": 92,
+          "fp": 0,
+          "fn": 0
+        },
+        "DUPLICATE": {
+          "tp": 1,
+          "tn": 95,
+          "fp": 2,
+          "fn": 2
+        },
+        "FEE_EXPLAINED": {
+          "tp": 53,
+          "tn": 46,
+          "fp": 0,
+          "fn": 1
+        },
+        "MATCHED": {
+          "tp": 14,
+          "tn": 86,
+          "fp": 0,
+          "fn": 0
+        },
+        "MISSING_SETTLEMENT": {
+          "tp": 5,
+          "tn": 92,
+          "fp": 2,
+          "fn": 1
+        },
+        "PARTIAL_MATCH": {
+          "tp": 6,
+          "tn": 94,
+          "fp": 0,
+          "fn": 0
+        },
+        "REFUND_ADJUSTED": {
+          "tp": 6,
+          "tn": 94,
+          "fp": 0,
+          "fn": 0
+        },
+        "TIMING_MISMATCH": {
+          "tp": 3,
+          "tn": 97,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "financial_confusion": {
+        "correctly_resolved": "4343772.50",
+        "falsely_resolved": "185978.00",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "0.00"
+      }
+    },
+    {
+      "records": 100,
+      "mode": "ai_assisted",
+      "status": "completed",
+      "seed": 42,
+      "scenario_mode": "MIXED",
+      "generation_ms": 39.2113,
+      "generation_peak_kb": 716.64,
+      "normalization_ms": 0.3081,
+      "controller_reported_normalization_ms": 1.437,
+      "reconciliation_ms": 818.5199,
+      "ai_investigation_ms": 102.1131,
+      "database_ms": 0.0,
+      "database_enabled": false,
+      "evaluation_ms": 2.2301,
+      "total_ms": 860.1094,
+      "throughput_records_per_sec": 123.99,
+      "peak_memory_kb": 10137.45,
+      "accuracy": 0.96,
+      "precision": 0.881,
+      "recall": 0.8935,
+      "f1": 0.8867,
+      "failures": 4,
+      "review_count": 0,
+      "ai_investigations": 27,
+      "ai_invocation_rate": 0.27,
+      "llm_calls": 0,
+      "agent_tool_calls": 1253,
+      "estimated_ai_cost_usd": "0.00",
+      "cost_per_case_usd": "0.00",
+      "cost_per_1000_cases_usd": "0.00",
+      "p50_latency_ms": 6.5968,
+      "p95_latency_ms": 12.9624,
+      "p99_latency_ms": 35.2267,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 3,
+        "FALSE_EXCEPTION": 1
+      },
+      "class_confusion": {
+        "AMOUNT_MISMATCH": {
+          "tp": 8,
+          "tn": 92,
+          "fp": 0,
+          "fn": 0
+        },
+        "DUPLICATE": {
+          "tp": 1,
+          "tn": 95,
+          "fp": 2,
+          "fn": 2
+        },
+        "FEE_EXPLAINED": {
+          "tp": 53,
+          "tn": 46,
+          "fp": 0,
+          "fn": 1
+        },
+        "MATCHED": {
+          "tp": 14,
+          "tn": 86,
+          "fp": 0,
+          "fn": 0
+        },
+        "MISSING_SETTLEMENT": {
+          "tp": 5,
+          "tn": 92,
+          "fp": 2,
+          "fn": 1
+        },
+        "PARTIAL_MATCH": {
+          "tp": 6,
+          "tn": 94,
+          "fp": 0,
+          "fn": 0
+        },
+        "REFUND_ADJUSTED": {
+          "tp": 6,
+          "tn": 94,
+          "fp": 0,
+          "fn": 0
+        },
+        "TIMING_MISMATCH": {
+          "tp": 3,
+          "tn": 97,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "financial_confusion": {
+        "correctly_resolved": "4343772.50",
+        "falsely_resolved": "185978.00",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "0.00"
+      }
+    },
+    {
+      "records": 500,
+      "mode": "deterministic_only",
+      "status": "completed",
+      "seed": 42,
+      "scenario_mode": "MIXED",
+      "generation_ms": 169.2131,
+      "generation_peak_kb": 3391.92,
+      "normalization_ms": 1.0777,
+      "controller_reported_normalization_ms": 7.3035,
+      "reconciliation_ms": 3433.3495,
+      "ai_investigation_ms": 0.0,
+      "database_ms": 0.0,
+      "database_enabled": false,
+      "evaluation_ms": 12.5897,
+      "total_ms": 3615.3555,
+      "throughput_records_per_sec": 146.85,
+      "peak_memory_kb": 45837.84,
+      "accuracy": 0.948,
+      "precision": 0.882,
+      "recall": 0.9095,
+      "f1": 0.8925,
+      "failures": 26,
+      "review_count": 0,
+      "ai_investigations": 0,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 4902,
+      "estimated_ai_cost_usd": "0.00",
+      "cost_per_case_usd": "0.00",
+      "cost_per_1000_cases_usd": "0.00",
+      "p50_latency_ms": 6.4283,
+      "p95_latency_ms": 9.1881,
+      "p99_latency_ms": 15.0451,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 14,
+        "FALSE_EXCEPTION": 12
+      },
+      "class_confusion": {
+        "AMOUNT_MISMATCH": {
+          "tp": 38,
+          "tn": 462,
+          "fp": 0,
+          "fn": 0
+        },
+        "DUPLICATE": {
+          "tp": 8,
+          "tn": 466,
+          "fp": 13,
+          "fn": 13
+        },
+        "FEE_EXPLAINED": {
+          "tp": 270,
+          "tn": 220,
+          "fp": 0,
+          "fn": 10
+        },
+        "MATCHED": {
+          "tp": 57,
+          "tn": 441,
+          "fp": 0,
+          "fn": 2
+        },
+        "MISSING_SETTLEMENT": {
+          "tp": 27,
+          "tn": 459,
+          "fp": 13,
+          "fn": 1
+        },
+        "PARTIAL_MATCH": {
+          "tp": 18,
+          "tn": 482,
+          "fp": 0,
+          "fn": 0
+        },
+        "REFUND_ADJUSTED": {
+          "tp": 41,
+          "tn": 459,
+          "fp": 0,
+          "fn": 0
+        },
+        "TIMING_MISMATCH": {
+          "tp": 15,
+          "tn": 485,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "financial_confusion": {
+        "correctly_resolved": "21809458.25",
+        "falsely_resolved": "1448384.50",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "0.00"
+      }
+    },
+    {
+      "records": 500,
+      "mode": "ai_assisted",
+      "status": "completed",
+      "seed": 42,
+      "scenario_mode": "MIXED",
+      "generation_ms": 169.2131,
+      "generation_peak_kb": 3391.92,
+      "normalization_ms": 1.0777,
+      "controller_reported_normalization_ms": 9.7727,
+      "reconciliation_ms": 5894.2219,
+      "ai_investigation_ms": 664.9789,
+      "database_ms": 0.0,
+      "database_enabled": false,
+      "evaluation_ms": 22.5426,
+      "total_ms": 6086.3064,
+      "throughput_records_per_sec": 86.83,
+      "peak_memory_kb": 50129.59,
+      "accuracy": 0.948,
+      "precision": 0.882,
+      "recall": 0.9095,
+      "f1": 0.8925,
+      "failures": 26,
+      "review_count": 0,
+      "ai_investigations": 132,
+      "ai_invocation_rate": 0.264,
+      "llm_calls": 0,
+      "agent_tool_calls": 6111,
+      "estimated_ai_cost_usd": "0.00",
+      "cost_per_case_usd": "0.00",
+      "cost_per_1000_cases_usd": "0.00",
+      "p50_latency_ms": 9.7504,
+      "p95_latency_ms": 21.8162,
+      "p99_latency_ms": 34.8558,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 14,
+        "FALSE_EXCEPTION": 12
+      },
+      "class_confusion": {
+        "AMOUNT_MISMATCH": {
+          "tp": 38,
+          "tn": 462,
+          "fp": 0,
+          "fn": 0
+        },
+        "DUPLICATE": {
+          "tp": 8,
+          "tn": 466,
+          "fp": 13,
+          "fn": 13
+        },
+        "FEE_EXPLAINED": {
+          "tp": 270,
+          "tn": 220,
+          "fp": 0,
+          "fn": 10
+        },
+        "MATCHED": {
+          "tp": 57,
+          "tn": 441,
+          "fp": 0,
+          "fn": 2
+        },
+        "MISSING_SETTLEMENT": {
+          "tp": 27,
+          "tn": 459,
+          "fp": 13,
+          "fn": 1
+        },
+        "PARTIAL_MATCH": {
+          "tp": 18,
+          "tn": 482,
+          "fp": 0,
+          "fn": 0
+        },
+        "REFUND_ADJUSTED": {
+          "tp": 41,
+          "tn": 459,
+          "fp": 0,
+          "fn": 0
+        },
+        "TIMING_MISMATCH": {
+          "tp": 15,
+          "tn": 485,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "financial_confusion": {
+        "correctly_resolved": "21809458.25",
+        "falsely_resolved": "1448384.50",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "0.00"
+      }
+    },
+    {
+      "records": 1000,
+      "mode": "deterministic_only",
+      "status": "completed",
+      "seed": 42,
+      "scenario_mode": "MIXED",
+      "generation_ms": 1012.2738,
+      "generation_peak_kb": 6809.54,
+      "normalization_ms": 4.1409,
+      "controller_reported_normalization_ms": 39.8716,
+      "reconciliation_ms": 7770.5578,
+      "ai_investigation_ms": 0.0,
+      "database_ms": 0.0,
+      "database_enabled": false,
+      "evaluation_ms": 15.3602,
+      "total_ms": 8798.4788,
+      "throughput_records_per_sec": 129.96,
+      "peak_memory_kb": 92032.08,
+      "accuracy": 0.979,
+      "precision": 0.8387,
+      "recall": 0.8515,
+      "f1": 0.8439,
+      "failures": 21,
+      "review_count": 1,
+      "ai_investigations": 0,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 9838,
+      "estimated_ai_cost_usd": "0.00",
+      "cost_per_case_usd": "0.00",
+      "cost_per_1000_cases_usd": "0.00",
+      "p50_latency_ms": 6.5732,
+      "p95_latency_ms": 11.0024,
+      "p99_latency_ms": 19.0125,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 11,
+        "FALSE_EXCEPTION": 9,
+        "OVER_ESCALATION": 1
+      },
+      "class_confusion": {
+        "AMOUNT_MISMATCH": {
+          "tp": 81,
+          "tn": 918,
+          "fp": 0,
+          "fn": 1
+        },
+        "DUPLICATE": {
+          "tp": 28,
+          "tn": 952,
+          "fp": 10,
+          "fn": 10
+        },
+        "FEE_EXPLAINED": {
+          "tp": 569,
+          "tn": 426,
+          "fp": 0,
+          "fn": 5
+        },
+        "HUMAN_REVIEW": {
+          "tp": 0,
+          "tn": 999,
+          "fp": 1,
+          "fn": 0
+        },
+        "MATCHED": {
+          "tp": 92,
+          "tn": 906,
+          "fp": 0,
+          "fn": 2
+        },
+        "MISSING_SETTLEMENT": {
+          "tp": 43,
+          "tn": 947,
+          "fp": 10,
+          "fn": 0
+        },
+        "PARTIAL_MATCH": {
+          "tp": 37,
+          "tn": 963,
+          "fp": 0,
+          "fn": 0
+        },
+        "REFUND_ADJUSTED": {
+          "tp": 93,
+          "tn": 904,
+          "fp": 0,
+          "fn": 3
+        },
+        "TIMING_MISMATCH": {
+          "tp": 36,
+          "tn": 964,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "financial_confusion": {
+        "correctly_resolved": "44872629.75",
+        "falsely_resolved": "798096.50",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "39882.50"
+      }
+    },
+    {
+      "records": 1000,
+      "mode": "ai_assisted",
+      "status": "completed",
+      "seed": 42,
+      "scenario_mode": "MIXED",
+      "generation_ms": 1012.2738,
+      "generation_peak_kb": 6809.54,
+      "normalization_ms": 4.1409,
+      "controller_reported_normalization_ms": 16.0503,
+      "reconciliation_ms": 8106.2171,
+      "ai_investigation_ms": 951.2595,
+      "database_ms": 0.0,
+      "database_enabled": false,
+      "evaluation_ms": 15.1597,
+      "total_ms": 9133.841,
+      "throughput_records_per_sec": 125.57,
+      "peak_memory_kb": 100589.3,
+      "accuracy": 0.979,
+      "precision": 0.8387,
+      "recall": 0.8515,
+      "f1": 0.8439,
+      "failures": 21,
+      "review_count": 1,
+      "ai_investigations": 246,
+      "ai_invocation_rate": 0.246,
+      "llm_calls": 0,
+      "agent_tool_calls": 12293,
+      "estimated_ai_cost_usd": "0.00",
+      "cost_per_case_usd": "0.00",
+      "cost_per_1000_cases_usd": "0.00",
+      "p50_latency_ms": 6.6057,
+      "p95_latency_ms": 12.7673,
+      "p99_latency_ms": 13.7152,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 11,
+        "FALSE_EXCEPTION": 9,
+        "OVER_ESCALATION": 1
+      },
+      "class_confusion": {
+        "AMOUNT_MISMATCH": {
+          "tp": 81,
+          "tn": 918,
+          "fp": 0,
+          "fn": 1
+        },
+        "DUPLICATE": {
+          "tp": 28,
+          "tn": 952,
+          "fp": 10,
+          "fn": 10
+        },
+        "FEE_EXPLAINED": {
+          "tp": 569,
+          "tn": 426,
+          "fp": 0,
+          "fn": 5
+        },
+        "HUMAN_REVIEW": {
+          "tp": 0,
+          "tn": 999,
+          "fp": 1,
+          "fn": 0
+        },
+        "MATCHED": {
+          "tp": 92,
+          "tn": 906,
+          "fp": 0,
+          "fn": 2
+        },
+        "MISSING_SETTLEMENT": {
+          "tp": 43,
+          "tn": 947,
+          "fp": 10,
+          "fn": 0
+        },
+        "PARTIAL_MATCH": {
+          "tp": 37,
+          "tn": 963,
+          "fp": 0,
+          "fn": 0
+        },
+        "REFUND_ADJUSTED": {
+          "tp": 93,
+          "tn": 904,
+          "fp": 0,
+          "fn": 3
+        },
+        "TIMING_MISMATCH": {
+          "tp": 36,
+          "tn": 964,
+          "fp": 0,
+          "fn": 0
+        }
+      },
+      "financial_confusion": {
+        "correctly_resolved": "44872629.75",
+        "falsely_resolved": "798096.50",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "39882.50"
+      }
+    },
+    {
+      "records": 5000,
+      "mode": "deterministic_only",
+      "status": "completed",
+      "seed": 42,
+      "scenario_mode": "MIXED",
+      "generation_ms": 2082.8229,
+      "generation_peak_kb": 33974.32,
+      "normalization_ms": 16.0791,
+      "controller_reported_normalization_ms": 91.0062,
+      "reconciliation_ms": 34830.2311,
+      "ai_investigation_ms": 0.0,
+      "database_ms": 0.0,
+      "database_enabled": false,
+      "evaluation_ms": 103.1793,
+      "total_ms": 37016.4743,
+      "throughput_records_per_sec": 144.42,
+      "peak_memory_kb": 460684.63,
+      "accuracy": 0.9636,
+      "precision": 0.7973,
+      "recall": 0.8204,
+      "f1": 0.8053,
+      "failures": 182,
+      "review_count": 6,
+      "ai_investigations": 0,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 49282,
+      "estimated_ai_cost_usd": "0.00",
+      "cost_per_case_usd": "0.00",
+      "cost_per_1000_cases_usd": "0.00",
+      "p50_latency_ms": 6.4408,
+      "p95_latency_ms": 7.3524,
+      "p99_latency_ms": 8.6262,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 105,
+        "FALSE_EXCEPTION": 71,
+        "OVER_ESCALATION": 6
+      },
+      "class_confusion": {
+        "AMOUNT_MISMATCH": {
+          "tp": 401,
+          "tn": 4589,
+          "fp": 0,
+          "fn": 10
+        },
+        "DUPLICATE": {
+          "tp": 94,
+          "tn": 4732,
+          "fp": 87,
+          "fn": 87
+        },
+        "FEE_EXPLAINED": {
+          "tp": 2810,
+          "tn": 2135,
+          "fp": 0,
+          "fn": 55
+        },
+        "HUMAN_REVIEW": {
+          "tp": 0,
+          "tn": 4994,
+          "fp": 6,
+          "fn": 0
+        },
+        "MATCHED": {
+          "tp": 543,
+          "tn": 4450,
+          "fp": 0,
+          "fn": 7
+        },
+        "MISSING_SETTLEMENT": {
+          "tp": 176,
+          "tn": 4735,
+          "fp": 87,
+          "fn": 2
+        },
+        "PARTIAL_MATCH": {
+          "tp": 152,
+          "tn": 4842,
+          "fp": 2,
+          "fn": 4
+        },
+        "REFUND_ADJUSTED": {
+          "tp": 494,
+          "tn": 4491,
+          "fp": 0,
+          "fn": 15
+        },
+        "TIMING_MISMATCH": {
+          "tp": 148,
+          "tn": 4850,
+          "fp": 0,
+          "fn": 2
+        }
+      },
+      "financial_confusion": {
+        "correctly_resolved": "215664009.25",
+        "falsely_resolved": "6960956.00",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "251008.25"
+      }
+    },
+    {
+      "records": 5000,
+      "mode": "ai_assisted",
+      "status": "completed",
+      "seed": 42,
+      "scenario_mode": "MIXED",
+      "generation_ms": 2082.8229,
+      "generation_peak_kb": 33974.32,
+      "normalization_ms": 16.0791,
+      "controller_reported_normalization_ms": 90.9435,
+      "reconciliation_ms": 42283.7294,
+      "ai_investigation_ms": 4969.8493,
+      "database_ms": 0.0,
+      "database_enabled": false,
+      "evaluation_ms": 90.9984,
+      "total_ms": 44457.9204,
+      "throughput_records_per_sec": 120.66,
+      "peak_memory_kb": 500709.84,
+      "accuracy": 0.9636,
+      "precision": 0.7973,
+      "recall": 0.8204,
+      "f1": 0.8053,
+      "failures": 182,
+      "review_count": 6,
+      "ai_investigations": 1153,
+      "ai_invocation_rate": 0.2306,
+      "llm_calls": 0,
+      "agent_tool_calls": 60754,
+      "estimated_ai_cost_usd": "0.00",
+      "cost_per_case_usd": "0.00",
+      "cost_per_1000_cases_usd": "0.00",
+      "p50_latency_ms": 6.5686,
+      "p95_latency_ms": 13.0702,
+      "p99_latency_ms": 14.406,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 105,
+        "FALSE_EXCEPTION": 71,
+        "OVER_ESCALATION": 6
+      },
+      "class_confusion": {
+        "AMOUNT_MISMATCH": {
+          "tp": 401,
+          "tn": 4589,
+          "fp": 0,
+          "fn": 10
+        },
+        "DUPLICATE": {
+          "tp": 94,
+          "tn": 4732,
+          "fp": 87,
+          "fn": 87
+        },
+        "FEE_EXPLAINED": {
+          "tp": 2810,
+          "tn": 2135,
+          "fp": 0,
+          "fn": 55
+        },
+        "HUMAN_REVIEW": {
+          "tp": 0,
+          "tn": 4994,
+          "fp": 6,
+          "fn": 0
+        },
+        "MATCHED": {
+          "tp": 543,
+          "tn": 4450,
+          "fp": 0,
+          "fn": 7
+        },
+        "MISSING_SETTLEMENT": {
+          "tp": 176,
+          "tn": 4735,
+          "fp": 87,
+          "fn": 2
+        },
+        "PARTIAL_MATCH": {
+          "tp": 152,
+          "tn": 4842,
+          "fp": 2,
+          "fn": 4
+        },
+        "REFUND_ADJUSTED": {
+          "tp": 494,
+          "tn": 4491,
+          "fp": 0,
+          "fn": 15
+        },
+        "TIMING_MISMATCH": {
+          "tp": 148,
+          "tn": 4850,
+          "fp": 0,
+          "fn": 2
+        }
+      },
+      "financial_confusion": {
+        "correctly_resolved": "215664009.25",
+        "falsely_resolved": "6960956.00",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "251008.25"
+      }
+    },
+    {
+      "records": 10000,
+      "mode": "deterministic_only",
+      "status": "completed",
+      "seed": 42,
+      "scenario_mode": "MIXED",
+      "generation_ms": 3796.0434,
+      "generation_peak_kb": 67841.33,
+      "normalization_ms": 39.5761,
+      "controller_reported_normalization_ms": 179.2475,
+      "reconciliation_ms": 70790.0354,
+      "ai_investigation_ms": 0.0,
+      "database_ms": 0.0,
+      "database_enabled": false,
+      "evaluation_ms": 177.8207,
+      "total_ms": 74764.1923,
+      "throughput_records_per_sec": 143.29,
+      "peak_memory_kb": 920866.37,
+      "accuracy": 0.9655,
+      "precision": 0.8051,
+      "recall": 0.8252,
+      "f1": 0.8122,
+      "failures": 345,
+      "review_count": 15,
+      "ai_investigations": 0,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 98497,
+      "estimated_ai_cost_usd": "0.00",
+      "cost_per_case_usd": "0.00",
+      "cost_per_1000_cases_usd": "0.00",
+      "p50_latency_ms": 6.3971,
+      "p95_latency_ms": 7.3602,
+      "p99_latency_ms": 8.9866,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 197,
+        "FALSE_EXCEPTION": 133,
+        "OVER_ESCALATION": 15
+      },
+      "class_confusion": {
+        "AMOUNT_MISMATCH": {
+          "tp": 805,
+          "tn": 9177,
+          "fp": 0,
+          "fn": 18
+        },
+        "DUPLICATE": {
+          "tp": 209,
+          "tn": 9463,
+          "fp": 164,
+          "fn": 164
+        },
+        "FEE_EXPLAINED": {
+          "tp": 5563,
+          "tn": 4341,
+          "fp": 0,
+          "fn": 96
+        },
+        "HUMAN_REVIEW": {
+          "tp": 0,
+          "tn": 9985,
+          "fp": 15,
+          "fn": 0
+        },
+        "MATCHED": {
+          "tp": 1121,
+          "tn": 8860,
+          "fp": 0,
+          "fn": 19
+        },
+        "MISSING_SETTLEMENT": {
+          "tp": 368,
+          "tn": 9462,
+          "fp": 164,
+          "fn": 6
+        },
+        "PARTIAL_MATCH": {
+          "tp": 305,
+          "tn": 9689,
+          "fp": 2,
+          "fn": 4
+        },
+        "REFUND_ADJUSTED": {
+          "tp": 988,
+          "tn": 8979,
+          "fp": 0,
+          "fn": 33
+        },
+        "TIMING_MISMATCH": {
+          "tp": 296,
+          "tn": 9699,
+          "fp": 0,
+          "fn": 5
+        }
+      },
+      "financial_confusion": {
+        "correctly_resolved": "436623311.50",
+        "falsely_resolved": "15663365.00",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "695454.25"
+      }
+    },
+    {
+      "records": 10000,
+      "mode": "ai_assisted",
+      "status": "completed",
+      "seed": 42,
+      "scenario_mode": "MIXED",
+      "generation_ms": 3796.0434,
+      "generation_peak_kb": 67841.33,
+      "normalization_ms": 39.5761,
+      "controller_reported_normalization_ms": 174.7286,
+      "reconciliation_ms": 86538.7184,
+      "ai_investigation_ms": 11666.3362,
+      "database_ms": 0.0,
+      "database_enabled": false,
+      "evaluation_ms": 347.5543,
+      "total_ms": 90683.0097,
+      "throughput_records_per_sec": 118.04,
+      "peak_memory_kb": 1001666.0,
+      "accuracy": 0.9656,
+      "precision": 0.8051,
+      "recall": 0.8252,
+      "f1": 0.8122,
+      "failures": 344,
+      "review_count": 14,
+      "ai_investigations": 2327,
+      "ai_invocation_rate": 0.2327,
+      "llm_calls": 0,
+      "agent_tool_calls": 121655,
+      "estimated_ai_cost_usd": "0.00",
+      "cost_per_case_usd": "0.00",
+      "cost_per_1000_cases_usd": "0.00",
+      "p50_latency_ms": 6.5726,
+      "p95_latency_ms": 13.4896,
+      "p99_latency_ms": 18.1672,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 197,
+        "FALSE_EXCEPTION": 133,
+        "OVER_ESCALATION": 14
+      },
+      "class_confusion": {
+        "AMOUNT_MISMATCH": {
+          "tp": 805,
+          "tn": 9177,
+          "fp": 0,
+          "fn": 18
+        },
+        "DUPLICATE": {
+          "tp": 209,
+          "tn": 9463,
+          "fp": 164,
+          "fn": 164
+        },
+        "FEE_EXPLAINED": {
+          "tp": 5564,
+          "tn": 4341,
+          "fp": 0,
+          "fn": 95
+        },
+        "HUMAN_REVIEW": {
+          "tp": 0,
+          "tn": 9986,
+          "fp": 14,
+          "fn": 0
+        },
+        "MATCHED": {
+          "tp": 1121,
+          "tn": 8860,
+          "fp": 0,
+          "fn": 19
+        },
+        "MISSING_SETTLEMENT": {
+          "tp": 368,
+          "tn": 9462,
+          "fp": 164,
+          "fn": 6
+        },
+        "PARTIAL_MATCH": {
+          "tp": 305,
+          "tn": 9689,
+          "fp": 2,
+          "fn": 4
+        },
+        "REFUND_ADJUSTED": {
+          "tp": 988,
+          "tn": 8979,
+          "fp": 0,
+          "fn": 33
+        },
+        "TIMING_MISMATCH": {
+          "tp": 296,
+          "tn": 9699,
+          "fp": 0,
+          "fn": 5
+        }
+      },
+      "financial_confusion": {
+        "correctly_resolved": "436681347.50",
+        "falsely_resolved": "15663365.00",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "637418.25"
+      }
+    },
+    {
+      "records": 50000,
+      "mode": "not_run",
+      "status": "rejected_by_input_contract",
+      "error": "1 validation error for ScenarioRequest",
+      "max_supported_records": 10000
+    }
+  ]
+}

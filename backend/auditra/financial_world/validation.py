@@ -32,12 +32,28 @@ class WorldValidator:
             *[settlement.settlement_id for settlement in dataset.settlements if settlement.payment_id not in payment_ids],
             *[refund.refund_id for refund in dataset.refunds if refund.payment_id not in payment_ids],
         ]
-        count = len(missing_order) + len(missing_payment)
+        controlled_missing_order = [
+            payment_id
+            for payment_id in missing_order
+            if getattr(dataset.ground_truth.get(payment_id), "scenario", "") == "entity_link_failure"
+        ]
+        uncontrolled_missing_order = [payment_id for payment_id in missing_order if payment_id not in set(controlled_missing_order)]
+        count = len(uncontrolled_missing_order) + len(missing_payment)
+        controlled_count = len(controlled_missing_order)
+        if count:
+            status = "FAILED"
+            detail = f"{count} broken visible link(s) found."
+        elif controlled_count:
+            status = "WARNING"
+            detail = "Entity-link failures are controlled adversarial anomalies."
+        else:
+            status = "PASSED"
+            detail = "All visible settlement/refund links resolve."
         return WorldValidationCheck(
             check_id="REFERENTIAL_INTEGRITY",
-            status="FAILED" if count else "PASSED",
-            detail="All visible settlement/refund links resolve." if not count else f"{count} broken visible link(s) found.",
-            count=count,
+            status=status,
+            detail=detail,
+            count=count + controlled_count,
         )
 
     def _currency_consistency(self, dataset: DatasetBundle) -> WorldValidationCheck:

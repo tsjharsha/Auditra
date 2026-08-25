@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
+import os
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from .financial_world import FinancialWorldSpec
 from .models import ReviewRequest, ScenarioMode, ScenarioRequest
@@ -14,7 +16,7 @@ from .storage import AuditraStore
 class ControllerRunRequest(BaseModel):
     dataset_id: Optional[str] = None
     mode: ScenarioMode = ScenarioMode.MIXED
-    record_count: int = 1000
+    record_count: int = Field(default=1000, ge=10, le=10000)
     seed: int = 42
 
 
@@ -22,18 +24,30 @@ class EvaluationRunRequest(BaseModel):
     dataset_id: Optional[str] = None
     controller_run_id: Optional[str] = None
     mode: ScenarioMode = ScenarioMode.MIXED
-    record_count: int = 1000
+    record_count: int = Field(default=1000, ge=10, le=10000)
     seed: int = 42
 
 
 class WorldPromptRequest(BaseModel):
-    prompt: str
+    prompt: str = Field(min_length=1, max_length=4000)
     seed: int = 42
 
 
 class SourceIngestionRequest(BaseModel):
     payload: Dict[str, Any]
     seed: int = 42
+
+    @field_validator("payload")
+    @classmethod
+    def validate_payload_size(cls, value: Dict[str, Any]) -> Dict[str, Any]:
+        encoded = json.dumps(value, default=str).encode("utf-8")
+        if len(encoded) > 2_000_000:
+            raise ValueError("ingestion payload exceeds 2MB limit")
+        for key in ("merchants", "orders", "payments", "settlements", "refunds", "fees", "fee_rules"):
+            rows = value.get(key)
+            if isinstance(rows, list) and len(rows) > 10000:
+                raise ValueError(f"{key} exceeds 10000 row ingestion limit")
+        return value
 
 
 store = AuditraStore()
@@ -45,7 +59,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        origin.strip()
+        for origin in os.getenv(
+            "AUDITRA_CORS_ORIGINS",
+            "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:4173,http://localhost:4173",
+        ).split(",")
+        if origin.strip()
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )

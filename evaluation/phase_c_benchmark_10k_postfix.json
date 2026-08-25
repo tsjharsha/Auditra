@@ -1,0 +1,211 @@
+{
+  "benchmark": "phase_c_scale",
+  "created_at": "2026-08-25T06:05:13Z",
+  "database_note": "AUDITRA_DATABASE_URL not configured; database_ms is 0.0 for direct in-memory benchmarks.",
+  "rows": [
+    {
+      "records": 10000,
+      "mode": "deterministic_only",
+      "status": "completed",
+      "seed": 42,
+      "scenario_mode": "MIXED",
+      "generation_ms": 3859.0045,
+      "generation_peak_kb": 67850.6,
+      "normalization_ms": 33.1071,
+      "controller_reported_normalization_ms": 164.5651,
+      "reconciliation_ms": 67601.3981,
+      "ai_investigation_ms": 0.0,
+      "database_ms": 0.0,
+      "database_enabled": false,
+      "evaluation_ms": 186.6595,
+      "total_ms": 71647.3091,
+      "throughput_records_per_sec": 148.18,
+      "peak_memory_kb": 920912.25,
+      "accuracy": 0.9656,
+      "precision": 0.8051,
+      "recall": 0.8252,
+      "f1": 0.8122,
+      "failures": 344,
+      "review_count": 14,
+      "ai_investigations": 0,
+      "ai_invocation_rate": 0.0,
+      "llm_calls": 0,
+      "agent_tool_calls": 98506,
+      "estimated_ai_cost_usd": "0.00",
+      "cost_per_case_usd": "0.00",
+      "cost_per_1000_cases_usd": "0.00",
+      "p50_latency_ms": 6.3046,
+      "p95_latency_ms": 7.2109,
+      "p99_latency_ms": 8.3117,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 197,
+        "FALSE_EXCEPTION": 133,
+        "OVER_ESCALATION": 14
+      },
+      "class_confusion": {
+        "AMOUNT_MISMATCH": {
+          "tp": 805,
+          "tn": 9177,
+          "fp": 0,
+          "fn": 18
+        },
+        "DUPLICATE": {
+          "tp": 209,
+          "tn": 9463,
+          "fp": 164,
+          "fn": 164
+        },
+        "FEE_EXPLAINED": {
+          "tp": 5564,
+          "tn": 4341,
+          "fp": 0,
+          "fn": 95
+        },
+        "HUMAN_REVIEW": {
+          "tp": 0,
+          "tn": 9986,
+          "fp": 14,
+          "fn": 0
+        },
+        "MATCHED": {
+          "tp": 1121,
+          "tn": 8860,
+          "fp": 0,
+          "fn": 19
+        },
+        "MISSING_SETTLEMENT": {
+          "tp": 368,
+          "tn": 9462,
+          "fp": 164,
+          "fn": 6
+        },
+        "PARTIAL_MATCH": {
+          "tp": 305,
+          "tn": 9689,
+          "fp": 2,
+          "fn": 4
+        },
+        "REFUND_ADJUSTED": {
+          "tp": 988,
+          "tn": 8979,
+          "fp": 0,
+          "fn": 33
+        },
+        "TIMING_MISMATCH": {
+          "tp": 296,
+          "tn": 9699,
+          "fp": 0,
+          "fn": 5
+        }
+      },
+      "financial_confusion": {
+        "correctly_resolved": "436681347.50",
+        "falsely_resolved": "15663365.00",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "637418.25"
+      }
+    },
+    {
+      "records": 10000,
+      "mode": "ai_assisted",
+      "status": "completed",
+      "seed": 42,
+      "scenario_mode": "MIXED",
+      "generation_ms": 3859.0045,
+      "generation_peak_kb": 67850.6,
+      "normalization_ms": 33.1071,
+      "controller_reported_normalization_ms": 169.7794,
+      "reconciliation_ms": 86209.1349,
+      "ai_investigation_ms": 11708.8224,
+      "database_ms": 0.0,
+      "database_enabled": false,
+      "evaluation_ms": 217.8768,
+      "total_ms": 90286.4718,
+      "throughput_records_per_sec": 118.4,
+      "peak_memory_kb": 1001666.57,
+      "accuracy": 0.9656,
+      "precision": 0.8051,
+      "recall": 0.8252,
+      "f1": 0.8122,
+      "failures": 344,
+      "review_count": 14,
+      "ai_investigations": 2327,
+      "ai_invocation_rate": 0.2327,
+      "llm_calls": 0,
+      "agent_tool_calls": 121655,
+      "estimated_ai_cost_usd": "0.00",
+      "cost_per_case_usd": "0.00",
+      "cost_per_1000_cases_usd": "0.00",
+      "p50_latency_ms": 6.601,
+      "p95_latency_ms": 13.5738,
+      "p99_latency_ms": 18.2391,
+      "failure_taxonomy": {
+        "CLASSIFICATION_ERROR": 197,
+        "FALSE_EXCEPTION": 133,
+        "OVER_ESCALATION": 14
+      },
+      "class_confusion": {
+        "AMOUNT_MISMATCH": {
+          "tp": 805,
+          "tn": 9177,
+          "fp": 0,
+          "fn": 18
+        },
+        "DUPLICATE": {
+          "tp": 209,
+          "tn": 9463,
+          "fp": 164,
+          "fn": 164
+        },
+        "FEE_EXPLAINED": {
+          "tp": 5564,
+          "tn": 4341,
+          "fp": 0,
+          "fn": 95
+        },
+        "HUMAN_REVIEW": {
+          "tp": 0,
+          "tn": 9986,
+          "fp": 14,
+          "fn": 0
+        },
+        "MATCHED": {
+          "tp": 1121,
+          "tn": 8860,
+          "fp": 0,
+          "fn": 19
+        },
+        "MISSING_SETTLEMENT": {
+          "tp": 368,
+          "tn": 9462,
+          "fp": 164,
+          "fn": 6
+        },
+        "PARTIAL_MATCH": {
+          "tp": 305,
+          "tn": 9689,
+          "fp": 2,
+          "fn": 4
+        },
+        "REFUND_ADJUSTED": {
+          "tp": 988,
+          "tn": 8979,
+          "fp": 0,
+          "fn": 33
+        },
+        "TIMING_MISMATCH": {
+          "tp": 296,
+          "tn": 9699,
+          "fp": 0,
+          "fn": 5
+        }
+      },
+      "financial_confusion": {
+        "correctly_resolved": "436681347.50",
+        "falsely_resolved": "15663365.00",
+        "correctly_escalated": "0.00",
+        "incorrectly_escalated": "637418.25"
+      }
+    }
+  ]
+}

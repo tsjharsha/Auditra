@@ -61,6 +61,38 @@ class FinancialWorldTests(unittest.TestCase):
         self.assertNotIn('"scenario"', public_payload)
         self.assertNotIn('"anomaly":', public_payload)
 
+    def test_controlled_entity_link_failures_are_valid_adversarial_worlds(self) -> None:
+        service = FinancialWorldService()
+        spec = FinancialWorldSpec(
+            prompt="Adversarial entity link failure regression.",
+            record_count=80,
+            seed=808,
+            anomaly_rates={"ENTITY_LINK_FAILURE": Decimal("0.0500")},
+        )
+
+        result = service.build_from_spec(spec)
+
+        self.assertTrue(result.validation.valid)
+        self.assertTrue(any(check.check_id == "REFERENTIAL_INTEGRITY" and check.status == "WARNING" for check in result.validation.checks))
+
+    def test_duplicate_payment_does_not_inherit_broken_entity_link(self) -> None:
+        service = FinancialWorldService()
+        prompt = (
+            "Generate an Indian e-commerce merchant with 120 orders, UPI and card payments, "
+            "2% platform fees, T+2 settlement, refunds, duplicates, partial settlements and adversarial anomalies."
+        )
+
+        result = service.build_from_prompt(prompt, seed=9005)
+        payment_by_id = {payment.payment_id: payment for payment in result.dataset.payments}
+
+        self.assertTrue(result.validation.valid)
+        for payment in result.dataset.payments:
+            if result.dataset.ground_truth[payment.payment_id].scenario == "duplicate_payment":
+                canonical_id = payment.original.get("duplicate_of")
+                self.assertIsNotNone(canonical_id)
+                self.assertEqual(payment.order_id, payment_by_id[canonical_id].order_id)
+                self.assertFalse(str(payment.order_id).startswith("ORD_MISSING_"))
+
     def test_financial_world_spec_rejects_unsupported_tokens(self) -> None:
         with self.assertRaises(ValueError):
             FinancialWorldSpec(currencies=["BTC"])

@@ -64,8 +64,6 @@ class FinancialWorldGenerator:
         anomaly_plan = self._anomaly_plan(spec, rng)
         anomaly_counts: Dict[str, int] = {}
 
-        previous_payment: Payment | None = None
-        previous_order: Order | None = None
         for idx, anomaly in enumerate(anomaly_plan, start=1):
             amount = self._amount(rng)
             customer_id = f"CUS_{rng.randint(100000, 999999)}"
@@ -182,19 +180,19 @@ class FinancialWorldGenerator:
             ground_truth[payment.payment_id] = GroundTruthCase(
                 payment_id=payment.payment_id,
                 expected_status=expected_status,
-                scenario=anomaly.lower(),
+                scenario="normal" if anomaly == "DUPLICATE_PAYMENT" else anomaly.lower(),
                 financial_impact=financial_impact,
                 reason=reason,
             )
 
-            if anomaly == "DUPLICATE_PAYMENT" and previous_payment and previous_order:
+            if anomaly == "DUPLICATE_PAYMENT":
                 dup_idx = len(payments) + 1
-                duplicate = previous_payment.model_copy(
+                duplicate = payment.model_copy(
                     update={
                         "source_record_id": f"{world_id}_PAYMENT_DUP_{idx:05d}",
                         "payment_id": f"PAY_{world_id[-6:]}_DUP_{idx:05d}",
-                        "captured_at": previous_payment.captured_at + timedelta(minutes=1),
-                        "original": {"world_id": world_id, "duplicate_of": previous_payment.payment_id},
+                        "captured_at": payment.captured_at + timedelta(minutes=1),
+                        "original": {"world_id": world_id, "duplicate_of": payment.payment_id},
                     }
                 )
                 payments.append(duplicate)
@@ -206,9 +204,6 @@ class FinancialWorldGenerator:
                     reason="payment duplicates an earlier payment for the same order, merchant, amount and customer",
                 )
                 anomaly_counts["DUPLICATE_PAYMENT"] = anomaly_counts.get("DUPLICATE_PAYMENT", 0) + 1
-
-            previous_payment = payment
-            previous_order = order
 
         dataset = DatasetBundle(
             dataset_id=f"WORLD_{world_id}",

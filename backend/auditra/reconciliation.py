@@ -61,7 +61,9 @@ class ReconciliationEngine:
         started_at = now_utc()
         start = time.perf_counter()
         audit = AuditLog(correlation_id=run_id)
+        normalize_start = time.perf_counter()
         index = DatasetIndex(dataset)
+        normalization_ms = (time.perf_counter() - normalize_start) * 1000
         cases: List[ReconciliationCase] = []
         latencies: List[float] = []
 
@@ -82,7 +84,7 @@ class ReconciliationEngine:
 
         duration_ms = (time.perf_counter() - start) * 1000
         finished_at = now_utc()
-        metrics = self._build_metrics(dataset, cases, duration_ms, latencies)
+        metrics = self._build_metrics(dataset, cases, duration_ms, latencies, normalization_ms)
 
         audit.record(
             actor="system",
@@ -117,6 +119,7 @@ class ReconciliationEngine:
         reason_codes: List[str] = []
         contradicting: List[str] = []
         supporting: List[str] = []
+        tool_failure_requires_review = False
 
         audit.record(
             actor="controller",
@@ -144,6 +147,19 @@ class ReconciliationEngine:
             related = {}
             located_payment = payment
             reason_codes.append("TOOL_BUDGET_EXCEEDED")
+            tool_failure_requires_review = True
+        except Exception:
+            order = None
+            settlements = []
+            refunds = []
+            fee_rules = []
+            history = {}
+            related = {}
+            located_payment = payment
+            reason_codes.append("TOOL_LOOKUP_FAILED")
+            contradicting.append("initial lookup tool failed")
+            timeline.append("Initial lookup tool failed")
+            tool_failure_requires_review = True
 
         if located_payment:
             timeline.append("Payment located")
@@ -194,22 +210,36 @@ class ReconciliationEngine:
         if expected_fee is not None:
             expected_settlement = money(payment.amount - expected_fee - refund_total)
         if actual_settlement is not None and expected_settlement is not None:
-            amount_result = tools.compare_amounts(actual_settlement, expected_settlement, self.amount_tolerance)
             difference = money(actual_settlement - expected_settlement)
-            if amount_result["within_tolerance"]:
-                timeline.append("Amount comparison passed deterministic tolerance")
-            else:
-                timeline.append("Amount discrepancy detected")
-                reason_codes.append("AMOUNT_DIFFERENCE")
+            try:
+                amount_result = tools.compare_amounts(actual_settlement, expected_settlement, self.amount_tolerance)
+                if amount_result["within_tolerance"]:
+                    timeline.append("Amount comparison passed deterministic tolerance")
+                else:
+                    timeline.append("Amount discrepancy detected")
+                    reason_codes.append("AMOUNT_DIFFERENCE")
+            except Exception:
+                amount_result = {"within_tolerance": False, "reason": "amount comparison tool failed"}
+                tool_failure_requires_review = True
+                timeline.append("Amount comparison tool failed")
+                reason_codes.append("AMOUNT_TOOL_FAILED")
+                contradicting.append("amount comparison tool failed")
 
         if settlements:
             cycle_days = self._merchant_cycle_days(index, payment.merchant_id)
-            temporal_result = tools.check_temporal_relationship(payment, settlements, cycle_days)
-            if temporal_result["valid"]:
-                timeline.append("Settlement timing verified")
-            else:
-                timeline.append("Settlement timing violates configured window")
-                reason_codes.append("SETTLEMENT_TIMING")
+            try:
+                temporal_result = tools.check_temporal_relationship(payment, settlements, cycle_days)
+                if temporal_result["valid"]:
+                    timeline.append("Settlement timing verified")
+                else:
+                    timeline.append("Settlement timing violates configured window")
+                    reason_codes.append("SETTLEMENT_TIMING")
+            except Exception:
+                temporal_result = {"valid": False, "reason": "temporal relationship tool failed"}
+                tool_failure_requires_review = True
+                timeline.append("Temporal relationship tool failed")
+                reason_codes.append("TEMPORAL_TOOL_FAILED")
+                contradicting.append("temporal relationship tool failed")
 
         status, impact = self._classify(
             payment=payment,
@@ -228,6 +258,14 @@ class ReconciliationEngine:
             contradicting=contradicting,
             timeline=timeline,
         )
+
+        if tool_failure_requires_review and status not in TERMINAL_REVIEW_STATUSES:
+            status = ReconciliationStatus.HUMAN_REVIEW
+            impact = impact if impact > 0 else payment.amount
+            confidence = min(0.62, 0.55)
+            band = self._confidence_band(confidence)
+            reason_codes.append("TOOL_CHECK_FAILED")
+            timeline.append("Tool check failed; escalated to human review")
 
         confidence = self._confidence_score(
             status=status,
@@ -294,6 +332,31 @@ class ReconciliationEngine:
             actual_settlement=actual_settlement,
             duplicate_info=duplicate_info,
         )
+        blocking_invariants = self._blocking_invariant_failures(status, invariants)
+        if blocking_invariants:
+            status = ReconciliationStatus.HUMAN_REVIEW
+            impact = impact if impact > 0 else payment.amount
+            confidence = min(confidence, 0.62)
+            band = self._confidence_band(confidence)
+            reason_codes.append("BLOCKING_INVARIANT_FAILED")
+            reason_codes.extend(f"INVARIANT_FAILED_{item.rule_id}" for item in blocking_invariants)
+            contradicting.extend(item.reason for item in blocking_invariants)
+            timeline.append("Blocking invariant failed; escalated to human review")
+            verification = self._verify(
+                status=status,
+                payment=payment,
+                fee_rule=fee_rule,
+                settlements_present=bool(settlements),
+                refunds_present=bool(refunds),
+                refund_total=refund_total,
+                amount_within_tolerance=bool(amount_result.get("within_tolerance")),
+                temporal_valid=bool(temporal_result.get("valid")),
+                is_duplicate=is_duplicate,
+                difference=difference,
+                expected_settlement=expected_settlement,
+                actual_settlement=actual_settlement,
+                refunds_before_settlement=self._refunds_before_settlement(refunds, settlements),
+            )
         confidence_factors = self._confidence_factors(
             order_exists=order is not None,
             settlements_present=bool(settlements),
@@ -657,6 +720,20 @@ class ReconciliationEngine:
             return True
         return any(str(item.status) == "FAILED" for item in invariants)
 
+    def _blocking_invariant_failures(self, status: ReconciliationStatus, invariants: List[InvariantResult]) -> List[InvariantResult]:
+        blocking_rule_ids = {
+            "CURRENCY_CONSISTENCY",
+            "MERCHANT_CONSISTENCY",
+            "PAYMENT_ORDER_AMOUNT",
+            "FEE_RULE_APPLICABILITY",
+            "REFUND_DOES_NOT_EXCEED_PAYMENT",
+        }
+        failures = [item for item in invariants if str(item.status) == "FAILED"]
+        blocking = [item for item in failures if item.rule_id in blocking_rule_ids]
+        if status != ReconciliationStatus.DUPLICATE:
+            blocking.extend(item for item in failures if item.rule_id == "DUPLICATE_CONSISTENCY")
+        return blocking
+
     def _blend_ai_confidence(self, confidence: float, ai_factors: Dict[str, float], negative_factors: Dict[str, float]) -> float:
         selected = ai_factors.get("selected_hypothesis_confidence", 0.0)
         verification = ai_factors.get("deterministic_verification", 0.0)
@@ -812,6 +889,7 @@ class ReconciliationEngine:
         cases: List[ReconciliationCase],
         duration_ms: float,
         latencies: List[float],
+        normalization_ms: float,
     ) -> RunMetrics:
         total = len(cases)
         total_volume = money(sum((payment.amount for payment in dataset.payments), Decimal("0.00")))
@@ -838,11 +916,18 @@ class ReconciliationEngine:
                 Decimal("0.00"),
             )
         )
+        ai_investigation_ms = sum(
+            case.ai_investigation.duration_ms
+            for case in ai_cases
+            if case.ai_investigation is not None
+        )
 
         return RunMetrics(
             transactions_processed=total,
             total_payment_volume=total_volume,
             reconciled_amount=reconciled_amount,
+            normalization_ms=round(normalization_ms, 4),
+            ai_investigation_ms=round(ai_investigation_ms, 4),
             match_rate=round(len(match_cases) / max(total, 1), 4),
             automatic_resolution_rate=round(len(auto_cases) / max(total, 1), 4),
             exception_rate=round(len(exception_cases) / max(total, 1), 4),

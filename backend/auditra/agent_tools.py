@@ -83,6 +83,7 @@ class InvestigationTools:
         "create_reconciliation_case",
         "request_human_review",
     }
+    evidence_entity_types = {"MERCHANT", "ORDER", "PAYMENT", "SETTLEMENT", "REFUND", "FEE_RULE"}
 
     def __init__(
         self,
@@ -449,7 +450,12 @@ class InvestigationTools:
 
     def get_evidence(self, entity_type: str, entity_id: str) -> Dict[str, Any]:
         def evidence() -> Dict[str, Any]:
-            return {"entity_type": entity_type, "entity_id": entity_id, "available": True}
+            normalized = entity_type.strip().upper()
+            if normalized not in self.evidence_entity_types:
+                raise ToolValidationError(f"entity_type is not evidence-allowlisted: {entity_type}")
+            if not self._entity_exists(normalized, entity_id):
+                raise ToolValidationError(f"evidence entity not found for allowlisted type: {normalized}")
+            return {"entity_type": normalized, "entity_id": entity_id, "available": True}
 
         return self._record(
             "get_evidence",
@@ -457,6 +463,21 @@ class InvestigationTools:
             evidence,
             lambda result: result,
         )
+
+    def _entity_exists(self, entity_type: str, entity_id: str) -> bool:
+        if entity_type == "MERCHANT":
+            return entity_id in self.index.merchants_by_id
+        if entity_type == "ORDER":
+            return entity_id in self.index.orders_by_id
+        if entity_type == "PAYMENT":
+            return entity_id in self.index.payments_by_id
+        if entity_type == "SETTLEMENT":
+            return any(item.settlement_id == entity_id for items in self.index.settlements_by_payment.values() for item in items)
+        if entity_type == "REFUND":
+            return any(item.refund_id == entity_id for items in self.index.refunds_by_payment.values() for item in items)
+        if entity_type == "FEE_RULE":
+            return any(item.fee_rule_id == entity_id for items in self.index.fee_rules_by_merchant.values() for item in items)
+        return False
 
     def create_hypothesis(self, label: str, evidence_ids: List[str]) -> Dict[str, Any]:
         def create() -> Dict[str, Any]:

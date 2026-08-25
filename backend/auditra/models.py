@@ -459,6 +459,8 @@ class RunMetrics(AuditraModel):
     transactions_processed: int
     total_payment_volume: Decimal
     reconciled_amount: Decimal
+    normalization_ms: float = 0.0
+    ai_investigation_ms: float = 0.0
     match_rate: float
     automatic_resolution_rate: float
     exception_rate: float

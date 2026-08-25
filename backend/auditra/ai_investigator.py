@@ -55,6 +55,7 @@ class AIInvestigationAgent:
         "unlinked_or_misaligned_order",
         "matched_low_risk",
     }
+    max_model_tool_plan_steps = 24
 
     def __init__(self, provider: Optional[StructuredInvestigationProvider] = None):
         if provider is not None:
@@ -258,7 +259,10 @@ class AIInvestigationAgent:
 
     def _group_tool_plan(self, tool_plan: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
         grouped: Dict[str, List[Dict[str, Any]]] = {}
+        accepted = 0
         for raw_step in tool_plan:
+            if accepted >= self.max_model_tool_plan_steps:
+                break
             step = raw_step.model_dump(mode="json") if hasattr(raw_step, "model_dump") else raw_step
             if not isinstance(step, dict):
                 continue
@@ -267,6 +271,7 @@ class AIInvestigationAgent:
             if label not in self.known_labels or tool_name not in self.model_tool_allowlist:
                 continue
             grouped.setdefault(label, []).append(step)
+            accepted += 1
         return grouped
 
     def _investigate_label(
