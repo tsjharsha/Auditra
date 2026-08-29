@@ -4,11 +4,14 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { auditraApi } from "../api/client";
 import type {
   AnomalyMode,
+  AssuranceReport,
   AuditWorldResult,
+  ChallengeDefinition,
   ControllerComparison,
   FinancialWorldSpec,
   PageId,
   ReconciliationCase,
+  RedTeamResult,
   ReviewAction,
   WorldBuildResult,
   WorldPreview,
@@ -55,6 +58,11 @@ interface AuditraContextValue {
   preview: WorldPreview | null;
   world: WorldBuildResult | null;
   audit: AuditWorldResult | null;
+  challenges: ChallengeDefinition[];
+  selectedChallengeId: string;
+  setSelectedChallengeId: (challengeId: string) => void;
+  assurance: AssuranceReport | null;
+  redTeam: RedTeamResult | null;
   comparison: ControllerComparison | null;
   selectedCase: ReconciliationCase | null;
   runHistory: RunHistoryItem[];
@@ -67,11 +75,13 @@ interface AuditraContextValue {
   previewWorld: () => Promise<WorldPreview>;
   buildWorld: () => Promise<WorldBuildResult>;
   buildWorldFromSpec: (spec: FinancialWorldSpec) => Promise<WorldBuildResult>;
+  buildChallenge: (recordCount?: number) => Promise<WorldBuildResult>;
   auditWorld: (worldOverride?: WorldBuildResult) => Promise<AuditWorldResult>;
   useDemoWorld: () => void;
   runFiveMinuteDemo: () => Promise<void>;
   breakController: (mode: AnomalyMode, recordCount?: number) => Promise<void>;
   runComparison: () => Promise<ControllerComparison>;
+  runRedTeam: (recordCount?: number) => Promise<RedTeamResult>;
   runControlledEvaluation: (settings: ControlledEvaluationSettings) => Promise<AuditWorldResult>;
   selectCase: (caseId: string) => void;
   setSelectedCase: (item: ReconciliationCase | null) => void;
@@ -104,6 +114,9 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
   const [preview, setPreview] = useState<WorldPreview | null>(null);
   const [world, setWorld] = useState<WorldBuildResult | null>(null);
   const [audit, setAudit] = useState<AuditWorldResult | null>(null);
+  const [selectedChallengeId, setSelectedChallengeId] = useState("settlement-reconciliation");
+  const [assurance, setAssurance] = useState<AssuranceReport | null>(null);
+  const [redTeam, setRedTeam] = useState<RedTeamResult | null>(null);
   const [comparison, setComparison] = useState<ControllerComparison | null>(null);
   const [selectedCase, setSelectedCase] = useState<ReconciliationCase | null>(null);
   const [runHistory, setRunHistory] = useState<RunHistoryItem[]>([]);
@@ -118,6 +131,12 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
     queryFn: auditraApi.health,
     retry: 1,
     refetchInterval: 15000,
+  });
+
+  const challengeCatalog = useQuery({
+    queryKey: ["challenges"],
+    queryFn: auditraApi.challenges,
+    retry: 1,
   });
 
   const previewMutation = useMutation({
@@ -178,6 +197,44 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const challengeMutation = useMutation({
+    mutationFn: (recordCount?: number) => {
+      const selected = challengeCatalog.data?.challenges.find((item) => item.challenge_id === selectedChallengeId);
+      return auditraApi.buildChallenge(selectedChallengeId, recordCount ?? selected?.record_count ?? 500, seed);
+    },
+    onMutate: () => {
+      setError(null);
+      setStatusMessage("Generating challenge and locking ground truth");
+    },
+    onSuccess: (result) => {
+      setWorld(result);
+      setPreview(result);
+      setAudit(null);
+      setAssurance(null);
+      setRedTeam(null);
+      setComparison(null);
+      setSelectedCase(null);
+      setActivePage("home");
+      setStatusMessage("Financial batch ready. Ground truth locked.");
+    },
+    onError: (err) => {
+      setError(err);
+      setStatusMessage("Challenge generation failed");
+    },
+  });
+
+  const assuranceMutation = useMutation({
+    mutationFn: (evaluationRunId: string) => auditraApi.assurance(evaluationRunId),
+    onSuccess: (result) => {
+      setAssurance(result);
+      setStatusMessage("Independent assurance report ready");
+    },
+    onError: (err) => {
+      setError(err);
+      setStatusMessage("Assurance scoring failed");
+    },
+  });
+
   const auditMutation = useMutation({
     mutationFn: (targetWorld: WorldBuildResult) => auditraApi.auditWorld(targetWorld.world_id),
     onMutate: () => {
@@ -190,12 +247,37 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
       setComparison(result.comparison);
       setSelectedCase(firstDifficultCase(result) ?? result.controller_run.cases[0] ?? null);
       appendRunHistory(result);
-      setActivePage("reconciliation");
-      setStatusMessage(result.survival_status);
+      setRedTeam(null);
+      setActivePage("audits");
+      setStatusMessage("Controller closed the batch. Verifying against hidden truth.");
+      void assuranceMutation.mutateAsync(result.evaluation.evaluation_run_id);
     },
     onError: (err) => {
       setError(err);
       setStatusMessage("Audit failed");
+    },
+  });
+
+  const redTeamMutation = useMutation<RedTeamResult, Error, number | undefined>({
+    mutationFn: (requestedCount) => {
+      if (!audit) throw new Error("Run the finance controller before starting a red-team retest");
+      return auditraApi.redTeam(audit.evaluation.evaluation_run_id, requestedCount ?? 200, seed + 42);
+    },
+    onMutate: () => {
+      setError(null);
+      setStatusMessage("Generating targeted attacks from the failure fingerprint");
+    },
+    onSuccess: (result) => {
+      setRedTeam(result);
+      setStatusMessage(
+        result.comparison.verdict === "SURVIVED"
+          ? "Controller survived the targeted retest"
+          : "Targeted retest confirmed a controller weakness",
+      );
+    },
+    onError: (err) => {
+      setError(err);
+      setStatusMessage("Red-team retest failed");
     },
   });
 
@@ -350,7 +432,10 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
     previewMutation.isPending ||
     buildMutation.isPending ||
     buildSpecMutation.isPending ||
+    challengeMutation.isPending ||
     auditMutation.isPending ||
+    assuranceMutation.isPending ||
+    redTeamMutation.isPending ||
     compareMutation.isPending ||
     controlledMutation.isPending ||
     reviewMutation.isPending ||
@@ -360,8 +445,14 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
     ? "Understanding"
     : buildMutation.isPending || buildSpecMutation.isPending
       ? "Generating"
+      : challengeMutation.isPending
+        ? "Building challenge"
       : auditMutation.isPending
         ? "Auditing"
+        : assuranceMutation.isPending
+          ? "Verifying"
+          : redTeamMutation.isPending
+            ? "Red teaming"
         : compareMutation.isPending || controlledMutation.isPending
           ? "Evaluating"
           : reviewMutation.isPending
@@ -395,6 +486,11 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
       preview,
       world,
       audit,
+      challenges: challengeCatalog.data?.challenges ?? [],
+      selectedChallengeId,
+      setSelectedChallengeId,
+      assurance,
+      redTeam,
       comparison,
       selectedCase,
       runHistory,
@@ -407,6 +503,7 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
       previewWorld: () => previewMutation.mutateAsync(),
       buildWorld: () => buildMutation.mutateAsync(),
       buildWorldFromSpec: (spec) => buildSpecMutation.mutateAsync(spec),
+      buildChallenge: (recordCount) => challengeMutation.mutateAsync(recordCount),
       auditWorld: (worldOverride) => {
         const target = worldOverride ?? world;
         if (!target) return Promise.reject(new Error("Build a world before auditing"));
@@ -421,6 +518,7 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
       runFiveMinuteDemo,
       breakController,
       runComparison: () => compareMutation.mutateAsync(),
+      runRedTeam: (recordCount) => redTeamMutation.mutateAsync(recordCount),
       runControlledEvaluation: (settings) => controlledMutation.mutateAsync(settings),
       selectCase,
       setSelectedCase,
@@ -429,7 +527,9 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
     [
       activePage,
       audit,
+      assurance,
       busyLabel,
+      challengeCatalog.data?.challenges,
       comparison,
       error,
       health.data?.status,
@@ -442,8 +542,10 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
       runHistory,
       seed,
       selectedCase,
+      selectedChallengeId,
       statusMessage,
       world,
+      redTeam,
     ],
   );
 

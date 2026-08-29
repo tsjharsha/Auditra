@@ -3,12 +3,12 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  background: #f6f8fb;
-  color: #111827;
+  background: #050914;
+  color: #e2e8f0;
 }
 
 * {
@@ -23,9 +23,69 @@ body,
 }
 
 body {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(246, 248, 251, 0.96)),
-    #f6f8fb;
+  background: #050914;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes softGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(79, 70, 229, 0); }
+  50% { box-shadow: 0 0 30px rgba(79, 70, 229, 0.4); }
+}
+
+@keyframes pulseGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-up {
+  animation: fadeUp 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-up-delayed {
+  animation: fadeUp 700ms cubic-bezier(0.16, 1, 0.3, 1) 150ms both;
+}
+
+.animate-fade-up-delayed-2 {
+  animation: fadeUp 700ms cubic-bezier(0.16, 1, 0.3, 1) 300ms both;
+}
+
+.animate-soft-glow {
+  animation: softGlow 2600ms ease-in-out infinite;
+}
+
+.animate-pulse-gradient {
+  background-size: 200% 200%;
+  animation: pulseGradient 4s ease infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-scale-in {
+  animation: scaleIn 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 button,
@@ -39,8 +99,29 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #0f766e;
+  outline: 2px solid #22d3ee;
   outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.25);
+  color: #ffffff;
+}
+
+* {
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+  scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }
 
 .react-flow__node {

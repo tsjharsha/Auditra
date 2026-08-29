@@ -2,7 +2,7 @@
 
 FROM FINANCIAL INTENT TO VERIFIED CONTROL.
 
-Auditra is an AI-native financial control and evaluation environment. You describe a financial world in natural language; Auditra builds a controlled synthetic finance environment, stresses it with realistic anomalies, audits it with deterministic controls plus bounded AI investigation, and then measures every decision against hidden ground truth.
+Auditra is the scenario lab for autonomous finance controllers. It generates controlled payment worlds, lets a controller close them, verifies every decision against hidden ground truth, attacks measured weaknesses, and returns a versioned assurance decision.
 
 It does not ask you to trust an AI. It measures whether you should.
 
@@ -23,7 +23,7 @@ Auditra starts one step earlier by creating controlled financial worlds, then us
 ## Solution
 
 ```text
-CREATE -> STRESS -> AUDIT -> PROVE
+GENERATE -> CLOSE -> VERIFY -> CHALLENGE -> ASSURE
 ```
 
 1. Prompt a merchant/payment world.
@@ -34,6 +34,9 @@ CREATE -> STRESS -> AUDIT -> PROVE
 6. Invoke bounded AI investigation only where useful.
 7. Verify every decision against invariant checks and evidence.
 8. Evaluate against hidden ground truth after the run.
+9. Fingerprint the controller's highest-risk failure pattern.
+10. Generate a targeted adversarial batch and retest the controller.
+11. Issue a scored deployment recommendation with unsafe-action penalties.
 
 ## Architecture
 
@@ -47,8 +50,23 @@ Core modules:
 - `backend/auditra/invariants.py`: deterministic financial safety checks.
 - `backend/auditra/evidence_graph.py`: evidence and decision graph.
 - `backend/auditra/evaluator.py`: independent ground-truth evaluation.
+- `backend/auditra/assurance.py`: challenge catalog, failure fingerprints, targeted retests, and assurance scoring.
 - `backend/auditra/postgres.py`: optional PostgreSQL persistence.
-- `frontend/`: React product UI for world building, audit, evidence, review, and evaluation.
+- `frontend/`: React Scenario Lab and Finance Controller Challenge experience.
+
+## Enterprise Challenge API
+
+The Option B workflow is available through versioned, ground-truth-safe contracts:
+
+```text
+GET  /challenges
+POST /challenges/{challenge_id}/build
+POST /worlds/{world_id}/audit
+GET  /audits/{evaluation_run_id}/assurance
+POST /audits/{evaluation_run_id}/red-team
+```
+
+The assurance report includes weighted dimensions, unsafe auto-action penalties, financial exposure, control checks, a failure fingerprint, and one of three recommendations: controlled deployment, human-supervised operation, or remediation required. Public responses never expose hidden ground-truth labels.
 
 ## AI Architecture
 

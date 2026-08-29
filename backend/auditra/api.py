@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
+from .assurance import CHALLENGES, assurance_report, challenge_spec, targeted_retest_spec
 from .financial_world import FinancialWorldSpec
 from .models import ReviewRequest, ScenarioMode, ScenarioRequest
 from .storage import AuditraStore
@@ -50,11 +51,21 @@ class SourceIngestionRequest(BaseModel):
         return value
 
 
+class ChallengeRunRequest(BaseModel):
+    record_count: Optional[int] = Field(default=None, ge=50, le=2000)
+    seed: int = 42
+
+
+class RedTeamRequest(BaseModel):
+    record_count: int = Field(default=200, ge=50, le=1000)
+    seed: int = 84
+
+
 store = AuditraStore()
 app = FastAPI(
     title="Auditra API",
-    version="0.1.0",
-    description="Autonomous financial control you can verify.",
+    version="0.3.0",
+    description="Scenario lab and independent assurance for autonomous finance controllers.",
 )
 
 app.add_middleware(
@@ -101,6 +112,29 @@ def _get_run_or_latest(run_id: Optional[str]):
 @app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "healthy", "product": "Auditra"}
+
+
+@app.get("/challenges")
+def list_challenges() -> Dict[str, Any]:
+    return {"challenges": CHALLENGES, "default_challenge_id": "settlement-reconciliation"}
+
+
+@app.post("/challenges/{challenge_id}/build")
+def build_challenge(challenge_id: str, request: ChallengeRunRequest = ChallengeRunRequest()) -> Dict[str, Any]:
+    try:
+        spec = challenge_spec(challenge_id, request.record_count, request.seed)
+        result = store.build_world_from_spec(spec)
+        payload = store.world_service.public_build_result(result)
+        payload["challenge"] = next(item for item in CHALLENGES if item["challenge_id"] == challenge_id)
+        payload["ground_truth"] = {
+            "status": "LOCKED",
+            "records": len(result.dataset.ground_truth) if result.dataset else 0,
+        }
+        return payload
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/datasets")
@@ -172,6 +206,57 @@ def audit_world(world_id: str) -> Dict[str, Any]:
         }
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/audits/{evaluation_run_id}/assurance")
+def get_assurance(evaluation_run_id: str) -> Dict[str, Any]:
+    try:
+        evaluation = store.get_evaluation_run(evaluation_run_id)
+        run = store.get_controller_run(evaluation.controller_run_id)
+        dataset = store.get_dataset(evaluation.dataset_id)
+        return assurance_report(dataset, run, evaluation)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/audits/{evaluation_run_id}/red-team")
+def red_team_audit(evaluation_run_id: str, request: RedTeamRequest = RedTeamRequest()) -> Dict[str, Any]:
+    try:
+        source_evaluation = store.get_evaluation_run(evaluation_run_id)
+        source_run = store.get_controller_run(source_evaluation.controller_run_id)
+        source_dataset = store.get_dataset(source_evaluation.dataset_id)
+        baseline = assurance_report(source_dataset, source_run, source_evaluation)
+        spec = targeted_retest_spec(source_dataset, source_evaluation, request.record_count, request.seed)
+        world = store.build_world_from_spec(spec)
+        run = store.run_controller(world.dataset_id)
+        evaluation = store.run_evaluation(world.dataset_id, run.run_id)
+        retest = assurance_report(store.get_dataset(world.dataset_id), run, evaluation)
+        return {
+            "attack_id": f"ATK_{evaluation.evaluation_run_id.removeprefix('EVAL_')}",
+            "source_evaluation_run_id": evaluation_run_id,
+            "target": baseline["failure_fingerprint"],
+            "generated_cases": request.record_count,
+            "world": store.world_service.public_build_result(world),
+            "controller_run": run.model_dump(mode="json"),
+            "evaluation": evaluation.model_dump(mode="json"),
+            "assurance": retest,
+            "comparison": {
+                "baseline_score": baseline["score"],
+                "retest_score": retest["score"],
+                "score_delta": round(retest["score"] - baseline["score"], 1),
+                "baseline_failures": len(source_evaluation.failures),
+                "retest_failures": len(evaluation.failures),
+                "verdict": (
+                    "SURVIVED"
+                    if retest["unsafe_auto_actions"] == 0 and retest["score"] >= 75
+                    else "WEAKNESS_CONFIRMED"
+                ),
+            },
+        }
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.get("/worlds/{world_id}")

@@ -1,203 +1,543 @@
-import { AlertTriangle, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
-import { Badge } from "../components/ui/Badge";
-import { Button } from "../components/ui/Button";
-import { Card, SectionHeader } from "../components/ui/Card";
-import { type Column, DataTable } from "../components/ui/DataTable";
-import { EmptyState } from "../components/ui/State";
-import { AuditProgress } from "../features/audit/AuditProgress";
-import { compact, money, pct, titleCase } from "../lib/format";
-import { attentionCases, auditHealthLabel, auditHealthRatio, auditHealthTone, caseShortExplanation, caseTitle, potentialExposure } from "../lib/product";
-import { riskTone, statusTone } from "../lib/status";
+import {
+  ArrowRight,
+  BrainCircuit,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  CircleAlert,
+  Crosshair,
+  Database,
+  Fingerprint,
+  Gauge,
+  GitCompare,
+  LockKeyhole,
+  Play,
+  RefreshCw,
+  Scale,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  Zap,
+} from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { InlineError, MetricTile, ProgressBar, StatusPill, WorkspacePanel } from "../components/WorkspaceUI";
 import { useAuditra } from "../hooks/useAuditra";
-import type { ReconciliationCase } from "../types/auditra";
+import { compact, money, pct, shortId, titleCase } from "../lib/format";
+import { attentionCases, caseShortExplanation, caseTitle, potentialExposure } from "../lib/product";
+import { cn } from "../lib/utils";
+import type { AssuranceReport, FailureRecord, ReconciliationCase, RedTeamResult } from "../types/auditra";
+
+const stages = ["Close", "Verify", "Inspect", "Challenge", "Assure"];
 
 export function AuditsPage() {
-  const { audit, world, isBusy, auditWorld, selectCase, setActivePage } = useAuditra();
+  const {
+    world,
+    audit,
+    assurance,
+    redTeam,
+    selectedCase,
+    setSelectedCase,
+    setActivePage,
+    auditWorld,
+    runRedTeam,
+    isBusy,
+    busyLabel,
+    statusMessage,
+    error,
+  } = useAuditra();
+  const [showAll, setShowAll] = useState(false);
 
-  if (!audit) {
-    return (
-      <EmptyState
-        title="No audit yet"
-        detail={world ? "Your world is ready. Start the audit to see what happened, what matters, and what needs review." : "Build a financial world first, then Auditra can audit it for you."}
-        action={
-          world ? (
-            <Button variant="primary" icon={<ShieldCheck className="h-4 w-4" />} disabled={isBusy} onClick={() => void auditWorld()}>
-              Audit this world
-            </Button>
-          ) : (
-            <Button variant="primary" onClick={() => setActivePage("worlds")}>Create a world</Button>
-          )
-        }
-      />
-    );
+  if (!world) {
+    return <EmptyState title="No challenge batch is ready" detail="Choose a finance risk and generate an immutable batch first." action="Go to Build" onAction={() => setActivePage("home")} />;
   }
 
-  const cases = attentionCases(audit);
-  const health = auditHealthRatio(audit);
-  const exposure = potentialExposure(cases);
+  if (!audit) {
+    return <ControllerLaunch />;
+  }
+
+  const exceptions = attentionCases(audit);
+  const failures = audit.evaluation.failures;
+  const focus =
+    (selectedCase && audit.controller_run.cases.find((item) => item.case_id === selectedCase.case_id)) ??
+    audit.controller_run.cases.find((item) => failures.some((failure) => failure.case_id === item.case_id)) ??
+    exceptions[0] ??
+    audit.controller_run.cases[0];
+  const focusFailure = failures.find((item) => item.case_id === focus?.case_id);
+  const visibleCases = showAll ? exceptions : exceptions.slice(0, 8);
 
   return (
-    <div className="space-y-6">
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_360px]">
-        <Card className="rounded-[32px] border-white/70 bg-[linear-gradient(135deg,rgba(34,197,94,0.08),rgba(79,70,229,0.10),rgba(255,255,255,0.96))] p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <Badge tone={auditHealthTone(audit)}>{auditHealthLabel(audit)}</Badge>
-              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">Audit complete</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-                Auditra finished reconciling this financial world and highlighted the activity that needs your attention.
-              </p>
+    <div className="space-y-7">
+      <header className="animate-fade-up border-b border-white/10 pb-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusPill accent={assurance ? recommendationAccent(assurance) : "cyan"} dot>
+                {assurance ? titleCase(assurance.recommendation) : "Independent verification"}
+              </StatusPill>
+              <StatusPill accent="slate">{shortId(audit.controller_run.run_id, 20)}</StatusPill>
             </div>
-            <Button onClick={() => setActivePage("insights")}>Open insights</Button>
+            <h1 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">Finance Controller Challenge</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400 sm:text-base">
+              The controller closed {compact(audit.controller_run.metrics.transactions_processed)} transactions. Auditra independently checked every decision against truth the controller never saw.
+            </p>
           </div>
+          <StoryRail active={redTeam ? 5 : assurance ? 4 : 2} />
+        </div>
+      </header>
 
-          <div className="mt-8 rounded-[28px] border border-white/80 bg-white/92 p-6">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Audit health</div>
-            <div className="mt-3 text-5xl font-semibold tracking-tight text-slate-950">{pct(health, 1)}</div>
-            <div className="mt-2 text-base font-medium text-slate-700">{auditHealthLabel(audit)} financial activity</div>
-            <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-100">
-              <div
-                className="h-full rounded-full bg-[linear-gradient(90deg,#22c55e_0%,#38bdf8_60%,#4f46e5_100%)]"
-                style={{ width: `${Math.max(8, Math.min(100, health * 100))}%` }}
-              />
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <MetricLike label="Transactions checked" value={compact(audit.controller_run.metrics.transactions_processed)} />
-              <MetricLike label="Need attention" value={compact(cases.length)} />
-              <MetricLike label="Potential exposure" value={money(exposure)} />
-            </div>
-          </div>
-        </Card>
+      {isBusy ? (
+        <div className="animate-pulse-gradient rounded-lg border border-cyan-400/20 bg-gradient-to-r from-cyan-400/10 via-indigo-400/10 to-cyan-400/10 px-5 py-4 text-sm text-cyan-100">
+          <span className="font-semibold">{busyLabel || "Working"}:</span> {statusMessage}
+        </div>
+      ) : null}
+      {error ? <InlineError error={error} /> : null}
 
-        <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-          <SectionHeader title="What happened" kicker="A concise read on the current audit" />
-          <div className="space-y-3">
-            <InsightRow label="Matched automatically" value={pct(audit.controller_run.metrics.automatic_resolution_rate)} tone="success" />
-            <InsightRow label="Needs review" value={pct(audit.controller_run.metrics.human_review_rate)} tone="review" />
-            <InsightRow label="Unresolved" value={pct(audit.controller_run.metrics.unresolved_rate)} tone={audit.controller_run.metrics.unresolved_rate > 0 ? "warning" : "success"} />
-            <InsightRow label="Controller accuracy" value={pct(audit.evaluation.metrics.accuracy)} tone="success" />
-          </div>
-        </Card>
+      <OutcomeSummary assurance={assurance} />
+
+      <section>
+        <SectionHeading
+          icon={<ShieldAlert />}
+          eyebrow="Exception ledger"
+          title={exceptions.length ? compact(exceptions.length) + " decisions need attention" : "No unresolved exceptions"}
+          detail="Every row is evidence-backed and traceable to the generated payment world."
+        />
+        <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(460px,1.1fr)]">
+          <WorkspacePanel className="p-0 sm:p-0">
+            <div className="max-h-[620px] overflow-y-auto">
+              {visibleCases.map((item) => (
+                <LedgerRow
+                  key={item.case_id}
+                  item={item}
+                  failure={failures.find((failure) => failure.case_id === item.case_id)}
+                  active={focus?.case_id === item.case_id}
+                  onClick={() => setSelectedCase(item)}
+                />
+              ))}
+              {!visibleCases.length ? <div className="p-8 text-center text-sm text-emerald-200">Every decision was safely resolved.</div> : null}
+            </div>
+            {exceptions.length > 8 ? (
+              <button type="button" className="w-full border-t border-white/10 px-4 py-3 text-sm font-semibold text-cyan-200 hover:bg-white/5" onClick={() => setShowAll((value) => !value)}>
+                {showAll ? "Show priority exceptions" : `Show all ${exceptions.length} exceptions`}
+              </button>
+            ) : null}
+          </WorkspacePanel>
+          {focus ? <TruthDeepDive item={focus} failure={focusFailure} /> : null}
+        </div>
       </section>
 
-      <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-        <SectionHeader title="Needs your attention" kicker={cases.length ? "Start with the most important exceptions." : "No urgent exceptions were found."} />
-        {cases.length ? (
-          <div className="grid gap-4 xl:grid-cols-3">
-            {cases.slice(0, 5).map((item) => (
-              <button
-                key={item.case_id}
-                className="rounded-[28px] border border-line bg-slate-50/80 p-5 text-left transition hover:-translate-y-0.5 hover:bg-white"
-                onClick={() => {
-                  selectCase(item.case_id);
-                  setActivePage("review");
-                }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className={`grid h-10 w-10 place-items-center rounded-2xl ${item.status === "MISSING_SETTLEMENT" || item.status === "AMOUNT_MISMATCH" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"}`}>
-                      {item.status === "MISSING_SETTLEMENT" || item.status === "AMOUNT_MISMATCH" ? <AlertTriangle className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
-                    </span>
-                    <div>
-                      <div className="text-sm font-semibold text-slate-950">{caseTitle(item)}</div>
-                      <div className="text-sm text-muted">{money(item.decision.financial_impact)} exposure</div>
-                    </div>
-                  </div>
-                  <Badge tone={riskTone(item.risk_score)}>Risk {item.risk_score.toFixed(1)}</Badge>
+      {assurance ? <RedTeamStage report={assurance} result={redTeam} onRun={() => void runRedTeam(200)} disabled={isBusy} /> : null}
+      {assurance ? <AssuranceStage report={redTeam?.assurance ?? assurance} retest={redTeam} /> : null}
+    </div>
+  );
+}
+
+function ControllerLaunch() {
+  const { world, auditWorld, setActivePage, isBusy, busyLabel, statusMessage, error } = useAuditra();
+  if (!world) return null;
+  const pipeline = [
+    ["Map relationships", "Orders, payments, refunds"],
+    ["Reconcile settlements", "Amounts, timing, fees"],
+    ["Investigate exceptions", "Bounded AI + tools"],
+    ["Verify decisions", "Evidence and invariants"],
+    ["Reveal ground truth", "Independent evaluation"],
+  ];
+  return (
+    <div className="space-y-7">
+      <header className="animate-fade-up border-b border-white/10 pb-6">
+        <StatusPill accent="emerald" dot>Batch validated / ground truth locked</StatusPill>
+        <h1 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">Can the controller safely close this batch?</h1>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400 sm:text-base">
+          It may auto-close safe transactions, explain known adjustments, or escalate uncertain decisions. It cannot access the hidden labels.
+        </p>
+      </header>
+      <WorkspacePanel className="relative overflow-hidden">
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-center">
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="grid h-12 w-12 place-items-center rounded-lg border border-indigo-400/20 bg-indigo-400/10 text-indigo-200"><BrainCircuit className="h-6 w-6" /></span>
+              <div>
+                <div className="text-xs font-semibold text-indigo-300">AI finance controller</div>
+                <h2 className="mt-1 text-xl font-semibold text-white">{world.challenge?.name ?? "Settlement reconciliation"}</h2>
+              </div>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <LaunchMetric label="Transactions" value={compact(world.summary.payments)} />
+              <LaunchMetric label="Payment volume" value={money(world.summary.payment_volume)} />
+              <LaunchMetric label="Known anomalies" value={compact(world.summary.anomalies)} hidden />
+            </div>
+            <button
+              type="button"
+              className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 px-6 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(14,165,233,0.24)] transition hover:brightness-110 disabled:opacity-50"
+              disabled={isBusy}
+              onClick={() => void auditWorld()}
+            >
+              {isBusy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current" />}
+              {isBusy ? busyLabel || "Running controller" : "Run AI finance controller"}
+            </button>
+            {isBusy ? <div className="mt-3 text-sm text-cyan-200">{statusMessage}</div> : null}
+          </div>
+          <div className="space-y-2">
+            {pipeline.map(([label, detail], index) => (
+              <div key={label} className="flex items-center gap-3 rounded-lg border border-white/[0.07] bg-black/15 p-3">
+                <span className={cn("grid h-7 w-7 shrink-0 place-items-center rounded-md text-xs font-bold", isBusy ? "animate-pulse bg-cyan-400/15 text-cyan-200" : "bg-white/5 text-slate-500")}>{index + 1}</span>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-200">{label}</div>
+                  <div className="mt-0.5 text-xs text-slate-600">{detail}</div>
                 </div>
-                <p className="mt-4 text-sm leading-6 text-muted">{caseShortExplanation(item)}</p>
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <Badge tone={statusTone(item.status)}>{titleCase(item.status)}</Badge>
-                  <span className="inline-flex items-center gap-1 text-sm font-medium text-indigo-700">
-                    Review
-                    <ArrowRight className="h-4 w-4" />
-                  </span>
-                </div>
-              </button>
+              </div>
             ))}
           </div>
-        ) : (
-          <div className="rounded-[28px] border border-emerald-200 bg-emerald-50/80 p-5">
-            <div className="flex items-center gap-2 text-emerald-900">
-              <CheckCircle2 className="h-5 w-5" />
-              <span className="font-semibold">This audit is in a healthy state.</span>
-            </div>
-            <p className="mt-2 text-sm leading-6 text-emerald-800">Auditra did not surface urgent exceptions. Open Insights if you want a deeper look at accuracy, AI value, and failure analysis.</p>
-          </div>
-        )}
-      </Card>
-
-      <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-        <SectionHeader title="Audit flow" kicker="A simple view of the work Auditra completed" />
-        <AuditProgress audit={audit} running={isBusy} />
-      </Card>
-
-      <details className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-panel">
-        <summary className="cursor-pointer text-sm font-semibold text-slate-950">View all cases</summary>
-        <div className="mt-5">
-          <DataTable rows={audit.controller_run.cases} columns={caseColumns} getRowId={(row) => row.case_id} onRowClick={(row) => selectCase(row.case_id)} />
         </div>
-      </details>
+      </WorkspacePanel>
+      {error ? <InlineError error={error} /> : null}
+      <button type="button" className="text-sm text-slate-500 hover:text-white" onClick={() => setActivePage("home")}>Back to scenario</button>
     </div>
   );
 }
 
-function MetricLike({ label, value }: { label: string; value: string }) {
+function OutcomeSummary({ assurance }: { assurance: AssuranceReport | null }) {
+  const { audit } = useAuditra();
+  if (!audit) return null;
+  const metrics = audit.controller_run.metrics;
+  const exceptions = attentionCases(audit);
+  const exposure = potentialExposure(exceptions);
   return (
-    <div className="rounded-2xl border border-line bg-slate-50/80 p-4">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="mt-2 text-xl font-semibold tracking-tight text-slate-950">{value}</div>
+    <section className="animate-fade-up-delayed">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <MetricTile label="Match rate" value={pct(metrics.match_rate, 1)} detail="Controller close rate" icon={<CheckCircle2 className="h-4 w-4" />} accent="emerald" />
+        <MetricTile label="Auto-closed" value={compact(Math.round(metrics.automatic_resolution_rate * metrics.transactions_processed))} detail={pct(metrics.automatic_resolution_rate, 1) + " of batch"} icon={<Zap className="h-4 w-4" />} accent="cyan" />
+        <MetricTile label="Escalated" value={compact(exceptions.length)} detail={pct(metrics.human_review_rate, 1) + " human review"} icon={<ShieldAlert className="h-4 w-4" />} accent={exceptions.length ? "amber" : "emerald"} />
+        <MetricTile label="Potential exposure" value={money(exposure)} detail={money(audit.evaluation.metrics.financial_impact_of_errors) + " measured error"} icon={<Scale className="h-4 w-4" />} accent={exposure ? "rose" : "emerald"} />
+        <MetricTile label="Assurance" value={assurance ? assurance.score.toFixed(1) : "..."} detail={assurance ? "Grade " + assurance.grade : "Verifying hidden truth"} icon={<Gauge className="h-4 w-4" />} accent={assurance ? recommendationAccent(assurance) : "indigo"} />
+      </div>
+    </section>
+  );
+}
+
+function StoryRail({ active }: { active: number }) {
+  return (
+    <div className="flex min-w-[300px] items-center rounded-lg border border-white/10 bg-white/[0.035] p-2">
+      {stages.map((stage, index) => (
+        <div key={stage} className="flex flex-1 items-center">
+          <div className="min-w-0 flex-1 text-center">
+            <span className={cn("mx-auto grid h-7 w-7 place-items-center rounded-md text-xs font-bold", index < active ? "bg-emerald-300 text-emerald-950" : index === active ? "bg-cyan-300 text-cyan-950" : "bg-white/5 text-slate-600")}>
+              {index < active ? <Check className="h-3.5 w-3.5" /> : index + 1}
+            </span>
+            <span className="mt-1 block truncate text-[10px] text-slate-500">{stage}</span>
+          </div>
+          {index < stages.length - 1 ? <ChevronRight className="h-3 w-3 shrink-0 text-slate-700" /> : null}
+        </div>
+      ))}
     </div>
   );
 }
 
-function InsightRow({
-  label,
-  value,
-  tone,
+function LedgerRow({
+  item,
+  failure,
+  active,
+  onClick,
 }: {
-  label: string;
-  value: string;
-  tone: "success" | "warning" | "review";
+  item: ReconciliationCase;
+  failure?: FailureRecord;
+  active: boolean;
+  onClick: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-line bg-slate-50/80 px-4 py-3">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
-      <Badge tone={tone}>{value}</Badge>
+    <button
+      type="button"
+      className={cn(
+        "grid w-full grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-white/[0.07] p-4 text-left transition last:border-0",
+        active ? "bg-cyan-400/[0.08]" : "hover:bg-white/[0.035]",
+      )}
+      onClick={onClick}
+    >
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-xs text-cyan-200">{shortId(item.payment_id, 19)}</span>
+          {failure ? <StatusPill accent="rose">Truth mismatch</StatusPill> : <StatusPill accent="amber">{titleCase(item.status)}</StatusPill>}
+        </div>
+        <div className="mt-2 text-sm font-semibold text-white">{caseTitle(item)}</div>
+        <div className="mt-1 truncate text-xs text-slate-500">{caseShortExplanation(item)}</div>
+      </div>
+      <div className="text-right">
+        <div className="text-sm font-semibold text-rose-200">{money(item.decision.financial_impact)}</div>
+        <div className="mt-2 flex items-center justify-end gap-1 text-[11px] text-slate-600">Inspect <ChevronRight className="h-3 w-3" /></div>
+      </div>
+    </button>
+  );
+}
+
+function TruthDeepDive({ item, failure }: { item: ReconciliationCase; failure?: FailureRecord }) {
+  const expected = failure?.expected ?? item.status;
+  const difference = item.decision.difference ?? item.decision.financial_impact;
+  const failedChecks = item.decision.verification?.checks.filter((check) => !check.passed) ?? [];
+  const graph = item.graph;
+  return (
+    <WorkspacePanel className="overflow-hidden border-cyan-400/15">
+      <div className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="text-xs font-semibold text-cyan-300">Ground truth verification</div>
+          <h3 className="mt-1 text-xl font-semibold text-white">{caseTitle(item)}</h3>
+          <div className="mt-2 font-mono text-xs text-slate-500">{item.payment_id}</div>
+        </div>
+        <StatusPill accent={failure ? "rose" : "emerald"}>{failure ? "Decision challenged" : "Decision verified"}</StatusPill>
+      </div>
+
+      <div className="mt-5 grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-3">
+        <TruthFact label="AI decision" value={titleCase(item.status)} tone={failure ? "amber" : "emerald"} />
+        <TruthFact label="Hidden truth" value={titleCase(expected)} tone={failure ? "rose" : "emerald"} />
+        <TruthFact label="Financial difference" value={money(difference)} tone={Number(difference) ? "rose" : "emerald"} />
+      </div>
+
+      <div className="mt-5 rounded-lg border border-white/10 bg-slate-950/55 p-4">
+        <div className="flex items-center gap-2 text-sm font-semibold text-white"><Fingerprint className="h-4 w-4 text-rose-300" /> Root cause</div>
+        <p className="mt-2 text-sm leading-6 text-slate-400">
+          {failure?.root_cause ?? item.ai_investigation?.rationale ?? caseShortExplanation(item)}
+        </p>
+      </div>
+
+      <div className="mt-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-xs font-semibold text-slate-400">Transaction evidence chain</div>
+          <span className="text-[11px] text-slate-600">{graph.nodes.length} records / {graph.edges.length} links</span>
+        </div>
+        <div className="mt-3 flex max-w-full items-center gap-2 overflow-x-auto pb-2">
+          {graph.nodes.slice(0, 6).map((node, index) => (
+            <div key={node.id} className="flex shrink-0 items-center gap-2">
+              <div className="min-w-[112px] rounded-lg border border-white/10 bg-white/[0.035] p-3">
+                <div className="text-[10px] font-semibold uppercase text-cyan-300">{node.type}</div>
+                <div className="mt-1 max-w-[130px] truncate text-xs text-slate-300">{node.label}</div>
+              </div>
+              {index < Math.min(graph.nodes.length, 6) - 1 ? <ArrowRight className="h-3.5 w-3.5 text-slate-700" /> : null}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-2">
+        {(failedChecks.length ? failedChecks : item.decision.verification?.checks.slice(0, 3) ?? []).map((check) => (
+          <div key={check.check} className="flex gap-3 rounded-lg border border-white/[0.07] p-3">
+            {check.passed ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" /> : <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />}
+            <div>
+              <div className="text-xs font-semibold text-slate-300">{titleCase(check.check)}</div>
+              <div className="mt-1 text-xs leading-5 text-slate-500">{check.detail}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </WorkspacePanel>
+  );
+}
+
+function RedTeamStage({
+  report,
+  result,
+  onRun,
+  disabled,
+}: {
+  report: AssuranceReport;
+  result: RedTeamResult | null;
+  onRun: () => void;
+  disabled: boolean;
+}) {
+  const fingerprint = report.failure_fingerprint;
+  return (
+    <section>
+      <SectionHeading
+        icon={<Crosshair />}
+        eyebrow="Red team"
+        title="Attack the controller where it is weakest"
+        detail="Auditra turns the measured failure fingerprint into a new targeted, reproducible test batch."
+      />
+      <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <WorkspacePanel className="border-rose-400/15">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <StatusPill accent={fingerprint.severity === "CRITICAL" ? "rose" : fingerprint.severity === "LOW" ? "emerald" : "amber"}>
+                {fingerprint.severity} fingerprint
+              </StatusPill>
+              <h3 className="mt-4 text-2xl font-semibold text-white">{titleCase(fingerprint.pattern)}</h3>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{fingerprint.root_cause}</p>
+            </div>
+            <div className="grid min-w-[190px] grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10">
+              <MiniFact label="Observed" value={compact(fingerprint.frequency)} />
+              <MiniFact label="Exposure" value={money(fingerprint.exposure)} />
+            </div>
+          </div>
+          <div className="mt-5">
+            <div className="text-xs font-semibold text-slate-500">Targeted attack vectors</div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {fingerprint.target_anomalies.map((anomaly) => <StatusPill key={anomaly} accent="rose">{titleCase(anomaly)}</StatusPill>)}
+            </div>
+          </div>
+          {!result ? (
+            <button
+              type="button"
+              className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-lg bg-rose-500 px-5 text-sm font-semibold text-white shadow-[0_14px_36px_rgba(244,63,94,0.18)] transition hover:bg-rose-400 disabled:opacity-50"
+              disabled={disabled}
+              onClick={onRun}
+            >
+              {disabled ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Target className="h-4 w-4" />}
+              Attack with 200 targeted cases
+            </button>
+          ) : (
+            <div className="mt-6 rounded-lg border border-white/10 bg-black/20 p-4 text-sm text-slate-300">
+              Attack <span className="font-mono text-cyan-200">{result.attack_id}</span> generated and independently scored.
+            </div>
+          )}
+        </WorkspacePanel>
+        {result ? <RetestComparison result={result} /> : <AttackPreview />}
+      </div>
+    </section>
+  );
+}
+
+function RetestComparison({ result }: { result: RedTeamResult }) {
+  const comparison = result.comparison;
+  const survived = comparison.verdict === "SURVIVED";
+  return (
+    <WorkspacePanel className={survived ? "border-emerald-400/20" : "border-rose-400/20"}>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold text-cyan-300">Targeted retest</div>
+          <h3 className="mt-1 text-xl font-semibold text-white">{survived ? "Controller survived" : "Weakness confirmed"}</h3>
+        </div>
+        <StatusPill accent={survived ? "emerald" : "rose"}>{titleCase(comparison.verdict)}</StatusPill>
+      </div>
+      <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <ScoreBlock label="Original batch" score={comparison.baseline_score} failures={comparison.baseline_failures} />
+        <ArrowRight className="h-5 w-5 text-slate-700" />
+        <ScoreBlock label="Targeted attack" score={comparison.retest_score} failures={comparison.retest_failures} />
+      </div>
+      <div className="mt-5">
+        <div className="flex justify-between text-xs text-slate-500"><span>Adversarial assurance</span><span>{comparison.retest_score.toFixed(1)} / 100</span></div>
+        <div className="mt-2"><ProgressBar value={comparison.retest_score / 100} accent={survived ? "emerald" : "rose"} /></div>
+      </div>
+      <p className="mt-5 text-xs leading-5 text-slate-500">
+        A lower targeted score is not hidden: it proves the evaluation found a real control boundary before production.
+      </p>
+    </WorkspacePanel>
+  );
+}
+
+function AttackPreview() {
+  return (
+    <WorkspacePanel>
+      <div className="grid h-full min-h-[280px] place-items-center text-center">
+        <div>
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-lg border border-rose-400/20 bg-rose-400/10 text-rose-300"><Fingerprint className="h-7 w-7" /></span>
+          <h3 className="mt-4 font-semibold text-white">Failure-directed generation</h3>
+          <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-slate-500">New cases preserve hidden truth while increasing the exact anomaly mix linked to the observed weakness.</p>
+        </div>
+      </div>
+    </WorkspacePanel>
+  );
+}
+
+function AssuranceStage({ report, retest }: { report: AssuranceReport; retest: RedTeamResult | null }) {
+  const tone = recommendationAccent(report);
+  return (
+    <section>
+      <SectionHeading
+        icon={<ShieldCheck />}
+        eyebrow="Assurance report"
+        title={retest ? "Final controller boundary" : "Initial deployment decision"}
+        detail="A versioned score derived from accuracy, safe autonomy, escalation, anomaly recall, financial impact, and evidence coverage."
+      />
+      <div className="mt-4 overflow-hidden rounded-lg border border-white/10 bg-slate-900/70">
+        <div className="grid xl:grid-cols-[340px_minmax(0,1fr)]">
+          <div className={cn("grid place-items-center border-b border-white/10 p-8 text-center xl:border-b-0 xl:border-r", tone === "emerald" ? "bg-emerald-400/[0.06]" : tone === "rose" ? "bg-rose-400/[0.06]" : "bg-amber-400/[0.06]")}>
+            <div>
+              <div className="text-xs font-semibold uppercase text-slate-500">Auditra assurance score</div>
+              <div className="mt-4 text-7xl font-semibold text-white">{report.score.toFixed(1)}</div>
+              <div className="mt-2 text-sm text-slate-500">Grade {report.grade} / 100</div>
+              <StatusPill accent={tone} dot>{titleCase(report.recommendation)}</StatusPill>
+              <p className="mx-auto mt-4 max-w-xs text-xs leading-5 text-slate-500">{report.recommendation_detail}</p>
+            </div>
+          </div>
+          <div className="p-5 sm:p-7">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {Object.entries(report.dimensions).map(([dimension, value]) => (
+                <div key={dimension}>
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="font-medium text-slate-400">{titleCase(dimension)}</span>
+                    <span className="font-semibold text-white">{pct(value, 1)}</span>
+                  </div>
+                  <div className="mt-2"><ProgressBar value={value} accent={value >= 0.9 ? "emerald" : value >= 0.75 ? "amber" : "rose"} /></div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-7 grid gap-2 sm:grid-cols-2">
+              {report.controls.map((control) => (
+                <div key={control.control} className="flex gap-3 rounded-lg border border-white/[0.07] bg-black/15 p-3">
+                  {control.status === "PASSED" ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" /> : <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />}
+                  <div>
+                    <div className="text-xs font-semibold text-slate-200">{control.control}</div>
+                    <div className="mt-1 text-[11px] leading-5 text-slate-500">{control.detail}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-[11px] text-slate-600">
+              <span>Report {report.report_id}</span>
+              <span>Model {report.model_version}</span>
+              <span>{report.unsafe_auto_actions} unsafe auto-actions</span>
+              <span>{money(report.unsafe_exposure)} unsafe exposure</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SectionHeading({ icon, eyebrow, title, detail }: { icon: ReactNode; eyebrow: string; title: string; detail: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-cyan-400/20 bg-cyan-400/10 text-cyan-300 [&>svg]:h-5 [&>svg]:w-5">{icon}</span>
+      <div>
+        <div className="text-xs font-semibold text-cyan-300">{eyebrow}</div>
+        <h2 className="mt-1 text-xl font-semibold text-white">{title}</h2>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">{detail}</p>
+      </div>
     </div>
   );
 }
 
-const caseColumns: Column<ReconciliationCase>[] = [
-  {
-    key: "case",
-    header: "Case",
-    value: (row) => caseTitle(row),
-    sortValue: (row) => row.status,
-  },
-  {
-    key: "payment",
-    header: "Payment",
-    value: (row) => row.payment_id,
-    sortValue: (row) => row.payment_id,
-    className: "font-mono text-xs",
-  },
-  {
-    key: "status",
-    header: "Status",
-    value: (row) => <Badge tone={statusTone(row.status)}>{titleCase(row.status)}</Badge>,
-    sortValue: (row) => row.status,
-  },
-  {
-    key: "impact",
-    header: "Exposure",
-    value: (row) => money(row.decision.financial_impact),
-    sortValue: (row) => Number(row.decision.financial_impact),
-  },
-  {
-    key: "risk",
-    header: "Risk",
-    value: (row) => <Badge tone={riskTone(row.risk_score)}>Risk {row.risk_score.toFixed(1)}</Badge>,
-    sortValue: (row) => row.risk_score,
-  },
-];
+function EmptyState({ title, detail, action, onAction }: { title: string; detail: string; action: string; onAction: () => void }) {
+  return (
+    <WorkspacePanel>
+      <div className="py-16 text-center">
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-lg border border-indigo-400/20 bg-indigo-400/10 text-indigo-300"><Database className="h-7 w-7" /></span>
+        <h1 className="mt-5 text-2xl font-semibold text-white">{title}</h1>
+        <p className="mt-2 text-sm text-slate-500">{detail}</p>
+        <button type="button" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-lg bg-white px-5 text-sm font-semibold text-slate-950" onClick={onAction}>{action}<ArrowRight className="h-4 w-4" /></button>
+      </div>
+    </WorkspacePanel>
+  );
+}
+
+function LaunchMetric({ label, value, hidden = false }: { label: string; value: string; hidden?: boolean }) {
+  return <div className="rounded-lg border border-white/10 bg-black/15 p-4"><div className="text-xs text-slate-500">{label}</div><div className={cn("mt-2 text-lg font-semibold", hidden ? "text-amber-200" : "text-white")}>{value}</div></div>;
+}
+
+function TruthFact({ label, value, tone }: { label: string; value: string; tone: "emerald" | "amber" | "rose" }) {
+  const color = tone === "emerald" ? "text-emerald-200" : tone === "rose" ? "text-rose-200" : "text-amber-200";
+  return <div className="bg-slate-950/80 p-4"><div className="text-xs text-slate-500">{label}</div><div className={cn("mt-2 text-sm font-semibold", color)}>{value}</div></div>;
+}
+
+function MiniFact({ label, value }: { label: string; value: string }) {
+  return <div className="bg-slate-950/70 p-3 text-center"><div className="text-[10px] text-slate-600">{label}</div><div className="mt-1 text-sm font-semibold text-white">{value}</div></div>;
+}
+
+function ScoreBlock({ label, score, failures }: { label: string; score: number; failures: number }) {
+  return <div className="rounded-lg border border-white/10 bg-black/15 p-4 text-center"><div className="text-[10px] text-slate-500">{label}</div><div className="mt-2 text-2xl font-semibold text-white">{score.toFixed(1)}</div><div className="mt-1 text-[11px] text-rose-300">{failures} failures</div></div>;
+}
+
+function recommendationAccent(report: AssuranceReport): "emerald" | "amber" | "rose" {
+  if (report.recommendation === "CONTROLLED_DEPLOYMENT") return "emerald";
+  if (report.recommendation === "HUMAN_SUPERVISED") return "amber";
+  return "rose";
+}

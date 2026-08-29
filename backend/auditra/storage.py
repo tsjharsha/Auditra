@@ -74,6 +74,13 @@ class AuditraStore:
                 raise KeyError(f"world not found: {world_id}")
             return self.worlds[world_id]
 
+    def get_world_for_dataset(self, dataset_id: str) -> FinancialWorldBuildResult:
+        with self._lock:
+            for world in self.worlds.values():
+                if world.dataset_id == dataset_id:
+                    return world
+            raise KeyError(f"world not found for dataset: {dataset_id}")
+
     def _store_world_result(self, result: FinancialWorldBuildResult) -> None:
         self.worlds[result.world_id] = result
         if result.dataset:

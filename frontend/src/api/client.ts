@@ -1,14 +1,17 @@
 import type {
   AuditWorldResult,
+  AssuranceReport,
+  ChallengeDefinition,
   ControllerComparison,
   FinancialWorldSpec,
   ReviewAction,
+  RedTeamResult,
   ScenarioMode,
   WorldBuildResult,
   WorldPreview,
 } from "../types/auditra";
 
-const API_BASE = import.meta.env.VITE_AUDITRA_API_BASE ?? "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_AUDITRA_API_BASE ?? "http://127.0.0.1:8002";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -27,6 +30,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const auditraApi = {
   health: () => request<{ status: string; product: string }>("/health"),
+  challenges: () =>
+    request<{ challenges: ChallengeDefinition[]; default_challenge_id: string }>("/challenges"),
+  buildChallenge: (challengeId: string, recordCount: number, seed: number) =>
+    request<WorldBuildResult>(`/challenges/${encodeURIComponent(challengeId)}/build`, {
+      method: "POST",
+      body: JSON.stringify({ record_count: recordCount, seed }),
+    }),
   previewWorld: (prompt: string, seed: number) =>
     request<WorldPreview>("/worlds/preview", {
       method: "POST",
@@ -42,7 +52,17 @@ export const auditraApi = {
       method: "POST",
       body: JSON.stringify(spec),
     }),
-  auditWorld: (worldId: string) => request<AuditWorldResult>(`/worlds/${encodeURIComponent(worldId)}/audit`, { method: "POST" }),
+  auditWorld: (worldId: string) =>
+    request<AuditWorldResult>(`/worlds/${encodeURIComponent(worldId)}/audit`, {
+      method: "POST",
+    }),
+  assurance: (evaluationRunId: string) =>
+    request<AssuranceReport>(`/audits/${encodeURIComponent(evaluationRunId)}/assurance`),
+  redTeam: (evaluationRunId: string, recordCount = 200, seed = 84) =>
+    request<RedTeamResult>(`/audits/${encodeURIComponent(evaluationRunId)}/red-team`, {
+      method: "POST",
+      body: JSON.stringify({ record_count: recordCount, seed }),
+    }),
   compare: (body: { dataset_id?: string; mode?: ScenarioMode; record_count?: number; seed?: number }) =>
     request<ControllerComparison>("/evaluation/compare", {
       method: "POST",

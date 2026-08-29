@@ -136,6 +136,8 @@ export interface WorldBuildResult {
   summary: WorldSummary;
   dataset_id: string;
   dataset: VisibleDataset | null;
+  challenge?: ChallengeDefinition;
+  ground_truth?: { status: "LOCKED"; records: number };
 }
 
 export interface WorldPreview {
@@ -412,6 +414,66 @@ export interface AuditWorldResult {
   survival_status: string;
 }
 
+export interface ChallengeDefinition {
+  challenge_id: string;
+  name: string;
+  description: string;
+  risk: string;
+  recommended: boolean;
+  record_count: number;
+  anomaly_mode: AnomalyMode;
+  accent: "cyan" | "rose" | "amber" | "indigo";
+}
+
+export interface FailureFingerprint {
+  pattern: string;
+  expected_status?: string | null;
+  frequency: number;
+  severity: "LOW" | "HIGH" | "CRITICAL";
+  exposure: string;
+  root_cause: string;
+  target_anomalies: string[];
+}
+
+export interface AssuranceReport {
+  report_id: string;
+  model_version: string;
+  dataset_id: string;
+  controller_run_id: string;
+  evaluation_run_id: string;
+  score: number;
+  grade: string;
+  recommendation: "CONTROLLED_DEPLOYMENT" | "HUMAN_SUPERVISED" | "REMEDIATION_REQUIRED";
+  recommendation_detail: string;
+  dimensions: Record<string, number>;
+  weights: Record<string, number>;
+  unsafe_auto_actions: number;
+  unsafe_auto_action_penalty: number;
+  unsafe_exposure: string;
+  measured_error_impact: string;
+  failure_fingerprint: FailureFingerprint;
+  controls: Array<{ control: string; status: "PASSED" | "REVIEW" | "FAILED"; detail: string }>;
+}
+
+export interface RedTeamResult {
+  attack_id: string;
+  source_evaluation_run_id: string;
+  target: FailureFingerprint;
+  generated_cases: number;
+  world: WorldBuildResult;
+  controller_run: ControllerRun;
+  evaluation: EvaluationRun;
+  assurance: AssuranceReport;
+  comparison: {
+    baseline_score: number;
+    retest_score: number;
+    score_delta: number;
+    baseline_failures: number;
+    retest_failures: number;
+    verdict: "SURVIVED" | "WEAKNESS_CONFIRMED";
+  };
+}
+
 export type PageId =
   | "home"
   | "worlds"
@@ -429,4 +491,4 @@ export type PageId =
   | "controller-runs"
   | "audit-trail";
 
-export type PrimaryPageId = "home" | "worlds" | "audits" | "review" | "insights" | "settings";
+export type PrimaryPageId = "home" | "audits";
