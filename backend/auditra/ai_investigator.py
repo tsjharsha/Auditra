@@ -7,7 +7,8 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 from .agent_tools import InvestigationTools, ToolBudgetExceeded
-from .ai_provider import OfflineStructuredProvider, OpenAIProvider, StructuredInvestigationProvider
+from .ai_provider import StructuredInvestigationProvider, runtime_investigation_provider
+from .llm import AI_UNAVAILABLE, OFFLINE_AI
 from .models import (
     AIInvestigationResult,
     FeeRule,
@@ -58,12 +59,7 @@ class AIInvestigationAgent:
     max_model_tool_plan_steps = 24
 
     def __init__(self, provider: Optional[StructuredInvestigationProvider] = None):
-        if provider is not None:
-            self.provider = provider
-        elif os.getenv("AUDITRA_USE_OPENAI_INVESTIGATOR") == "1":
-            self.provider = OpenAIProvider()
-        else:
-            self.provider = OfflineStructuredProvider()
+        self.provider = provider or runtime_investigation_provider()
 
     def investigate(
         self,
@@ -155,11 +151,17 @@ class AIInvestigationAgent:
 
         usage = proposal.get("usage")
         llm_calls = int(getattr(usage, "llm_calls", 0))
-        input_tokens = int(getattr(usage, "input_tokens", 0))
-        output_tokens = int(getattr(usage, "output_tokens", 0))
-        estimated_cost = Decimal(str(getattr(usage, "estimated_cost_usd", "0.00")))
+        input_tokens = getattr(usage, "input_tokens", None)
+        output_tokens = getattr(usage, "output_tokens", None)
+        total_tokens = getattr(usage, "total_tokens", None)
+        estimated_cost_raw = getattr(usage, "estimated_cost_usd", None)
+        estimated_cost = Decimal(str(estimated_cost_raw)) if estimated_cost_raw is not None else None
         provider_attempts = int(getattr(usage, "attempts", 0))
         provider_latency_ms = float(getattr(usage, "latency_ms", 0.0))
+        provider_name = str(proposal.get("provider") or self.provider.provider_name)
+        model_name = str(proposal.get("model") or self.provider.model_name)
+        execution_mode = str(proposal.get("execution_mode") or (OFFLINE_AI if llm_calls == 0 else "AI_ASSISTED"))
+        fallback_reason = proposal.get("fallback_reason")
         finished_at = now_utc()
         duration_ms = (time.perf_counter() - started_perf) * 1000
         failed_count = len(failed_invariants)
@@ -171,19 +173,23 @@ class AIInvestigationAgent:
             payment_id=payment.payment_id,
             case_id=tools.case_id,
             objective="Select evidence-backed hypotheses and safe tool calls for this reconciliation case.",
-            provider=self.provider.provider_name,
-            model=self.provider.model_name,
-            mode="ai_assisted_offline" if llm_calls == 0 else "ai_assisted_llm",
-            prompt_version=self.provider.prompt_version,
+            provider=provider_name,
+            model=model_name,
+            mode=execution_mode,
+            prompt_version=str(proposal.get("prompt_version") or self.provider.prompt_version),
             started_at=started_at,
             finished_at=finished_at,
             duration_ms=round(duration_ms, 4),
             llm_calls=llm_calls,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
-            estimated_cost_usd=money(estimated_cost),
+            total_tokens=total_tokens,
+            estimated_cost_usd=money(estimated_cost) if estimated_cost is not None else Decimal("0.00"),
+            fallback_reason=str(fallback_reason) if fallback_reason else None,
+            response_id=proposal.get("response_id"),
             provider_attempts=provider_attempts,
             provider_latency_ms=round(provider_latency_ms, 4),
+            provider_trace=proposal.get("provider_trace", []),
             available_tools=sorted(self.model_tool_allowlist),
             verification_requirements=proposal.get("verification_requirements", []),
             max_tool_calls=tools.max_calls,
@@ -208,6 +214,7 @@ class AIInvestigationAgent:
                 "deterministic_verification_passed": verification_passed,
                 "ai_may_override_arithmetic": False,
                 "tool_plan_steps_requested": sum(len(steps) for steps in tool_plan.values()),
+                "fallback_reason": fallback_reason,
             },
             escalation_reason=escalation_reason,
             tool_call_count=len(tools.calls) - initial_tool_count,
@@ -231,14 +238,33 @@ class AIInvestigationAgent:
             objective="Select evidence-backed hypotheses and safe tool calls for this reconciliation case.",
             provider=self.provider.provider_name,
             model=self.provider.model_name,
-            mode="ai_unavailable",
+            mode=AI_UNAVAILABLE,
             prompt_version=self.provider.prompt_version,
             started_at=started_at,
             finished_at=finished_at,
             duration_ms=round((time.perf_counter() - started_perf) * 1000, 4),
             ai_unavailable=True,
-            provider_error=str(exc)[:300],
-            provider_attempts=1,
+            provider_error=self._safe_provider_error(exc),
+            provider_attempts=int(getattr(exc, "attempts", 1)),
+            provider_latency_ms=round(float(getattr(exc, "latency_ms", 0.0)), 4),
+            provider_trace=[
+                {
+                    "execution_mode": AI_UNAVAILABLE,
+                    "provider": self.provider.provider_name,
+                    "model": self.provider.model_name,
+                    "prompt_version": self.provider.prompt_version,
+                    "timestamp": getattr(exc, "timestamp", None),
+                    "latency_ms": round(float(getattr(exc, "latency_ms", 0.0)), 4),
+                    "attempts": int(getattr(exc, "attempts", 1)),
+                    "llm_calls": 0,
+                    "input_tokens": None,
+                    "output_tokens": None,
+                    "total_tokens": None,
+                    "cost_usd": None,
+                    "success": False,
+                    "failure_type": getattr(exc, "failure_type", type(exc).__name__),
+                }
+            ],
             available_tools=sorted(self.model_tool_allowlist),
             verification_requirements=["Escalate because the configured AI provider did not return a valid typed plan."],
             max_tool_calls=tools.max_calls,
@@ -256,6 +282,14 @@ class AIInvestigationAgent:
             escalation_reason="AI_UNAVAILABLE",
             tool_call_count=0,
         )
+
+    def _safe_provider_error(self, exc: Exception) -> str:
+        detail = str(exc)[:300]
+        for variable in ("GROQ_API_KEY", "OPENAI_API_KEY"):
+            secret = os.getenv(variable)
+            if secret:
+                detail = detail.replace(secret, "[redacted]")
+        return detail
 
     def _group_tool_plan(self, tool_plan: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
         grouped: Dict[str, List[Dict[str, Any]]] = {}

@@ -154,6 +154,7 @@ class UnderstandingStep(AuditraModel):
     step: str
     status: str = "COMPLETED"
     detail: str = ""
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 class WorldValidationCheck(AuditraModel):

@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 from .assurance import CHALLENGES, assurance_report, challenge_spec, targeted_retest_spec
 from .financial_world import FinancialWorldSpec
 from .models import ReviewRequest, ScenarioMode, ScenarioRequest
+from .runtime import controller_execution_metadata, public_controller_run, runtime_ai_status
 from .storage import AuditraStore
 
 
@@ -64,7 +65,7 @@ class RedTeamRequest(BaseModel):
 store = AuditraStore()
 app = FastAPI(
     title="Auditra API",
-    version="0.3.0",
+    version="0.4.0",
     description="Scenario lab and independent assurance for autonomous finance controllers.",
 )
 
@@ -110,8 +111,8 @@ def _get_run_or_latest(run_id: Optional[str]):
 
 
 @app.get("/health")
-def health() -> Dict[str, str]:
-    return {"status": "healthy", "product": "Auditra"}
+def health() -> Dict[str, Any]:
+    return {"status": "healthy", "product": "Auditra", "ai": runtime_ai_status()}
 
 
 @app.get("/challenges")
@@ -196,10 +197,14 @@ def audit_world(world_id: str) -> Dict[str, Any]:
         world = store.get_world(world_id)
         controller_run = store.run_controller(world.dataset_id)
         evaluation = store.run_evaluation(world.dataset_id, controller_run.run_id)
-        comparison = store.compare_controllers(world.dataset_id)
+        comparison = store.compare_controllers(
+            world.dataset_id,
+            ai_run=controller_run,
+            ai_evaluation=evaluation,
+        )
         return {
             "world": store.world_service.public_build_result(world),
-            "controller_run": controller_run.model_dump(mode="json"),
+            "controller_run": public_controller_run(controller_run),
             "evaluation": evaluation.model_dump(mode="json"),
             "comparison": comparison,
             "survival_status": "CONTROLLER SURVIVED" if not evaluation.failures else f"CONTROLLER FAILED {len(evaluation.failures)} CASES",
@@ -237,7 +242,7 @@ def red_team_audit(evaluation_run_id: str, request: RedTeamRequest = RedTeamRequ
             "target": baseline["failure_fingerprint"],
             "generated_cases": request.record_count,
             "world": store.world_service.public_build_result(world),
-            "controller_run": run.model_dump(mode="json"),
+            "controller_run": public_controller_run(run),
             "evaluation": evaluation.model_dump(mode="json"),
             "assurance": retest,
             "comparison": {
@@ -288,7 +293,7 @@ def create_controller_run(request: ControllerRunRequest) -> Dict[str, Any]:
             )
             dataset_id = dataset.dataset_id
         run = store.run_controller(dataset_id)
-        return run.model_dump(mode="json")
+        return public_controller_run(run)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -296,7 +301,7 @@ def create_controller_run(request: ControllerRunRequest) -> Dict[str, Any]:
 @app.get("/controller/runs/{run_id}")
 def get_controller_run(run_id: str) -> Dict[str, Any]:
     try:
-        return store.get_controller_run(run_id).model_dump(mode="json")
+        return public_controller_run(store.get_controller_run(run_id))
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -463,6 +468,7 @@ def demo_mode(request: ScenarioRequest = ScenarioRequest(mode=ScenarioMode.MIXED
         "controller_run": {
             "run_id": controller_run.run_id,
             "metrics": controller_run.metrics.model_dump(mode="json"),
+            "execution": controller_execution_metadata(controller_run),
         },
         "evaluation": evaluation.model_dump(mode="json"),
         "survival_status": "CONTROLLER SURVIVED" if not evaluation.failures else f"CONTROLLER FAILED {len(evaluation.failures)} CASES",

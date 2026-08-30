@@ -341,13 +341,17 @@ class AIInvestigationResult(AuditraModel):
     finished_at: datetime
     duration_ms: float
     llm_calls: int = 0
-    input_tokens: int = 0
-    output_tokens: int = 0
-    estimated_cost_usd: Decimal = Decimal("0.00")
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    total_tokens: Optional[int] = None
+    estimated_cost_usd: Optional[Decimal] = Decimal("0.00")
     ai_unavailable: bool = False
     provider_error: Optional[str] = None
+    fallback_reason: Optional[str] = None
+    response_id: Optional[str] = None
     provider_attempts: int = 0
     provider_latency_ms: float = 0.0
+    provider_trace: List[Dict[str, Any]] = Field(default_factory=list)
     available_tools: List[str] = Field(default_factory=list)
     verification_requirements: List[str] = Field(default_factory=list)
     max_tool_calls: int = 0
@@ -367,7 +371,9 @@ class AIInvestigationResult(AuditraModel):
 
     @field_validator("estimated_cost_usd")
     @classmethod
-    def quantize_ai_cost(cls, value: Decimal) -> Decimal:
+    def quantize_ai_cost(cls, value: Optional[Decimal]) -> Optional[Decimal]:
+        if value is None:
+            return None
         return money(value)
 
 

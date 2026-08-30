@@ -1,313 +1,35 @@
-import { useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { FlaskConical, ShieldAlert, TrendingUp } from "lucide-react";
-import { Badge } from "../components/ui/Badge";
-import { Button } from "../components/ui/Button";
-import { Card, SectionHeader } from "../components/ui/Card";
-import { type Column, DataTable } from "../components/ui/DataTable";
-import { Field, Input, Select } from "../components/ui/Field";
-import { Tabs } from "../components/ui/Tabs";
-import { EmptyState } from "../components/ui/State";
-import { compact, money, ms, pct, titleCase } from "../lib/format";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { BarChart3, FlaskConical, Gauge, TrendingUp } from "lucide-react";
+import { InlineError, MetricTile, SectionTitle, SegmentedTabs, StatusPill, WorkspacePanel } from "../components/WorkspaceUI";
+import { useAuditra } from "../hooks/useAuditra";
+import { compact, money, pct, titleCase } from "../lib/format";
 import { attentionCases, potentialExposure } from "../lib/product";
-import { statusTone } from "../lib/status";
-import { useAuditra, type ControlledEvaluationSettings } from "../hooks/useAuditra";
-import type { AnomalyMode, FailureRecord, ReconciliationCase } from "../types/auditra";
+import { useState } from "react";
+import type { AnomalyMode } from "../types/auditra";
 
-type InsightTab = "overview" | "baseline" | "failures" | "performance";
-
-const initialRates: Record<string, string> = {
-  AMOUNT_MISMATCH: "0.0400",
-  MISSING_SETTLEMENT: "0.0300",
-  DUPLICATE_PAYMENT: "0.0200",
-  FEE_MISMATCH: "0.0200",
-  REFUND_MISMATCH: "0.0200",
-  PARTIAL_SETTLEMENT: "0.0300",
-  TIMING_MISMATCH: "0.0200",
-  CONFLICTING_EVIDENCE: "0.0200",
-  CURRENCY_MISMATCH: "0.0100",
-  ENTITY_LINK_FAILURE: "0.0100",
-};
+type Tab = "patterns" | "evaluation" | "challenge";
 
 export function InsightsPage() {
-  const { audit, comparison, runComparison, breakController, runControlledEvaluation, selectCase, runHistory, isBusy } = useAuditra();
-  const [tab, setTab] = useState<InsightTab>("overview");
-  const [settings, setSettings] = useState<ControlledEvaluationSettings>({
-    recordCount: 500,
-    seed: 91,
-    anomalyMode: "STRESSED",
-    anomalyRates: initialRates,
-  });
-
-  if (!audit) {
-    return <EmptyState title="No insights yet" detail="Run an audit first. Auditra will turn the result into useful insights about exposure, quality, and review load." />;
-  }
-
-  const comparisonRows = comparison?.comparison ?? audit.comparison.comparison ?? [];
-  const aiRow = comparisonRows.find((row) => row.mode === "ai_assisted");
-  const baseRow = comparisonRows.find((row) => row.mode === "deterministic_only");
+  const { audit, comparison, assurance, redTeam, runComparison, runRedTeam, breakController, isBusy, error, setActivePage } = useAuditra();
+  const [tab, setTab] = useState<Tab>("patterns");
+  if (!audit) return <Empty onClick={() => setActivePage("audits")} />;
   const attention = attentionCases(audit);
   const exposure = potentialExposure(attention);
-  const topIssue = attention[0];
-  const exposureByStatus = Object.entries(
-    attention.reduce<Record<string, number>>((acc, item) => {
-      acc[item.status] = (acc[item.status] ?? 0) + Number(item.decision.financial_impact ?? 0);
-      return acc;
-    }, {}),
-  ).map(([status, value]) => ({
-    status: titleCase(status),
-    exposure: Number(value.toFixed(2)),
-  }));
-  const failureData = Object.entries(audit.evaluation.metrics.failure_taxonomy).map(([name, count]) => ({
-    name: titleCase(name),
-    count,
-  }));
+  const exposureData = Object.entries(attention.reduce<Record<string, number>>((acc, item) => { acc[item.status] = (acc[item.status] ?? 0) + Number(item.decision.financial_impact ?? 0); return acc; }, {})).map(([status, value]) => ({ name: titleCase(status), value: Number(value.toFixed(2)) }));
+  const failureData = Object.entries(audit.evaluation.metrics.failure_taxonomy).map(([name, count]) => ({ name: titleCase(name), value: count }));
+  const rows = comparison?.comparison ?? audit.comparison.comparison;
 
-  return (
-    <div className="space-y-6">
-      <section className="grid gap-4 xl:grid-cols-3">
-        <SummaryTile
-          title="Where problems are happening"
-          value={topIssue ? caseInsight(topIssue.status) : "Healthy activity"}
-          detail={topIssue ? `${money(topIssue.decision.financial_impact)} is the largest single exposure in the current audit.` : "Auditra did not surface a major exception category."}
-        />
-        <SummaryTile
-          title="What needs attention"
-          value={`${compact(attention.length)} cases`}
-          detail={attention.length ? `${money(exposure)} of potential exposure is concentrated in the current queue.` : "No urgent review queue is open right now."}
-        />
-        <SummaryTile
-          title="Controller value"
-          value={aiRow && baseRow ? pct(aiRow.metrics.accuracy - baseRow.metrics.accuracy, 2) : pct(audit.evaluation.metrics.accuracy, 1)}
-          detail={aiRow && baseRow ? "Accuracy lift versus the deterministic baseline on the same dataset." : "Run AI vs baseline to quantify the lift."}
-        />
-      </section>
-
-      <Tabs
-        tabs={[
-          { id: "overview", label: "Overview" },
-          { id: "baseline", label: "AI vs Baseline" },
-          { id: "failures", label: "Failures", count: audit.evaluation.failures.length },
-          { id: "performance", label: "Performance" },
-        ]}
-        active={tab}
-        onChange={(next) => setTab(next as InsightTab)}
-      />
-
-      {tab === "overview" ? (
-        <div className="grid gap-4 xl:grid-cols-2">
-          <ChartCard title="Where exposure is coming from" kicker="Financial exposure grouped by issue type">
-            {exposureByStatus.length ? <ExposureChart data={exposureByStatus} /> : <EmptyState title="No exposure chart" detail="There are no active exception categories in this audit." />}
-          </ChartCard>
-          <ChartCard title="What failed most often" kicker="Failure categories surfaced by evaluation">
-            {failureData.length ? <FailureChart data={failureData} /> : <EmptyState title="No failure analysis" detail="This evaluation did not produce a failure taxonomy." />}
-          </ChartCard>
-        </div>
-      ) : null}
-
-      {tab === "baseline" ? (
-        <div className="space-y-4">
-          <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-            <SectionHeader title="AI vs baseline" kicker="Compare Auditra's AI-assisted mode against the deterministic controller on the same dataset" action={<Button disabled={isBusy} onClick={() => void runComparison()}>Run comparison</Button>} />
-            {comparisonRows.length ? (
-              <div className="grid gap-4 lg:grid-cols-2">
-                {comparisonRows.map((row) => (
-                  <div key={row.mode} className="rounded-[24px] border border-line bg-slate-50/80 p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="text-lg font-semibold text-slate-950">{row.mode === "ai_assisted" ? "AI-assisted" : "Deterministic only"}</div>
-                      <Badge tone={row.failures ? "warning" : "success"}>{row.failures} failures</Badge>
-                    </div>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <InsightMetric label="Accuracy" value={pct(row.metrics.accuracy)} />
-                      <InsightMetric label="Precision" value={pct(row.metrics.precision)} />
-                      <InsightMetric label="Recall" value={pct(row.metrics.recall)} />
-                      <InsightMetric label="F1" value={pct(row.metrics.f1)} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState title="No comparison yet" detail="Run the comparison to measure AI lift against the deterministic baseline." />
-            )}
-          </Card>
-        </div>
-      ) : null}
-
-      {tab === "failures" ? (
-        <div className="space-y-4">
-          <ChartCard title="Failure taxonomy" kicker="Evaluation categories that most often produce incorrect outcomes">
-            {failureData.length ? <FailureChart data={failureData} /> : <EmptyState title="No failure taxonomy" detail="The current evaluation run has no failure categories to display." />}
-          </ChartCard>
-          <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-            <SectionHeader title="Failure replay" kicker="Open any failed case to review the underlying transaction in context" />
-            <DataTable rows={audit.evaluation.failures} columns={failureColumns(audit.controller_run.cases)} getRowId={(row) => row.case_id} onRowClick={(row) => selectCase(row.case_id)} emptyTitle="No failed cases" />
-          </Card>
-        </div>
-      ) : null}
-
-      {tab === "performance" ? (
-        <div className="space-y-4">
-          <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-            <SectionHeader title="Performance overview" kicker="A polished view of the metrics that matter for trust, speed, and cost" />
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <InsightMetric label="Accuracy" value={pct(audit.evaluation.metrics.accuracy)} />
-              <InsightMetric label="Precision" value={pct(audit.evaluation.metrics.precision)} />
-              <InsightMetric label="Recall" value={pct(audit.evaluation.metrics.recall)} />
-              <InsightMetric label="F1" value={pct(audit.evaluation.metrics.f1)} />
-              <InsightMetric label="Throughput" value={`${compact(audit.controller_run.metrics.throughput_records_per_sec)}/sec`} />
-              <InsightMetric label="Median latency" value={ms(audit.controller_run.metrics.median_latency_ms)} />
-              <InsightMetric label="P95 latency" value={ms(audit.controller_run.metrics.p95_latency_ms)} />
-              <InsightMetric label="AI cost" value={`USD ${audit.evaluation.metrics.estimated_ai_cost_usd}`} />
-            </div>
-          </Card>
-
-          <Card className="rounded-[32px] border-white/70 bg-[linear-gradient(135deg,rgba(79,70,229,0.08),rgba(255,255,255,0.94),rgba(14,165,233,0.06))] p-6">
-            <SectionHeader title="Advanced testing" kicker="Test how Auditra behaves when financial data becomes difficult" />
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-3">
-                  {(["NORMAL", "STRESSED", "ADVERSARIAL"] as AnomalyMode[]).map((mode) => (
-                    <Button key={mode} icon={<FlaskConical className="h-4 w-4" />} disabled={isBusy} onClick={() => void breakController(mode, settings.recordCount)}>
-                      {titleCase(mode.toLowerCase())}
-                    </Button>
-                  ))}
-                </div>
-                <div className="grid gap-3 md:grid-cols-3">
-                  <Field label="Records">
-                    <Input type="number" min={50} max={5000} value={settings.recordCount} onChange={(event) => setSettings({ ...settings, recordCount: Number(event.target.value) })} />
-                  </Field>
-                  <Field label="Seed">
-                    <Input type="number" value={settings.seed} onChange={(event) => setSettings({ ...settings, seed: Number(event.target.value) })} />
-                  </Field>
-                  <Field label="Mode">
-                    <Select value={settings.anomalyMode} onChange={(event) => setSettings({ ...settings, anomalyMode: event.target.value as AnomalyMode })}>
-                      {["NORMAL", "STRESSED", "ADVERSARIAL", "CHAOS"].map((mode) => (
-                        <option key={mode} value={mode}>
-                          {mode}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                </div>
-                <Button variant="primary" icon={<TrendingUp className="h-4 w-4" />} disabled={isBusy} onClick={() => void runControlledEvaluation(settings)}>
-                  Run controlled evaluation
-                </Button>
-              </div>
-              <div className="rounded-[28px] border border-white/80 bg-white/90 p-5">
-                <div className="text-sm font-semibold text-slate-950">Session history</div>
-                <div className="mt-4 space-y-3">
-                  {runHistory.slice(0, 4).map((run) => (
-                    <div key={run.runId} className="rounded-2xl border border-line bg-slate-50/80 p-3">
-                      <div className="text-sm font-semibold text-slate-950">{run.mode}</div>
-                      <div className="text-sm text-muted">{compact(run.records)} records</div>
-                    </div>
-                  ))}
-                  {!runHistory.length ? <div className="text-sm text-muted">No controlled evaluations recorded in this session yet.</div> : null}
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      ) : null}
-    </div>
-  );
+  return <div className="space-y-7">
+    <header className="animate-fade-up border-b border-white/10 pb-6"><StatusPill accent="indigo" dot>Insights</StatusPill><h1 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">What the audit is telling you</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400 sm:text-base">Only the useful patterns: exposure, controller quality, and targeted challenge results.</p></header>
+    {error ? <InlineError error={error} /> : null}
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><MetricTile label="Audit health" value={pct(audit.evaluation.metrics.accuracy)} detail="Hidden-truth evaluation" accent="emerald" icon={<Gauge className="h-4 w-4" />} /><MetricTile label="Needs attention" value={compact(attention.length)} detail={money(exposure) + " exposure"} accent={attention.length ? "amber" : "emerald"} /><MetricTile label="Financial error" value={money(audit.evaluation.metrics.financial_impact_of_errors)} detail="Measured after truth reveal" accent="rose" /><MetricTile label="Assurance" value={assurance ? titleCase(assurance.recommendation) : "Pending"} detail={assurance ? "Grade " + assurance.grade : "Run audit to score"} accent="cyan" /></div>
+    <SegmentedTabs tabs={[{ id: "patterns", label: "Patterns" }, { id: "evaluation", label: "Evaluation" }, { id: "challenge", label: "Challenge" }]} active={tab} onChange={setTab} />
+    {tab === "patterns" ? <div className="grid gap-5 xl:grid-cols-2"><Chart title="Exposure by issue" data={exposureData} currency /><Chart title="Failure taxonomy" data={failureData} /></div> : null}
+    {tab === "evaluation" ? <WorkspacePanel><SectionTitle icon={<BarChart3 className="h-5 w-5" />} title="Controller evaluation" detail="Compare deterministic-only and AI-assisted runs on the same world." action={<button type="button" className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50" disabled={isBusy} onClick={() => void runComparison()}>Run comparison</button>} /><div className="mt-5 grid gap-4 lg:grid-cols-2">{rows.map((row) => <div key={row.mode} className="rounded-lg border border-white/10 bg-white/[0.04] p-5"><div className="flex items-center justify-between"><h3 className="font-semibold text-white">{row.mode === "ai_assisted" ? "AI-assisted" : "Deterministic"}</h3><StatusPill accent={row.execution.execution_mode.startsWith("REAL_") ? "cyan" : row.mode === "ai_assisted" ? "amber" : "slate"}>{row.execution.execution_mode}</StatusPill></div><div className="mt-4 grid gap-3 sm:grid-cols-2"><Small label="Accuracy" value={pct(row.metrics.accuracy)} /><Small label="Precision" value={pct(row.metrics.precision)} /><Small label="Recall" value={pct(row.metrics.recall)} /><Small label="F1" value={pct(row.metrics.f1)} /></div></div>)}</div></WorkspacePanel> : null}
+    {tab === "challenge" ? <WorkspacePanel><SectionTitle icon={<FlaskConical className="h-5 w-5" />} title="Challenge the controller" detail="Use the measured failure fingerprint to retest the controller against harder cases." />{assurance ? <div className="mt-5 rounded-lg border border-rose-400/20 bg-rose-400/10 p-4"><div className="text-sm font-semibold text-white">{titleCase(assurance.failure_fingerprint.pattern)}</div><p className="mt-2 text-sm leading-6 text-slate-400">{assurance.failure_fingerprint.root_cause}</p><div className="mt-4 flex flex-wrap gap-3"><button type="button" className="rounded-md bg-rose-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={isBusy} onClick={() => void runRedTeam(200)}>Run challenge</button>{(["STRESSED", "ADVERSARIAL", "CHAOS"] as AnomalyMode[]).map((mode) => <button key={mode} type="button" className="rounded-md border border-white/10 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/[0.06] disabled:opacity-50" disabled={isBusy} onClick={() => void breakController(mode, 500)}><TrendingUp className="mr-2 inline h-4 w-4" />{titleCase(mode)}</button>)}</div></div> : <div className="mt-5 text-sm text-slate-500">Assurance is still pending.</div>}{redTeam ? <div className="mt-5 rounded-lg border border-cyan-400/20 bg-cyan-400/10 p-4 text-sm text-cyan-100">Targeted retest: {titleCase(redTeam.comparison.verdict)}. Score {redTeam.comparison.retest_score.toFixed(1)}.</div> : null}</WorkspacePanel> : null}
+  </div>;
 }
 
-function SummaryTile({ title, value, detail }: { title: string; value: string; detail: string }) {
-  return (
-    <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</div>
-      <div className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">{value}</div>
-      <div className="mt-2 text-sm leading-6 text-muted">{detail}</div>
-    </Card>
-  );
-}
-
-function ChartCard({ title, kicker, children }: { title: string; kicker: string; children: React.ReactNode }) {
-  return (
-    <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-      <SectionHeader title={title} kicker={kicker} />
-      <div className="h-[320px]">{children}</div>
-    </Card>
-  );
-}
-
-function InsightMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-line bg-slate-50/80 p-4">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="mt-2 text-lg font-semibold text-slate-950">{value}</div>
-    </div>
-  );
-}
-
-function ExposureChart({ data }: { data: Array<{ status: string; exposure: number }> }) {
-  return (
-    <ResponsiveContainer>
-      <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-        <XAxis dataKey="status" tickLine={false} axisLine={false} />
-        <YAxis tickLine={false} axisLine={false} />
-        <Tooltip formatter={(value) => money(Number(value))} />
-        <Bar dataKey="exposure" fill="#4f46e5" radius={[8, 8, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-function FailureChart({ data }: { data: Array<{ name: string; count: number }> }) {
-  return (
-    <ResponsiveContainer>
-      <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-        <XAxis dataKey="name" tickLine={false} axisLine={false} />
-        <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-        <Tooltip />
-        <Legend />
-        <Bar dataKey="count" fill="#0ea5e9" radius={[8, 8, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-function failureColumns(cases: ReconciliationCase[]): Column<FailureRecord>[] {
-  return [
-    {
-      key: "case",
-      header: "Case",
-      value: (row) => titleCase(row.failure_category),
-      sortValue: (row) => row.failure_category,
-    },
-    {
-      key: "expected",
-      header: "Expected",
-      value: (row) => <Badge tone={statusTone(row.expected)}>{titleCase(row.expected)}</Badge>,
-      sortValue: (row) => row.expected,
-    },
-    {
-      key: "predicted",
-      header: "Predicted",
-      value: (row) => <Badge tone={statusTone(row.predicted)}>{titleCase(row.predicted)}</Badge>,
-      sortValue: (row) => row.predicted,
-    },
-    {
-      key: "impact",
-      header: "Exposure",
-      value: (row) => money(row.financial_impact),
-      sortValue: (row) => Number(row.financial_impact),
-    },
-    {
-      key: "evidence",
-      header: "Evidence",
-      value: (row) => cases.find((item) => item.case_id === row.case_id)?.evidence.length ?? row.evidence_available.length,
-      sortValue: (row) => cases.find((item) => item.case_id === row.case_id)?.evidence.length ?? row.evidence_available.length,
-    },
-  ];
-}
-
-function caseInsight(status: string) {
-  if (status === "MISSING_SETTLEMENT") return "Settlement gaps";
-  if (status === "AMOUNT_MISMATCH") return "Amount mismatches";
-  if (status === "HUMAN_REVIEW" || status === "UNRESOLVED") return "Escalated reviews";
-  return titleCase(status);
-}
+function Chart({ title, data, currency = false }: { title: string; data: Array<{ name: string; value: number }>; currency?: boolean }) { return <WorkspacePanel><SectionTitle title={title} />{data.length ? <div className="mt-4 h-[320px]"><ResponsiveContainer><BarChart data={data}><CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.18)" vertical={false} /><XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 12 }} tickLine={false} axisLine={false} /><YAxis tick={{ fill: "#94a3b8", fontSize: 12 }} tickLine={false} axisLine={false} /><Tooltip formatter={(value) => currency ? money(Number(value)) : compact(Number(value))} contentStyle={{ background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }} /><Bar dataKey="value" fill="#22d3ee" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div> : <div className="mt-4 rounded-lg border border-dashed border-white/10 p-8 text-center text-sm text-slate-500">No data for this chart.</div>}</WorkspacePanel>; }
+function Small({ label, value }: { label: string; value: string }) { return <div className="rounded-lg border border-white/10 bg-black/20 p-4"><div className="text-xs text-slate-500">{label}</div><div className="mt-2 text-lg font-semibold text-white">{value}</div></div>; }
+function Empty({ onClick }: { onClick: () => void }) { return <WorkspacePanel><div className="py-16 text-center"><h1 className="text-2xl font-semibold text-white">No insights yet</h1><p className="mt-2 text-sm text-slate-500">Run an audit first so Auditra can reveal patterns.</p><button type="button" className="mt-6 rounded-md bg-white px-5 py-3 text-sm font-semibold text-slate-950" onClick={onClick}>Open audits</button></div></WorkspacePanel>; }

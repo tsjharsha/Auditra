@@ -1,261 +1,49 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Eye, Hammer, PlayCircle, ShieldCheck, WandSparkles } from "lucide-react";
-import { Badge } from "../components/ui/Badge";
-import { Button } from "../components/ui/Button";
-import { Card, SectionHeader } from "../components/ui/Card";
-import { Textarea } from "../components/ui/Field";
-import { ErrorState, EmptyState, SuccessState } from "../components/ui/State";
-import { AuditProgress } from "../features/audit/AuditProgress";
-import { SchemaRelationshipFlow } from "../features/graph/RelationshipFlow";
-import { BuilderPipeline } from "../features/world/BuilderPipeline";
-import { SchemaBrowser } from "../features/world/SchemaBrowser";
-import { SpecEditor } from "../features/world/SpecEditor";
-import { WorldRecordExplorer } from "../features/world/WorldRecordExplorer";
-import { compact, money } from "../lib/format";
-import { useAuditra, PROMPT_SUGGESTIONS } from "../hooks/useAuditra";
-
-type WorldStep = "describe" | "review" | "build" | "audit" | "explore";
-
-const steps: Array<{ id: WorldStep; label: string }> = [
-  { id: "describe", label: "Describe" },
-  { id: "review", label: "Review" },
-  { id: "build", label: "Build" },
-  { id: "audit", label: "Audit" },
-  { id: "explore", label: "Explore" },
-];
+﻿import { ArrowRight, Eye, FileText, PlayCircle, RefreshCw, ShieldCheck, WandSparkles } from "lucide-react";
+import { InlineError, MetricTile, SectionTitle, StatusPill, WorkspacePanel } from "../components/WorkspaceUI";
+import { PROMPT_SUGGESTIONS, useAuditra } from "../hooks/useAuditra";
+import { compact, money, titleCase } from "../lib/format";
 
 export function WorldsPage() {
-  const {
-    prompt,
-    setPrompt,
-    preview,
-    world,
-    audit,
-    error,
-    isBusy,
-    statusMessage,
-    previewWorld,
-    buildWorld,
-    buildWorldFromSpec,
-    auditWorld,
-    runFiveMinuteDemo,
-    setActivePage,
-    selectCase,
-  } = useAuditra();
-  const activePreview = preview ?? world;
-  const defaultStep: WorldStep = audit ? "explore" : world ? "audit" : activePreview ? "review" : "describe";
-  const [step, setStep] = useState<WorldStep>(defaultStep);
+  const { prompt, setPrompt, preview, world, audit, error, isBusy, busyLabel, statusMessage, previewWorld, buildWorld, auditWorld, runFiveMinuteDemo, setActivePage } = useAuditra();
+  const active = preview ?? world;
+  const facts = active ? [
+    ["Market", active.spec.country + " / " + active.spec.currencies.join(" + ")],
+    ["Business", active.spec.world_name || active.spec.merchant_name],
+    ["Activity", compact(active.spec.record_count) + " orders"],
+    ["Payments", active.spec.payment_methods.join(" + ")],
+    ["Fee", (Number(active.spec.fee_rate) * 100).toFixed(2) + "%"],
+    ["Settlement", "T+" + active.spec.settlement_delay_days],
+    ["Refunds", Number(active.spec.refund_rate) > 0 ? "Enabled" : "Off"],
+    ["Risk", titleCase(active.spec.anomaly_mode)],
+  ] : [];
 
-  useEffect(() => {
-    setStep(defaultStep);
-  }, [defaultStep]);
-
-  const summaryRows = useMemo(
-    () =>
-      activePreview
-        ? [
-            ["Business", activePreview.spec.world_name || activePreview.spec.merchant_name],
-            ["Country", activePreview.spec.country],
-            ["Currency", activePreview.spec.currencies.join(" / ")],
-            ["Orders", compact(activePreview.spec.record_count)],
-            ["Payments", activePreview.spec.payment_methods.join(" + ")],
-            ["Fee", `${Number(activePreview.spec.fee_rate) * 100}% fee`],
-            ["Settlement", `T+${activePreview.spec.settlement_delay_days}`],
-            ["Refunds", Number(activePreview.spec.refund_rate) > 0 ? "Enabled" : "Not included"],
-          ]
-        : [],
-    [activePreview],
-  );
-
-  return (
-    <div className="space-y-6">
-      <Card className="rounded-[32px] border-white/70 bg-white/90 p-6 shadow-panel">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <Badge tone="review">Create / Audit / Trust</Badge>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">Build a financial world in a guided flow</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              Start with a description, review what Auditra understood, build the world, then move directly into audit and exploration.
-            </p>
-          </div>
-          <Button icon={<PlayCircle className="h-4 w-4" />} disabled={isBusy} onClick={() => void runFiveMinuteDemo()}>
-            Open demo
-          </Button>
-        </div>
-
-        <div className="mt-6 grid gap-3 md:grid-cols-5">
-          {steps.map((item, index) => {
-            const active = step === item.id;
-            const complete = steps.findIndex((entry) => entry.id === defaultStep) >= index;
-            return (
-              <button
-                key={item.id}
-                className={`rounded-[24px] border px-4 py-4 text-left transition ${
-                  active
-                    ? "border-indigo-200 bg-indigo-50/80"
-                    : complete
-                      ? "border-emerald-200 bg-emerald-50/70"
-                      : "border-line bg-slate-50/70 hover:bg-white"
-                }`}
-                onClick={() => setStep(item.id)}
-              >
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Step {index + 1}</div>
-                <div className="mt-2 text-sm font-semibold text-slate-950">{item.label}</div>
-              </button>
-            );
-          })}
-        </div>
-      </Card>
-
-      {error ? <ErrorState title="Something went wrong" error={error} /> : null}
-
-      {step === "describe" ? (
-        <Card className="rounded-[32px] border-white/70 bg-[linear-gradient(135deg,rgba(79,70,229,0.10),rgba(14,165,233,0.08),rgba(255,255,255,0.96))] p-6">
-          <SectionHeader title="Describe your financial world" kicker="Start with a natural-language prompt. Auditra will turn it into a clean financial setup." />
-          <Textarea
-            className="min-h-[180px] rounded-[24px] border-white bg-white/90 px-5 py-4 text-base shadow-none"
-            placeholder="Describe the financial world you want to audit..."
-            value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-          />
-          <div className="mt-4 flex flex-wrap gap-2">
-            {PROMPT_SUGGESTIONS.map((item) => (
-              <button key={item} className="rounded-full border border-white/90 bg-white/90 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-white" onClick={() => setPrompt(item)}>
-                {item}
-              </button>
-            ))}
-          </div>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Button icon={<Eye className="h-4 w-4" />} disabled={isBusy || !prompt.trim()} onClick={() => void previewWorld()}>
-              Review setup
-            </Button>
-            <Button variant="primary" icon={<WandSparkles className="h-4 w-4" />} disabled={isBusy || !prompt.trim()} onClick={() => void buildWorld()}>
-              Build world
-            </Button>
-          </div>
-        </Card>
-      ) : null}
-
-      {step === "review" ? (
-        activePreview ? (
-          <div className="space-y-4">
-            <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-              <SectionHeader title="You described..." kicker="A clean summary of the world Auditra is about to build" />
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {summaryRows.map(([label, value]) => (
-                  <div key={label} className="rounded-2xl border border-line bg-slate-50/80 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</div>
-                    <div className="mt-2 text-sm font-semibold text-slate-950">{value}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-                <div className="rounded-[28px] border border-indigo-100 bg-[linear-gradient(135deg,rgba(224,231,255,0.80),rgba(239,246,255,0.92))] p-5">
-                  <div className="text-sm font-semibold text-slate-950">Core relationships</div>
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <FlowPill label="Orders" />
-                    <ArrowRight className="h-4 w-4 text-slate-400" />
-                    <FlowPill label="Payments" />
-                    <ArrowRight className="h-4 w-4 text-slate-400" />
-                    <FlowPill label="Settlements" />
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Badge tone="info">Refunds</Badge>
-                    <Badge tone="info">Fees</Badge>
-                  </div>
-                </div>
-                <div className="rounded-[28px] border border-line bg-slate-50/80 p-5">
-                  <div className="text-sm font-semibold text-slate-950">What happens next</div>
-                  <div className="mt-3 text-sm leading-6 text-muted">
-                    Auditra will generate transactions, validate the world, and prepare it for audit. You can keep this summary simple or open advanced details if you want to fine-tune the spec.
-                  </div>
-                </div>
-              </div>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Button onClick={() => setStep("describe")}>Edit</Button>
-                <Button variant="primary" icon={<Hammer className="h-4 w-4" />} disabled={isBusy} onClick={() => void buildWorld()}>
-                  Build world
-                </Button>
-              </div>
-            </Card>
-
-            <details className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-panel">
-              <summary className="cursor-pointer text-sm font-semibold text-slate-950">View advanced setup details</summary>
-              <div className="mt-5 space-y-5">
-                <SpecEditor spec={activePreview.spec} disabled={isBusy} onGenerate={(spec) => void buildWorldFromSpec(spec)} />
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_520px]">
-                  <SchemaBrowser schema={activePreview.schema_preview} />
-                  <SchemaRelationshipFlow model={activePreview.relationship_model} />
-                </div>
-              </div>
-            </details>
-          </div>
-        ) : (
-          <EmptyState title="Nothing to review yet" detail="Describe a financial world first so Auditra can summarize it back to you." />
-        )
-      ) : null}
-
-      {step === "build" ? (
-        <div className="space-y-4">
-          <BuilderPipeline preview={preview} world={world} audit={audit} isBusy={isBusy} />
-          {world ? (
-            <SuccessState title="Your financial world is ready" detail={`${compact(world.summary.orders)} orders, ${compact(world.summary.payments)} payments, ${compact(world.summary.settlements)} settlements, ${money(world.summary.payment_volume)} financial activity.`} />
-          ) : (
-            <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-              <div className="text-lg font-semibold text-slate-950">Building in progress</div>
-              <p className="mt-2 text-sm leading-6 text-muted">Auditra is understanding your request, generating realistic transactions, validating the world, and getting it ready for audit.</p>
-              <div className="mt-3 text-sm font-medium text-indigo-700">{statusMessage}</div>
-            </Card>
-          )}
-          {world ? (
-            <div className="flex flex-wrap gap-3">
-              <Button variant="primary" icon={<ShieldCheck className="h-4 w-4" />} disabled={isBusy} onClick={() => void auditWorld()}>
-                Audit this world
-              </Button>
-              <Button onClick={() => setStep("explore")}>Explore world</Button>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      {step === "audit" ? (
-        world ? (
-          <div className="space-y-4">
-            <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-              <SectionHeader title="Auditra is checking your financial world" kicker="A clean audit experience that focuses on progress rather than internal system detail" />
-              <AuditProgress audit={audit} running={isBusy} />
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Button variant="primary" icon={<ShieldCheck className="h-4 w-4" />} disabled={isBusy} onClick={() => void auditWorld()}>
-                  {audit ? "Run again" : "Audit this world"}
-                </Button>
-                {audit ? <Button onClick={() => setActivePage("audits")}>Open audit results</Button> : null}
-              </div>
-            </Card>
-            {audit ? <SuccessState title="Audit complete" detail="Auditra finished reconciling this world and prepared a review-ready result." /> : null}
-          </div>
-        ) : (
-          <EmptyState title="Build a world first" detail="Auditra needs a generated financial world before it can run the audit flow." />
-        )
-      ) : null}
-
-      {step === "explore" ? (
-        world ? (
-          <WorldRecordExplorer
-            world={world}
-            cases={audit?.controller_run.cases}
-            onSelectCase={(caseId) => {
-              selectCase(caseId);
-              setActivePage("review");
-            }}
-          />
-        ) : (
-          <EmptyState title="No world to explore" detail="Build a world first, then come back here to inspect activity, relationships, and exceptions." />
-        )
-      ) : null}
+  return <div className="space-y-7">
+    <header className="animate-fade-up border-b border-white/10 pb-6">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div><StatusPill accent="cyan" dot>Financial World Builder</StatusPill><h1 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">Create a controlled financial world</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400 sm:text-base">Describe the merchant, let Auditra understand the setup, then generate a validated world ready for audit.</p></div>
+        <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-white hover:bg-white/[0.1]" disabled={isBusy} onClick={() => void runFiveMinuteDemo()}><PlayCircle className="h-4 w-4" />Run demo</button>
+      </div>
+    </header>
+    {error ? <InlineError error={error} /> : null}
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_430px]">
+      <WorkspacePanel className="animate-fade-up-delayed">
+        <SectionTitle icon={<FileText className="h-5 w-5" />} eyebrow="Describe" title="What should Auditra audit?" detail="Use plain language. The model can interpret intent, while deterministic generation stays authoritative." />
+        <textarea className="mt-5 min-h-[190px] w-full resize-y rounded-lg border border-white/10 bg-black/25 px-4 py-4 text-sm leading-6 text-white placeholder:text-slate-600" placeholder="Describe the financial world you want to audit..." value={prompt} onChange={(event) => setPrompt(event.target.value)} />
+        <div className="mt-4 grid gap-2 lg:grid-cols-3">{PROMPT_SUGGESTIONS.map((item) => <button key={item} type="button" className="rounded-md border border-white/10 bg-white/[0.035] p-3 text-left text-xs leading-5 text-slate-400 hover:border-cyan-400/30 hover:text-cyan-100" onClick={() => setPrompt(item)}>{item}</button>)}</div>
+        <div className="mt-5 flex flex-wrap gap-3"><button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-md border border-cyan-400/20 bg-cyan-400/10 px-4 text-sm font-semibold text-cyan-100 hover:bg-cyan-400/15 disabled:opacity-50" disabled={isBusy || !prompt.trim()} onClick={() => void previewWorld()}><Eye className="h-4 w-4" />Understand</button><button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-md bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 px-5 text-sm font-semibold text-white shadow-[0_14px_36px_rgba(14,165,233,0.22)] hover:brightness-110 disabled:opacity-50" disabled={isBusy || !prompt.trim()} onClick={() => void buildWorld()}>{isBusy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <WandSparkles className="h-4 w-4" />}{isBusy ? busyLabel || "Building" : "Build world"}</button></div>
+        {isBusy ? <div className="mt-3 text-sm text-cyan-200">{statusMessage}</div> : null}
+      </WorkspacePanel>
+      <WorkspacePanel className="animate-fade-up-delayed-2">
+        <SectionTitle eyebrow="Understand" title={active ? "Financial setup understood" : "Waiting for a world"} detail={active ? "Only the useful summary is shown here. Schema details stay advanced." : "Preview or build to see the interpreted setup."} />
+        {active ? <div className="mt-5 grid gap-2 sm:grid-cols-2">{facts.map(([label, value]) => <Fact key={label} label={label} value={value} />)}</div> : <div className="mt-6 rounded-lg border border-dashed border-white/10 p-8 text-center text-sm text-slate-500">No financial world yet.</div>}
+        {active ? <details className="mt-5 rounded-lg border border-white/10 bg-black/20 p-4"><summary className="cursor-pointer text-sm font-semibold text-white">View advanced setup details</summary><pre className="mt-4 max-h-[300px] overflow-auto text-xs leading-5 text-slate-400">{JSON.stringify(active.spec, null, 2)}</pre></details> : null}
+      </WorkspacePanel>
     </div>
-  );
+    <WorkspacePanel className="animate-fade-up-delayed"><SectionTitle eyebrow="Build" title={world ? "World ready" : "Build progress"} detail={world ? "The dataset is validated, hidden truth is locked, and the audit can begin." : "Auditra will understand, generate relationships, create transactions, and validate the world."} />
+      {world ? <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><MetricTile label="Orders" value={compact(world.summary.orders)} accent="cyan" /><MetricTile label="Payments" value={compact(world.summary.payments)} accent="indigo" /><MetricTile label="Settlements" value={compact(world.summary.settlements)} accent="emerald" /><MetricTile label="Volume" value={money(world.summary.payment_volume)} accent="amber" /></div> : null}
+      {world ? <div className="mt-5 flex flex-wrap gap-3"><button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-md bg-white px-5 text-sm font-semibold text-slate-950 hover:bg-slate-100 disabled:opacity-50" disabled={isBusy} onClick={() => void auditWorld()}><ShieldCheck className="h-4 w-4" />{audit ? "Audit again" : "Audit world"}</button><button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/10 px-4 text-sm font-semibold text-slate-300 hover:bg-white/[0.06]" onClick={() => setActivePage("audits")}>Open audit <ArrowRight className="h-4 w-4" /></button></div> : null}
+    </WorkspacePanel>
+  </div>;
 }
 
-function FlowPill({ label }: { label: string }) {
-  return <div className="rounded-full border border-white/90 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800">{label}</div>;
-}
+function Fact({ label, value }: { label: string; value: string }) { return <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3"><div className="text-[11px] font-semibold text-slate-500">{label}</div><div className="mt-1 text-sm font-semibold text-white">{value}</div></div>; }

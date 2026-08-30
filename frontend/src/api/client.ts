@@ -4,6 +4,7 @@ import type {
   ChallengeDefinition,
   ControllerComparison,
   FinancialWorldSpec,
+  HealthResponse,
   ReviewAction,
   RedTeamResult,
   ScenarioMode,
@@ -29,7 +30,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const auditraApi = {
-  health: () => request<{ status: string; product: string }>("/health"),
+  health: () => request<HealthResponse>("/health"),
   challenges: () =>
     request<{ challenges: ChallengeDefinition[]; default_challenge_id: string }>("/challenges"),
   buildChallenge: (challengeId: string, recordCount: number, seed: number) =>

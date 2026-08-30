@@ -1,96 +1,23 @@
-import { LockKeyhole, ShieldCheck, Sparkles, Workflow } from "lucide-react";
+import { LockKeyhole, Server, ShieldCheck, Sparkles, Workflow } from "lucide-react";
 import { API_BASE } from "../api/client";
-import { Badge } from "../components/ui/Badge";
-import { Button } from "../components/ui/Button";
-import { Card, SectionHeader } from "../components/ui/Card";
-import { EmptyState } from "../components/ui/State";
-import { compact } from "../lib/format";
+import { MetricTile, SectionTitle, StatusPill, WorkspacePanel } from "../components/WorkspaceUI";
 import { useAuditra } from "../hooks/useAuditra";
+import { compact, titleCase } from "../lib/format";
 
 export function SettingsPage() {
-  const { world, audit, healthStatus, statusMessage, comparison, runFiveMinuteDemo, isBusy } = useAuditra();
-
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-          <SectionHeader title="Workspace" kicker="The current environment Auditra is working inside" />
-          <SettingRow label="API status" value={healthStatus} badge />
-          <SettingRow label="Current status" value={statusMessage} />
-          <SettingRow label="Active world" value={world?.summary.merchant ?? "No world yet"} />
-          <SettingRow label="Dataset" value={world?.dataset_id ?? "No dataset yet"} />
-          <div className="mt-4">
-            <Button variant="primary" icon={<Workflow className="h-4 w-4" />} disabled={isBusy} onClick={() => void runFiveMinuteDemo()}>
-              Run demo workspace
-            </Button>
-          </div>
-        </Card>
-
-        <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-          <SectionHeader title="AI" kicker="A concise read on model-backed investigation activity" />
-          <SettingRow label="Comparison ready" value={comparison ? "Yes" : "Not yet"} badge />
-          <SettingRow label="AI-assisted cases" value={audit ? compact(audit.controller_run.metrics.ai_investigation_count) : "0"} />
-          <SettingRow label="Review rate" value={audit ? `${(audit.controller_run.metrics.human_review_rate * 100).toFixed(1)}%` : "-"} />
-          <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 text-sm leading-6 text-indigo-900">
-            Advanced AI benchmarking and stress modes now live under the Insights page.
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-          <SectionHeader title="Data" kicker="The current world and audit payload in product language" />
-          {world ? (
-            <div className="space-y-3">
-              <SettingRow label="Merchant" value={world.summary.merchant} />
-              <SettingRow label="Orders" value={compact(world.summary.orders)} />
-              <SettingRow label="Payments" value={compact(world.summary.payments)} />
-              <SettingRow label="Currencies" value={world.summary.currencies.join(" / ")} />
-            </div>
-          ) : (
-            <EmptyState title="No data yet" detail="Create a world to see workspace-level data settings and summaries." />
-          )}
-        </Card>
-
-        <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-          <SectionHeader title="Security" kicker="Trust, review, and audit-trail status for the current session" />
-          <div className="grid gap-3">
-            <SecurityItem icon={<ShieldCheck className="h-4 w-4" />} title="Reviewable decisions" detail={audit ? `${compact(audit.controller_run.cases.length)} controller decisions are available for review.` : "No controller decisions yet."} />
-            <SecurityItem icon={<LockKeyhole className="h-4 w-4" />} title="Audit trail" detail={audit ? `${compact(audit.controller_run.audit_events.length)} audit events are available in this session.` : "No audit trail yet."} />
-            <SecurityItem icon={<Sparkles className="h-4 w-4" />} title="Advanced diagnostics" detail="Technical metadata, investigation detail, and stress testing are available behind progressive disclosure instead of the primary workflow." />
-          </div>
-        </Card>
-      </div>
-
-      <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-        <SectionHeader title="Technical details" kicker="A small place for environment information that should not dominate the product UI" />
-        <div className="grid gap-3 md:grid-cols-3">
-          <SettingRow label="API base" value={API_BASE} />
-          <SettingRow label="World ID" value={world?.world_id ?? "Not generated"} />
-          <SettingRow label="Run ID" value={audit?.controller_run.run_id ?? "No audit run"} />
-        </div>
-      </Card>
+  const { world, audit, healthStatus, statusMessage, runtimeAI, comparison, runFiveMinuteDemo, isBusy } = useAuditra();
+  const investigation = runtimeAI?.investigation;
+  const worldAI = runtimeAI?.world_understanding;
+  return <div className="space-y-7">
+    <header className="animate-fade-up border-b border-white/10 pb-6"><StatusPill accent="slate" dot>Settings</StatusPill><h1 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">Workspace and runtime</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400 sm:text-base">A concise operational view of API health, provider mode, and the active audit workspace.</p></header>
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><MetricTile label="API status" value={healthStatus} detail={statusMessage} accent={healthStatus === "healthy" ? "emerald" : "rose"} icon={<Server className="h-4 w-4" />} /><MetricTile label="Investigation mode" value={investigation?.execution_mode ?? "Checking"} detail={investigation?.model ?? "Runtime status"} accent={investigation?.execution_mode.startsWith("REAL_") ? "cyan" : "amber"} icon={<Sparkles className="h-4 w-4" />} /><MetricTile label="World mode" value={worldAI?.execution_mode ?? "Checking"} detail={worldAI?.model ?? "Runtime status"} accent={worldAI?.execution_mode.startsWith("REAL_") ? "cyan" : "slate"} /><MetricTile label="Audit cases" value={audit ? compact(audit.controller_run.cases.length) : "0"} detail={comparison ? "Comparison ready" : "No comparison yet"} accent="indigo" /></div>
+    <div className="grid gap-5 xl:grid-cols-2">
+      <WorkspacePanel><SectionTitle icon={<Workflow className="h-5 w-5" />} title="Current workspace" detail="What Auditra is operating on right now." action={<button type="button" className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50" disabled={isBusy} onClick={() => void runFiveMinuteDemo()}>Run demo</button>} /><div className="mt-5 space-y-2"><Row label="Merchant" value={world?.summary.merchant ?? "No world yet"} /><Row label="Dataset" value={world?.dataset_id ?? "No dataset yet"} /><Row label="World ID" value={world?.world_id ?? "Not generated"} /><Row label="Run ID" value={audit?.controller_run.run_id ?? "No audit run"} /></div></WorkspacePanel>
+      <WorkspacePanel><SectionTitle icon={<ShieldCheck className="h-5 w-5" />} title="Provider truth" detail="Offline, deterministic, and real Groq states stay explicitly labeled." /><div className="mt-5 space-y-2"><Row label="Investigation provider" value={investigation ? `${investigation.provider} / ${investigation.execution_mode}` : "Unknown"} badge={investigation?.execution_mode} /><Row label="World understanding" value={worldAI ? `${worldAI.provider} / ${worldAI.execution_mode}` : "Unknown"} badge={worldAI?.execution_mode} /><Row label="Configured" value={investigation?.configured ? "Yes" : "No"} /><Row label="Fallback" value={investigation?.fallback_mode ?? "None"} /></div></WorkspacePanel>
     </div>
-  );
+    <WorkspacePanel><SectionTitle icon={<LockKeyhole className="h-5 w-5" />} title="Security posture" detail="Secrets stay server-side. The frontend receives mode and model metadata only." /><div className="mt-5 grid gap-3 md:grid-cols-3"><Security title="Ground truth isolation" detail="Hidden labels are used only by evaluation after the controller run." /><Security title="Bounded tools" detail="Investigation plans still run through allowlisted tools and typed arguments." /><Security title="Technical details" detail={`API base: ${API_BASE}`} /></div></WorkspacePanel>
+  </div>;
 }
 
-function SettingRow({ label, value, badge = false }: { label: string; value: string; badge?: boolean }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-slate-50/80 px-4 py-3">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
-      {badge ? <Badge tone="muted">{value}</Badge> : <span className="text-sm font-semibold text-slate-950">{value}</span>}
-    </div>
-  );
-}
-
-function SecurityItem({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) {
-  return (
-    <div className="rounded-2xl border border-line bg-slate-50/80 p-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-        <span className="text-indigo-600">{icon}</span>
-        {title}
-      </div>
-      <div className="mt-2 text-sm leading-6 text-muted">{detail}</div>
-    </div>
-  );
-}
+function Row({ label, value, badge }: { label: string; value: string; badge?: string }) { return <div className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3"><span className="text-sm text-slate-400">{label}</span>{badge ? <StatusPill accent={badge.startsWith("REAL_") ? "cyan" : badge === "AI_UNAVAILABLE" ? "rose" : "amber"}>{badge}</StatusPill> : <span className="max-w-[60%] truncate text-right text-sm font-semibold text-white">{titleCase(String(value))}</span>}</div>; }
+function Security({ title, detail }: { title: string; detail: string }) { return <div className="rounded-lg border border-white/10 bg-black/20 p-4"><div className="text-sm font-semibold text-white">{title}</div><div className="mt-2 text-sm leading-6 text-slate-500">{detail}</div></div>; }

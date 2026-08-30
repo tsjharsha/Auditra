@@ -7,7 +7,25 @@ from typing import Dict, List, Optional, Tuple
 
 from pydantic import ValidationError
 
-from ..llm import LLMInvalidResponse, LLMProvider, LLMProviderConfig, LLMUnavailable, OpenAIProvider as OpenAILLMProvider
+from ..llm import (
+    DETERMINISTIC,
+    OFFLINE_AI,
+    REAL_GEMINI_AI,
+    REAL_HUGGINGFACE_AI,
+    REAL_OPENROUTER_AI,
+    REAL_GROQ_AI,
+    REAL_OPENAI_AI,
+    GeminiProvider as GeminiLLMProvider,
+    GroqProvider as GroqLLMProvider,
+    HuggingFaceProvider as HuggingFaceLLMProvider,
+    OpenRouterProvider as OpenRouterLLMProvider,
+    LLMInvalidResponse,
+    LLMProvider,
+    LLMProviderConfig,
+    LLMUnavailable,
+    OpenAIProvider as OpenAILLMProvider,
+    resolve_llm_provider,
+)
 from .models import AnomalyMode, FinancialWorldSpec, UnderstandingStep, rate
 
 
@@ -93,7 +111,16 @@ class DeterministicPromptParser:
             understanding_source="deterministic_parser",
         )
         steps = [
-            UnderstandingStep(step="Understand intent", detail="Parsed merchant, volume, payment rails, fees, settlement policy and anomaly intent."),
+            UnderstandingStep(
+                step="Understand intent",
+                detail="Parsed merchant, volume, payment rails, fees, settlement policy and anomaly intent.",
+                metadata={
+                    "execution_mode": DETERMINISTIC,
+                    "provider": "deterministic",
+                    "model": "financial-world-parser",
+                    "success": True,
+                },
+            ),
             UnderstandingStep(step="Extract financial entities", detail="MERCHANT, ORDER, PAYMENT, SETTLEMENT, REFUND and FEE_RULE selected."),
             UnderstandingStep(step="Build schema", detail="Canonical Auditra finance schema prepared for preview."),
             UnderstandingStep(step="Build relationship model", detail="Order-payment-settlement-refund-fee relationships derived."),
@@ -182,11 +209,13 @@ class DeterministicPromptParser:
         return value.value if isinstance(value, AnomalyMode) else str(value)
 
 
-class OpenAIWorldSpecProvider:
+class LLMWorldSpecProvider:
     prompt_version = "world-spec-v2"
+    provider_label = "openai"
+    execution_mode = REAL_OPENAI_AI
 
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
-        self.llm_provider = llm_provider or OpenAILLMProvider(config=config or LLMProviderConfig.from_env("AUDITRA_WORLD_LLM"))
+    def __init__(self, llm_provider: LLMProvider):
+        self.llm_provider = llm_provider
         self.model = self.llm_provider.config.model
 
     def parse(self, prompt: str, seed: int = 42) -> Tuple[FinancialWorldSpec, List[UnderstandingStep]]:
@@ -206,10 +235,31 @@ class OpenAIWorldSpecProvider:
                 parsed = dict(response.output)
                 parsed.setdefault("prompt", prompt)
                 parsed.setdefault("seed", seed)
-                parsed["understanding_source"] = f"openai:{self.model}"
+                parsed["understanding_source"] = f"{self.provider_label}:{response.model}"
                 spec = FinancialWorldSpec.model_validate(parsed)
+                trace = {
+                    "execution_mode": self.execution_mode,
+                    "provider": response.provider,
+                    "model": response.model,
+                    "prompt_version": self.prompt_version,
+                    "timestamp": response.timestamp,
+                    "latency_ms": response.latency_ms,
+                    "attempts": response.attempts,
+                    "llm_calls": response.llm_calls,
+                    "input_tokens": response.input_tokens,
+                    "output_tokens": response.output_tokens,
+                    "total_tokens": response.total_tokens,
+                    "cost_usd": str(response.estimated_cost_usd) if response.estimated_cost_usd is not None else None,
+                    "success": True,
+                    "failure_type": None,
+                    "response_id": response.response_id,
+                }
                 steps = [
-                    UnderstandingStep(step="Understand intent", detail=f"LLM provider {self.model} produced a validated world specification."),
+                    UnderstandingStep(
+                        step="Understand intent",
+                        detail=f"{response.provider} model {response.model} produced a validated world specification.",
+                        metadata=trace,
+                    ),
                     UnderstandingStep(step="Validate structured output", detail="Pydantic schema validation passed before deterministic generation."),
                     UnderstandingStep(
                         step="Record AI usage",
@@ -217,23 +267,122 @@ class OpenAIWorldSpecProvider:
                             f"calls={response.llm_calls}, input_tokens={response.input_tokens}, "
                             f"output_tokens={response.output_tokens}, cost_usd={response.estimated_cost_usd}"
                         ),
+                        metadata=trace,
                     ),
                 ]
                 return spec, steps
             except (LLMInvalidResponse, ValidationError, ValueError) as exc:
                 last_error = exc
             except LLMUnavailable as exc:
-                raise PromptUnderstandingError(f"OpenAI world builder unavailable: {exc}") from exc
-        raise PromptUnderstandingError(f"OpenAI returned invalid FinancialWorldSpec: {last_error}")
+                raise PromptUnderstandingError(f"{self.provider_label} world builder unavailable: {exc}") from exc
+        raise PromptUnderstandingError(f"{self.provider_label} returned invalid FinancialWorldSpec: {last_error}")
 
+
+class OpenAIWorldSpecProvider(LLMWorldSpecProvider):
+    provider_label = "openai"
+    execution_mode = REAL_OPENAI_AI
+
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+        super().__init__(
+            llm_provider
+            or OpenAILLMProvider(config=config or LLMProviderConfig.from_env("AUDITRA_WORLD_LLM"))
+        )
+
+
+class GroqWorldSpecProvider(LLMWorldSpecProvider):
+    provider_label = "groq"
+    execution_mode = REAL_GROQ_AI
+
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+        super().__init__(
+            llm_provider
+            or GroqLLMProvider(config=config or LLMProviderConfig.from_groq_env("AUDITRA_WORLD_LLM"))
+        )
+
+
+class GeminiWorldSpecProvider(LLMWorldSpecProvider):
+    provider_label = "gemini"
+    execution_mode = REAL_GEMINI_AI
+
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+        super().__init__(
+            llm_provider
+            or GeminiLLMProvider(config=config or LLMProviderConfig.from_gemini_env("AUDITRA_WORLD_LLM"))
+        )
+
+
+class OpenRouterWorldSpecProvider(LLMWorldSpecProvider):
+    provider_label = "openrouter"
+    execution_mode = REAL_OPENROUTER_AI
+
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+        super().__init__(
+            llm_provider
+            or OpenRouterLLMProvider(config=config or LLMProviderConfig.from_openrouter_env("AUDITRA_WORLD_LLM"))
+        )
+
+
+class HuggingFaceWorldSpecProvider(LLMWorldSpecProvider):
+    provider_label = "huggingface"
+    execution_mode = REAL_HUGGINGFACE_AI
+
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+        super().__init__(
+            llm_provider
+            or HuggingFaceLLMProvider(config=config or LLMProviderConfig.from_huggingface_env("AUDITRA_WORLD_LLM"))
+        )
 
 class WorldUnderstandingService:
-    def __init__(self, openai: Optional[OpenAIWorldSpecProvider] = None):
+    def __init__(
+        self,
+        openai: Optional[OpenAIWorldSpecProvider] = None,
+        groq: Optional[GroqWorldSpecProvider] = None,
+        gemini: Optional[GeminiWorldSpecProvider] = None,
+        openrouter: Optional[OpenRouterWorldSpecProvider] = None,
+        huggingface: Optional[HuggingFaceWorldSpecProvider] = None,
+    ):
         self.parser = DeterministicPromptParser()
         self.openai = openai or OpenAIWorldSpecProvider()
+        self.groq = groq or GroqWorldSpecProvider()
+        self.gemini = gemini or GeminiWorldSpecProvider()
+        self.openrouter = openrouter or OpenRouterWorldSpecProvider()
+        self.huggingface = huggingface or HuggingFaceWorldSpecProvider()
 
     def understand(self, prompt: str, seed: int = 42) -> Tuple[FinancialWorldSpec, List[UnderstandingStep]]:
-        provider = os.getenv("AUDITRA_WORLD_LLM_PROVIDER", os.getenv("AUDITRA_LLM_PROVIDER", "")).lower()
-        if os.getenv("AUDITRA_USE_OPENAI_WORLD_BUILDER") == "1" or provider == "openai":
-            return self.openai.parse(prompt, seed=seed)
+        provider = resolve_llm_provider("WORLD")
+        if provider in {"groq", "openai"}:
+            selected = self.groq if provider == "groq" else self.openai
+            try:
+                return selected.parse(prompt, seed=seed)
+            except PromptUnderstandingError as exc:
+                spec, steps = self.parser.parse(prompt, seed=seed)
+                source = getattr(exc, "__cause__", None) or exc
+                failure_type = getattr(source, "failure_type", "invalid_structured_output")
+                spec = spec.model_copy(update={"understanding_source": f"deterministic_fallback:{provider}:{failure_type}"})
+                steps.insert(
+                    0,
+                    UnderstandingStep(
+                        step="External AI fallback",
+                        status="WARNING",
+                        detail=f"{provider} could not return a valid spec; deterministic parsing completed the request.",
+                        metadata={
+                            "execution_mode": OFFLINE_AI,
+                            "provider": "deterministic",
+                            "model": "financial-world-parser",
+                            "prompt_version": selected.prompt_version,
+                            "timestamp": getattr(source, "timestamp", None),
+                            "latency_ms": getattr(source, "latency_ms", 0.0),
+                            "attempts": getattr(source, "attempts", 0),
+                            "llm_calls": 0,
+                            "input_tokens": None,
+                            "output_tokens": None,
+                            "total_tokens": None,
+                            "cost_usd": None,
+                            "success": False,
+                            "failure_type": failure_type,
+                            "requested_provider": provider,
+                        },
+                    ),
+                )
+                return spec, steps
         return self.parser.parse(prompt, seed=seed)

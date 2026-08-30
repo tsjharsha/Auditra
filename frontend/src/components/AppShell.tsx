@@ -1,4 +1,12 @@
-import { Activity, Database, Hammer, Network, ShieldCheck } from "lucide-react";
+import {
+  Activity,
+  BarChart3,
+  Boxes,
+  ClipboardCheck,
+  House,
+  Settings,
+  ShieldCheck,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuditra } from "../hooks/useAuditra";
 import { normalizePageId } from "../lib/navigation";
@@ -6,33 +14,52 @@ import { cn } from "../lib/utils";
 import type { PrimaryPageId } from "../types/auditra";
 
 const navigation: Array<{ id: PrimaryPageId; label: string; icon: ReactNode }> = [
-  { id: "home", label: "Build", icon: <Hammer className="h-4 w-4" /> },
-  { id: "audits", label: "Audit", icon: <ShieldCheck className="h-4 w-4" /> },
+  { id: "home", label: "Home", icon: <House className="h-4 w-4" /> },
+  { id: "worlds", label: "Worlds", icon: <Boxes className="h-4 w-4" /> },
+  { id: "audits", label: "Audits", icon: <ShieldCheck className="h-4 w-4" /> },
+  { id: "review", label: "Review", icon: <ClipboardCheck className="h-4 w-4" /> },
+  { id: "insights", label: "Insights", icon: <BarChart3 className="h-4 w-4" /> },
+  { id: "settings", label: "Settings", icon: <Settings className="h-4 w-4" /> },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { activePage, setActivePage, healthStatus, statusMessage, isBusy, busyLabel, world, audit } = useAuditra();
+  const {
+    activePage,
+    setActivePage,
+    healthStatus,
+    runtimeAI,
+    statusMessage,
+    isBusy,
+    busyLabel,
+    world,
+    audit,
+  } = useAuditra();
   const currentPage = normalizePageId(activePage);
+  const provider = runtimeAI?.investigation;
   const healthy = healthStatus === "healthy";
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#050914] text-slate-100">
-      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(125deg,rgba(79,70,229,0.16)_0%,transparent_32%,rgba(8,145,178,0.12)_67%,transparent_100%)]" />
-      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:linear-gradient(to_bottom,black,transparent_78%)]" />
-
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#050914]/85 backdrop-blur-xl">
-        <div className="mx-auto flex min-h-[72px] w-full max-w-[1480px] items-center gap-4 px-4 sm:px-6 lg:px-8">
-          <button type="button" className="flex shrink-0 items-center gap-3 text-left" onClick={() => setActivePage("home")}>
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 via-sky-500 to-cyan-400 text-white shadow-[0_0_24px_rgba(34,211,238,0.28)]">
-              <Network className="h-5 w-5" />
+    <div className="min-h-screen bg-[#070a10] text-slate-100">
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#090d14]/95 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-[68px] w-full max-w-[1600px] items-center gap-3 px-4 sm:px-6 lg:px-8">
+          <button
+            type="button"
+            className="flex shrink-0 items-center gap-3 text-left"
+            onClick={() => setActivePage("home")}
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-md bg-cyan-400 text-slate-950 shadow-[0_0_28px_rgba(34,211,238,0.18)]">
+              <ShieldCheck className="h-5 w-5" />
             </span>
             <span className="hidden sm:block">
-              <span className="block text-lg font-bold text-white">Auditra</span>
-              <span className="block text-[11px] text-slate-500">Financial control intelligence</span>
+              <span className="block text-base font-semibold text-white">Auditra</span>
+              <span className="block text-[10px] text-slate-500">Autonomous finance assurance</span>
             </span>
           </button>
 
-          <nav className="ml-auto flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.035] p-1 sm:ml-6" aria-label="Primary navigation">
+          <nav
+            className="ml-2 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto lg:ml-8"
+            aria-label="Primary navigation"
+          >
             {navigation.map((item) => {
               const active = currentPage === item.id;
               return (
@@ -40,8 +67,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                   key={item.id}
                   type="button"
                   className={cn(
-                    "inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition sm:px-4",
-                    active ? "bg-white text-slate-950 shadow-sm" : "text-slate-400 hover:bg-white/5 hover:text-white",
+                    "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md px-3 text-xs font-semibold transition sm:text-sm",
+                    active
+                      ? "bg-white/[0.1] text-white"
+                      : "text-slate-500 hover:bg-white/[0.05] hover:text-slate-200",
                   )}
                   onClick={() => setActivePage(item.id)}
                 >
@@ -52,40 +81,69 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          <div className="ml-auto hidden min-w-0 items-center gap-3 lg:flex">
+          <div className="hidden shrink-0 items-center gap-2 xl:flex">
             {world ? (
-              <div className="flex min-w-0 items-center gap-2 border-r border-white/10 pr-3 text-xs text-slate-400">
-                <Database className="h-4 w-4 shrink-0 text-indigo-300" />
-                <span className="max-w-[180px] truncate">{world.summary.merchant}</span>
-              </div>
-            ) : null}
-            <div className="flex min-w-0 items-center gap-2 text-xs text-slate-400">
-              <Activity className={cn("h-4 w-4 shrink-0", isBusy ? "animate-pulse text-cyan-300" : "text-slate-500")} />
-              <span className="max-w-[180px] truncate">{isBusy ? busyLabel : statusMessage}</span>
-            </div>
-            <div className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold", healthy ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200" : "border-amber-400/20 bg-amber-400/10 text-amber-200")}>
-              <span className="relative flex h-2 w-2">
-                {healthy ? <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-60" /> : null}
-                <span className={cn("relative inline-flex h-2 w-2 rounded-full", healthy ? "bg-emerald-300" : "bg-amber-300")} />
+              <span className="max-w-[150px] truncate border-r border-white/10 pr-3 text-xs text-slate-500">
+                {world.summary.merchant}
               </span>
+            ) : null}
+            <ProviderBadge
+              mode={provider?.execution_mode ?? "AI_UNAVAILABLE"}
+              model={provider?.model ?? "Checking runtime"}
+            />
+            <span
+              className={cn(
+                "inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[11px] font-semibold",
+                healthy
+                  ? "border-emerald-400/20 bg-emerald-400/[0.08] text-emerald-200"
+                  : "border-rose-400/20 bg-rose-400/[0.08] text-rose-200",
+              )}
+            >
+              <span className={cn("h-1.5 w-1.5 rounded-full", healthy ? "bg-emerald-300" : "bg-rose-300")} />
               {healthy ? "API live" : healthStatus}
-            </div>
+            </span>
           </div>
         </div>
 
-        <div className="border-t border-white/[0.06] px-4 py-2 lg:hidden">
-          <div className="mx-auto flex max-w-[1480px] items-center justify-between gap-3 text-xs text-slate-500">
-            <span className="truncate">{isBusy ? busyLabel : statusMessage}</span>
-            <span className={cn("shrink-0", healthy ? "text-emerald-300" : "text-amber-300")}>{healthy ? "API live" : healthStatus}</span>
+        <div className="border-t border-white/[0.06] px-4 py-2 xl:hidden">
+          <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 text-xs">
+            <span className="flex min-w-0 items-center gap-2 text-slate-500">
+              <Activity className={cn("h-3.5 w-3.5 shrink-0", isBusy && "animate-pulse text-cyan-300")} />
+              <span className="truncate">{isBusy ? busyLabel : statusMessage}</span>
+            </span>
+            <span className={healthy ? "shrink-0 text-emerald-300" : "shrink-0 text-rose-300"}>
+              {healthy ? provider?.execution_mode ?? "API live" : "API offline"}
+            </span>
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-[1480px] px-4 py-7 sm:px-6 sm:py-9 lg:px-8">
+      <main className="mx-auto w-full max-w-[1600px] px-4 py-7 sm:px-6 sm:py-9 lg:px-8">
         {children}
       </main>
 
       {audit ? <div className="sr-only">Current audit run {audit.controller_run.run_id}</div> : null}
     </div>
+  );
+}
+
+function ProviderBadge({ mode, model }: { mode: string; model: string }) {
+  const real = mode.startsWith("REAL_");
+  const unavailable = mode === "AI_UNAVAILABLE";
+  return (
+    <span
+      className={cn(
+        "inline-flex max-w-[220px] items-center gap-2 rounded-md border px-2.5 py-1.5 text-[11px] font-semibold",
+        real
+          ? "border-cyan-400/20 bg-cyan-400/[0.08] text-cyan-200"
+          : unavailable
+            ? "border-rose-400/20 bg-rose-400/[0.08] text-rose-200"
+            : "border-amber-400/20 bg-amber-400/[0.08] text-amber-200",
+      )}
+      title={mode + " / " + model}
+    >
+      <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", real ? "bg-cyan-300" : unavailable ? "bg-rose-300" : "bg-amber-300")} />
+      <span className="truncate">{mode}</span>
+    </span>
   );
 }

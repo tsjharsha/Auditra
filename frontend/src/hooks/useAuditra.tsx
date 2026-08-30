@@ -13,6 +13,7 @@ import type {
   ReconciliationCase,
   RedTeamResult,
   ReviewAction,
+  RuntimeAIStatus,
   WorldBuildResult,
   WorldPreview,
 } from "../types/auditra";
@@ -69,6 +70,7 @@ interface AuditraContextValue {
   lastReviewEvent: string | null;
   statusMessage: string;
   healthStatus: string;
+  runtimeAI: RuntimeAIStatus | null;
   isBusy: boolean;
   busyLabel: string;
   error: unknown;
@@ -497,6 +499,7 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
       lastReviewEvent,
       statusMessage,
       healthStatus: health.data?.status ?? (health.isError ? "offline" : "checking"),
+      runtimeAI: health.data?.ai ?? null,
       isBusy,
       busyLabel,
       error,
@@ -533,6 +536,7 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
       comparison,
       error,
       health.data?.status,
+      health.data?.ai,
       health.isError,
       isBusy,
       lastReviewEvent,

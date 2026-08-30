@@ -1,11 +1,31 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, replace
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
-from .llm import LLMInvalidResponse, LLMProvider, LLMProviderConfig, MockProvider, OfflineProvider, OpenAIProvider as OpenAILLMProvider
+from .llm import (
+    OFFLINE_AI,
+    REAL_GEMINI_AI,
+    REAL_HUGGINGFACE_AI,
+    REAL_OPENROUTER_AI,
+    REAL_GROQ_AI,
+    REAL_OPENAI_AI,
+    GeminiProvider as GeminiLLMProvider,
+    GroqProvider as GroqLLMProvider,
+    HuggingFaceProvider as HuggingFaceLLMProvider,
+    OpenRouterProvider as OpenRouterLLMProvider,
+    LLMInvalidResponse,
+    LLMProvider,
+    LLMProviderConfig,
+    LLMUnavailable,
+    MockProvider,
+    OfflineProvider,
+    OpenAIProvider as OpenAILLMProvider,
+    resolve_llm_provider,
+)
 
 
 HypothesisLabel = Literal[
@@ -62,9 +82,10 @@ class InvestigationPlan(BaseModel):
 @dataclass(frozen=True)
 class ProviderUsage:
     llm_calls: int = 0
-    input_tokens: int = 0
-    output_tokens: int = 0
-    estimated_cost_usd: str = "0.00"
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    total_tokens: Optional[int] = None
+    estimated_cost_usd: Optional[str] = None
     latency_ms: float = 0.0
     attempts: int = 0
 
@@ -100,7 +121,32 @@ class OfflineStructuredProvider(StructuredInvestigationProvider):
             ],
             confidence_factors={"provider_confidence": 0.72},
         )
-        return {**plan.model_dump(mode="json"), "usage": ProviderUsage()}
+        return {
+            **plan.model_dump(mode="json"),
+            "provider": self.provider_name,
+            "model": self.model_name,
+            "execution_mode": OFFLINE_AI,
+            "prompt_version": self.prompt_version,
+            "usage": ProviderUsage(estimated_cost_usd="0.00"),
+            "provider_trace": [
+                {
+                    "execution_mode": OFFLINE_AI,
+                    "provider": self.provider_name,
+                    "model": self.model_name,
+                    "prompt_version": self.prompt_version,
+                    "timestamp": None,
+                    "latency_ms": 0.0,
+                    "attempts": 0,
+                    "llm_calls": 0,
+                    "input_tokens": None,
+                    "output_tokens": None,
+                    "total_tokens": None,
+                    "cost_usd": "0.00",
+                    "success": True,
+                    "failure_type": None,
+                }
+            ],
+        }
 
     def _candidate_labels(self, context: Dict[str, Any]) -> List[HypothesisLabel]:
         candidates: List[HypothesisLabel] = []
@@ -173,16 +219,27 @@ class OfflineStructuredProvider(StructuredInvestigationProvider):
         return steps
 
 
-class OpenAIInvestigationProvider(StructuredInvestigationProvider):
-    provider_name = "openai"
+class LLMInvestigationProvider(StructuredInvestigationProvider):
+    execution_mode = REAL_OPENAI_AI
     prompt_version = "investigation-plan-v2"
 
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
-        self.llm_provider = llm_provider or OpenAILLMProvider(config=config or LLMProviderConfig.from_env("AUDITRA_INVESTIGATION_LLM"))
+    def __init__(self, llm_provider: LLMProvider):
+        self.llm_provider = llm_provider
+        self.provider_name = llm_provider.provider_name
         self.model_name = self.llm_provider.config.model
 
     def propose(self, context: Dict[str, Any]) -> Dict[str, Any]:
         last_error: Optional[Exception] = None
+        calls = 0
+        input_tokens = 0
+        output_tokens = 0
+        total_tokens = 0
+        token_usage_known = True
+        cost_total = 0.0
+        cost_known = True
+        latency_ms = 0.0
+        provider_attempts = 0
+        last_response = None
         for attempt in range(1, 3):
             response = self.llm_provider.generate_structured(
                 schema_name="AuditraInvestigationPlan",
@@ -194,23 +251,226 @@ class OpenAIInvestigationProvider(StructuredInvestigationProvider):
                 ),
                 user_payload=context,
             )
+            last_response = response
+            calls += response.llm_calls
+            latency_ms += response.latency_ms
+            provider_attempts += response.attempts
+            if response.input_tokens is None or response.output_tokens is None:
+                token_usage_known = False
+            else:
+                input_tokens += response.input_tokens
+                output_tokens += response.output_tokens
+                total_tokens += response.total_tokens or response.input_tokens + response.output_tokens
+            if response.estimated_cost_usd is None:
+                cost_known = False
+            else:
+                cost_total += float(response.estimated_cost_usd)
             try:
                 plan = InvestigationPlan.model_validate(response.output)
+                cost = f"{cost_total:.6f}" if cost_known else None
                 return {
                     **plan.model_dump(mode="json"),
+                    "provider": response.provider,
+                    "model": response.model,
+                    "execution_mode": self.execution_mode,
+                    "prompt_version": self.prompt_version,
                     "usage": ProviderUsage(
                         llm_calls=response.llm_calls,
-                        input_tokens=response.input_tokens,
-                        output_tokens=response.output_tokens,
-                        estimated_cost_usd=str(response.estimated_cost_usd),
-                        latency_ms=response.latency_ms,
-                        attempts=max(response.attempts, attempt),
+                        input_tokens=input_tokens if token_usage_known else None,
+                        output_tokens=output_tokens if token_usage_known else None,
+                        total_tokens=total_tokens if token_usage_known else None,
+                        estimated_cost_usd=cost,
+                        latency_ms=round(latency_ms, 4),
+                        attempts=max(provider_attempts, attempt),
                     ),
                     "response_id": response.response_id,
+                    "provider_trace": [
+                        {
+                            "execution_mode": self.execution_mode,
+                            "provider": response.provider,
+                            "model": response.model,
+                            "prompt_version": self.prompt_version,
+                            "timestamp": response.timestamp,
+                            "latency_ms": round(latency_ms, 4),
+                            "attempts": max(provider_attempts, attempt),
+                            "llm_calls": response.llm_calls,
+                            "input_tokens": input_tokens if token_usage_known else None,
+                            "output_tokens": output_tokens if token_usage_known else None,
+                            "total_tokens": total_tokens if token_usage_known else None,
+                            "cost_usd": cost,
+                            "success": True,
+                            "failure_type": None,
+                            "response_id": response.response_id,
+                        }
+                    ],
                 }
             except ValidationError as exc:
                 last_error = exc
         raise LLMInvalidResponse(f"invalid investigation plan: {last_error}")
+
+
+class OpenAIInvestigationProvider(LLMInvestigationProvider):
+    execution_mode = REAL_OPENAI_AI
+
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+        super().__init__(
+            llm_provider
+            or OpenAILLMProvider(config=config or LLMProviderConfig.from_env("AUDITRA_INVESTIGATION_LLM"))
+        )
+
+
+class GroqInvestigationProvider(LLMInvestigationProvider):
+    execution_mode = REAL_GROQ_AI
+
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+        super().__init__(
+            llm_provider
+            or GroqLLMProvider(config=config or LLMProviderConfig.from_groq_env("AUDITRA_INVESTIGATION_LLM"))
+        )
+
+
+class GeminiInvestigationProvider(LLMInvestigationProvider):
+    execution_mode = REAL_GEMINI_AI
+
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+        super().__init__(
+            llm_provider
+            or GeminiLLMProvider(config=config or LLMProviderConfig.from_gemini_env("AUDITRA_INVESTIGATION_LLM"))
+        )
+
+
+class OpenRouterInvestigationProvider(LLMInvestigationProvider):
+    execution_mode = REAL_OPENROUTER_AI
+
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+        super().__init__(
+            llm_provider
+            or OpenRouterLLMProvider(config=config or LLMProviderConfig.from_openrouter_env("AUDITRA_INVESTIGATION_LLM"))
+        )
+
+
+class HuggingFaceInvestigationProvider(LLMInvestigationProvider):
+    execution_mode = REAL_HUGGINGFACE_AI
+
+    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+        super().__init__(
+            llm_provider
+            or HuggingFaceLLMProvider(config=config or LLMProviderConfig.from_huggingface_env("AUDITRA_INVESTIGATION_LLM"))
+        )
+
+class TransparentFallbackInvestigationProvider(StructuredInvestigationProvider):
+    """Uses offline planning after an external failure and labels the fallback."""
+
+    def __init__(
+        self,
+        primary: StructuredInvestigationProvider,
+        fallback: Optional[StructuredInvestigationProvider] = None,
+    ):
+        self.primary = primary
+        self.fallback = fallback or OfflineStructuredProvider()
+        self.provider_name = primary.provider_name
+        self.model_name = primary.model_name
+        self.prompt_version = primary.prompt_version
+        self._circuit_open = False
+        self._circuit_failure_type: Optional[str] = None
+        self._circuit_failure_trace: Optional[Dict[str, Any]] = None
+        self._primary_calls = 0
+        self._primary_call_limit = max(0, int(os.getenv("AUDITRA_EXTERNAL_LLM_CASE_LIMIT", "12")))
+
+    def propose(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        if self._primary_call_limit and self._primary_calls >= self._primary_call_limit:
+            proposal = self.fallback.propose(context)
+            proposal["fallback_reason"] = "provider_budget_exhausted"
+            proposal["usage"] = ProviderUsage(estimated_cost_usd="0.00")
+            proposal["provider_trace"] = [
+                {
+                    "execution_mode": getattr(self.primary, "execution_mode", "AI_UNAVAILABLE"),
+                    "provider": self.primary.provider_name,
+                    "model": self.primary.model_name,
+                    "prompt_version": self.primary.prompt_version,
+                    "timestamp": None,
+                    "latency_ms": 0.0,
+                    "attempts": 0,
+                    "llm_calls": 0,
+                    "input_tokens": None,
+                    "output_tokens": None,
+                    "total_tokens": None,
+                    "cost_usd": None,
+                    "success": False,
+                    "failure_type": "provider_budget_exhausted",
+                },
+                *proposal.get("provider_trace", []),
+            ]
+            return proposal
+        if self._circuit_open:
+            proposal = self.fallback.propose(context)
+            failure_type = self._circuit_failure_type or "provider_circuit_open"
+            proposal["fallback_reason"] = f"provider_circuit_open:{failure_type}"
+            proposal["usage"] = ProviderUsage(estimated_cost_usd="0.00")
+            if self._circuit_failure_trace:
+                proposal["provider_trace"] = [{**self._circuit_failure_trace, "failure_type": proposal["fallback_reason"]}, *proposal.get("provider_trace", [])]
+            return proposal
+        try:
+            self._primary_calls += 1
+            return self.primary.propose(context)
+        except Exception as exc:
+            proposal = self.fallback.propose(context)
+            failure_type = getattr(exc, "failure_type", "invalid_structured_output")
+            self._circuit_open = True
+            self._circuit_failure_type = failure_type
+            proposal["fallback_reason"] = failure_type
+            proposal["usage"] = ProviderUsage(
+                llm_calls=0,
+                input_tokens=None,
+                output_tokens=None,
+                total_tokens=None,
+                estimated_cost_usd="0.00",
+                latency_ms=float(getattr(exc, "latency_ms", 0.0)),
+                attempts=int(getattr(exc, "attempts", 0)),
+            )
+            failure_trace = {
+                    "execution_mode": getattr(self.primary, "execution_mode", "AI_UNAVAILABLE"),
+                    "provider": self.primary.provider_name,
+                    "model": self.primary.model_name,
+                    "prompt_version": self.primary.prompt_version,
+                    "timestamp": getattr(exc, "timestamp", None),
+                    "latency_ms": getattr(exc, "latency_ms", 0.0),
+                    "attempts": getattr(exc, "attempts", 0),
+                    "llm_calls": 0,
+                    "input_tokens": None,
+                    "output_tokens": None,
+                    "total_tokens": None,
+                    "cost_usd": None,
+                    "success": False,
+                    "failure_type": failure_type,
+            }
+            self._circuit_failure_trace = failure_trace
+            proposal["provider_trace"] = [failure_trace, *proposal.get("provider_trace", [])]
+            return proposal
+
+
+def _bounded_investigation_config(config: LLMProviderConfig) -> LLMProviderConfig:
+    timeout_cap = float(os.getenv("AUDITRA_EXTERNAL_LLM_TIMEOUT_CAP", "8"))
+    retry_cap = int(os.getenv("AUDITRA_EXTERNAL_LLM_MAX_RETRIES_CAP", "0"))
+    return replace(
+        config,
+        timeout_seconds=min(config.timeout_seconds, timeout_cap),
+        max_retries=min(config.max_retries, retry_cap),
+    )
+
+def runtime_investigation_provider() -> StructuredInvestigationProvider:
+    provider = resolve_llm_provider("INVESTIGATION")
+    if provider == "groq":
+        return TransparentFallbackInvestigationProvider(GroqInvestigationProvider(config=_bounded_investigation_config(LLMProviderConfig.from_groq_env("AUDITRA_INVESTIGATION_LLM"))))
+    if provider == "gemini":
+        return TransparentFallbackInvestigationProvider(GeminiInvestigationProvider(config=_bounded_investigation_config(LLMProviderConfig.from_gemini_env("AUDITRA_INVESTIGATION_LLM"))))
+    if provider == "openrouter":
+        return TransparentFallbackInvestigationProvider(OpenRouterInvestigationProvider(config=_bounded_investigation_config(LLMProviderConfig.from_openrouter_env("AUDITRA_INVESTIGATION_LLM"))))
+    if provider == "huggingface":
+        return TransparentFallbackInvestigationProvider(HuggingFaceInvestigationProvider(config=_bounded_investigation_config(LLMProviderConfig.from_huggingface_env("AUDITRA_INVESTIGATION_LLM"))))
+    if provider == "openai":
+        return TransparentFallbackInvestigationProvider(OpenAIInvestigationProvider(config=_bounded_investigation_config(LLMProviderConfig.from_env("AUDITRA_INVESTIGATION_LLM"))))
+    return OfflineStructuredProvider()
 
 
 class OpenAIProvider(OpenAIInvestigationProvider):
@@ -235,13 +495,49 @@ class MockStructuredInvestigationProvider(StructuredInvestigationProvider):
             self_challenge=["Could duplicate or fee evidence contradict this?"],
             verification_requirements=["Deterministic verification must pass."],
         )
-        return {**plan.model_dump(mode="json"), "usage": ProviderUsage(llm_calls=1, input_tokens=100, output_tokens=40, estimated_cost_usd="0.01")}
+        return {
+            **plan.model_dump(mode="json"),
+            "provider": self.provider_name,
+            "model": self.model_name,
+            "execution_mode": "MOCK_AI",
+            "prompt_version": self.prompt_version,
+            "usage": ProviderUsage(
+                llm_calls=1,
+                input_tokens=100,
+                output_tokens=40,
+                total_tokens=140,
+                estimated_cost_usd="0.01",
+                attempts=1,
+            ),
+            "provider_trace": [
+                {
+                    "execution_mode": "MOCK_AI",
+                    "provider": self.provider_name,
+                    "model": self.model_name,
+                    "prompt_version": self.prompt_version,
+                    "timestamp": None,
+                    "latency_ms": 0.0,
+                    "attempts": 1,
+                    "llm_calls": 1,
+                    "input_tokens": 100,
+                    "output_tokens": 40,
+                    "total_tokens": 140,
+                    "cost_usd": "0.01",
+                    "success": True,
+                    "failure_type": None,
+                }
+            ],
+        }
 
 
 __all__ = [
     "AllowedToolName",
     "HypothesisLabel",
     "InvestigationPlan",
+    "GeminiInvestigationProvider",
+    "GroqInvestigationProvider",
+    "HuggingFaceInvestigationProvider",
+    "OpenRouterInvestigationProvider",
     "LLMProvider",
     "LLMProviderConfig",
     "MockProvider",
@@ -252,5 +548,7 @@ __all__ = [
     "OpenAIProvider",
     "ProviderUsage",
     "StructuredInvestigationProvider",
+    "TransparentFallbackInvestigationProvider",
     "ToolPlanStep",
+    "runtime_investigation_provider",
 ]

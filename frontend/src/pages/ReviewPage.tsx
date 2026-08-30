@@ -1,213 +1,48 @@
-import { useMemo, useState } from "react";
-import { CheckCircle2, GitBranch, ShieldAlert } from "lucide-react";
-import { Badge } from "../components/ui/Badge";
-import { Button } from "../components/ui/Button";
-import { Card, SectionHeader } from "../components/ui/Card";
-import { Textarea } from "../components/ui/Field";
-import { EmptyState, SuccessState } from "../components/ui/State";
-import { EvidencePanel } from "../features/investigation/EvidencePanel";
-import { ToolTrace } from "../features/investigation/ToolTrace";
-import { VerificationPanel } from "../features/investigation/VerificationPanel";
-import { CaseEvidenceFlow } from "../features/graph/RelationshipFlow";
+import { ArrowRight, CheckCircle2, CircleAlert, GitBranch, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import { InlineError, SectionTitle, SegmentedTabs, StatusPill, WorkspacePanel } from "../components/WorkspaceUI";
+import { useAuditra } from "../hooks/useAuditra";
 import { money, pct, titleCase } from "../lib/format";
 import { caseEvidenceHighlights, caseShortExplanation, caseTitle, caseWhyItMatters, groupedReviewCases, reviewPriority } from "../lib/product";
-import { riskTone, statusTone } from "../lib/status";
-import { useAuditra } from "../hooks/useAuditra";
 import type { ReviewAction } from "../types/auditra";
 
-type ReviewFilter = "high" | "medium" | "resolved";
+type Filter = "high" | "medium" | "resolved";
 
 export function ReviewPage() {
-  const { audit, selectedCase, setSelectedCase, reviewCase, lastReviewEvent, isBusy } = useAuditra();
-  const [filter, setFilter] = useState<ReviewFilter>("high");
+  const { audit, selectedCase, setSelectedCase, reviewCase, lastReviewEvent, isBusy, error, setActivePage } = useAuditra();
+  const [filter, setFilter] = useState<Filter>("high");
   const [note, setNote] = useState("Reviewed in Auditra.");
-
-  if (!audit) {
-    return <EmptyState title="No cases to review" detail="Run an audit first so Auditra can surface the transactions that need your attention." />;
-  }
+  if (!audit) return <Empty title="No cases to review" detail="Run an audit first so Auditra can surface the decisions that need attention." onClick={() => setActivePage("audits")} />;
 
   const groups = groupedReviewCases(audit);
-  const currentRows = filter === "high" ? groups.high : filter === "medium" ? groups.medium : groups.resolved;
-  const focusCase = selectedCase ?? groups.high[0] ?? groups.medium[0] ?? groups.resolved[0] ?? null;
-  const evidence = focusCase ? caseEvidenceHighlights(focusCase) : [];
+  const rows = filter === "high" ? groups.high : filter === "medium" ? groups.medium : groups.resolved;
+  const focus = selectedCase ?? groups.high[0] ?? groups.medium[0] ?? groups.resolved[0] ?? null;
+  const evidence = focus ? caseEvidenceHighlights(focus) : [];
+  const checks = focus?.decision.verification?.checks ?? [];
+  const submit = (action: ReviewAction) => focus && void reviewCase(focus.case_id, action, note);
 
-  const submit = (action: ReviewAction) => {
-    if (focusCase) void reviewCase(focusCase.case_id, action, note);
-  };
-
-  return (
-    <div className="space-y-6">
-      {lastReviewEvent ? <SuccessState title={lastReviewEvent} detail="The decision was recorded for the active controller run." /> : null}
-
-      <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-        <Card className="rounded-[32px] border-white/70 bg-white/90 p-5">
-          <SectionHeader title="Cases where Auditra needs you" kicker="Focus on priority first, then work through the rest." />
-          <div className="grid gap-2">
-            <FilterButton label="High priority" count={groups.high.length} active={filter === "high"} onClick={() => setFilter("high")} />
-            <FilterButton label="Medium priority" count={groups.medium.length} active={filter === "medium"} onClick={() => setFilter("medium")} />
-            <FilterButton label="Resolved" count={groups.resolved.length} active={filter === "resolved"} onClick={() => setFilter("resolved")} />
-          </div>
-          <div className="mt-4 space-y-3">
-            {currentRows.length ? (
-              currentRows.map((item) => (
-                <button
-                  key={item.case_id}
-                  className={`w-full rounded-[24px] border p-4 text-left transition ${
-                    focusCase?.case_id === item.case_id ? "border-indigo-200 bg-indigo-50/70" : "border-line bg-slate-50/80 hover:bg-white"
-                  }`}
-                  onClick={() => setSelectedCase(item)}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-slate-950">{caseTitle(item)}</div>
-                      <div className="mt-1 text-sm text-muted">{money(item.decision.financial_impact)} exposure</div>
-                    </div>
-                    <Badge tone={riskTone(item.risk_score)}>Risk {item.risk_score.toFixed(1)}</Badge>
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-muted">{caseShortExplanation(item)}</p>
-                </button>
-              ))
-            ) : (
-              <EmptyState title="No cases in this group" detail="Switch groups to review a different slice of the queue." />
-            )}
-          </div>
-        </Card>
-
-        {focusCase ? (
-          <div className="space-y-4">
-            <Card className="rounded-[32px] border-white/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.92),rgba(255,255,255,0.96),rgba(224,231,255,0.80))] p-6">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-11 w-11 place-items-center rounded-2xl bg-amber-50 text-amber-600">
-                      <ShieldAlert className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <div className="text-sm font-medium text-slate-500">{reviewPriority(focusCase)}</div>
-                      <h1 className="text-2xl font-semibold tracking-tight text-slate-950">{caseTitle(focusCase)}</h1>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Badge tone={statusTone(focusCase.status)}>{titleCase(focusCase.status)}</Badge>
-                    <Badge tone={riskTone(focusCase.risk_score)}>Risk {focusCase.risk_score.toFixed(1)}</Badge>
-                    <Badge tone={Number(focusCase.decision.financial_impact) > 0 ? "warning" : "muted"}>{money(focusCase.decision.financial_impact)} exposure</Badge>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-white/80 bg-white/90 px-4 py-3">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Result</div>
-                  <div className="mt-2 text-lg font-semibold text-slate-950">{titleCase(focusCase.decision.status)}</div>
-                  <div className="text-sm text-muted">{pct(focusCase.decision.confidence_score)} confidence</div>
-                </div>
-              </div>
-            </Card>
-
-            <div className="grid gap-4 xl:grid-cols-2">
-              <InfoCard title="What Auditra found" content={caseShortExplanation(focusCase)} />
-              <InfoCard title={focusCase.status === "HUMAN_REVIEW" || focusCase.status === "UNRESOLVED" ? "Why Auditra is uncertain" : "Why"} content={caseWhyItMatters(focusCase)} />
-            </div>
-
-            <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-              <SectionHeader title="Evidence" kicker="The key records behind this decision" />
-              <div className="grid gap-3 md:grid-cols-3">
-                {evidence.map((item) => (
-                  <div key={item.evidence_id} className="rounded-2xl border border-line bg-slate-50/80 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{titleCase(item.entity_type)}</div>
-                    <div className="mt-2 text-sm font-semibold text-slate-950">{item.summary}</div>
-                  </div>
-                ))}
-                {!evidence.length ? <EmptyState title="No evidence highlighted" detail="Open advanced details to inspect the full evidence set." /> : null}
-              </div>
-            </Card>
-
-            <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-              <SectionHeader title="Verification" kicker="The checks Auditra used to build confidence" />
-              <div className="grid gap-3">
-                {(focusCase.decision.verification?.checks ?? []).slice(0, 4).map((check) => (
-                  <div key={check.check} className="flex items-start gap-3 rounded-2xl border border-line bg-slate-50/80 px-4 py-3">
-                    <CheckCircle2 className={`mt-0.5 h-4 w-4 ${check.passed ? "text-emerald-600" : "text-amber-600"}`} />
-                    <div>
-                      <div className="text-sm font-semibold text-slate-950">{check.check}</div>
-                      <div className="text-sm text-muted">{check.detail}</div>
-                    </div>
-                  </div>
-                ))}
-                {!focusCase.decision.verification?.checks.length ? <EmptyState title="No verification summary" detail="Auditra did not return a verification summary for this case." /> : null}
-              </div>
-            </Card>
-
-            <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-              <SectionHeader title="What you can decide" kicker="Approve, reject, or keep the case open after reviewing the evidence." />
-              <Textarea value={note} onChange={(event) => setNote(event.target.value)} className="min-h-[120px] rounded-[24px] border-line bg-slate-50/80" />
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <Button variant="success" disabled={isBusy} onClick={() => submit("APPROVE")}>Approve</Button>
-                <Button variant="danger" disabled={isBusy} onClick={() => submit("REJECT")}>Reject</Button>
-                <Button disabled={isBusy} onClick={() => submit("MARK_UNRESOLVED")}>Keep open</Button>
-              </div>
-            </Card>
-
-            <details className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-panel">
-              <summary className="cursor-pointer text-sm font-semibold text-slate-950">View investigation details</summary>
-              <div className="mt-5 space-y-5">
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-                  <Card className="rounded-[28px] bg-slate-50/70">
-                    <SectionHeader title="Reasoning snapshot" kicker="Advanced context stays here by default." />
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between rounded-2xl border border-line bg-white px-4 py-3">
-                        <span className="text-sm font-medium text-slate-700">AI mode</span>
-                        <Badge tone={focusCase.ai_investigation ? "review" : "muted"}>{focusCase.ai_investigation?.mode ?? "Not needed"}</Badge>
-                      </div>
-                      <div className="flex items-center justify-between rounded-2xl border border-line bg-white px-4 py-3">
-                        <span className="text-sm font-medium text-slate-700">Relationship graph</span>
-                        <span className="inline-flex items-center gap-1 text-sm font-medium text-indigo-700">
-                          Explore
-                          <GitBranch className="h-4 w-4" />
-                        </span>
-                      </div>
-                      <div className="rounded-2xl border border-line bg-white p-4 text-sm leading-6 text-muted">
-                        {focusCase.ai_investigation?.rationale ?? "This case was resolved without an AI investigation."}
-                      </div>
-                    </div>
-                  </Card>
-                  <VerificationPanel verification={focusCase.decision.verification} invariants={focusCase.invariants} />
-                </div>
-
-                <EvidencePanel
-                  evidence={focusCase.evidence}
-                  selectedIds={[...focusCase.decision.supporting_evidence, ...focusCase.decision.contradicting_evidence]}
-                />
-                <Card className="rounded-[28px] bg-white">
-                  <SectionHeader title="Relationship graph" kicker="Supporting and contradicting evidence across the case" />
-                  <CaseEvidenceFlow graph={focusCase.graph} />
-                </Card>
-                <Card className="rounded-[28px] bg-white">
-                  <SectionHeader title="Tool activity" kicker="Technical execution details for this investigation" />
-                  <ToolTrace calls={focusCase.tool_calls} />
-                </Card>
-              </div>
-            </details>
-          </div>
-        ) : (
-          <EmptyState title="No case selected" detail="Choose a case from the queue to open the review workspace." />
-        )}
-      </div>
+  return <div className="space-y-7">
+    <header className="animate-fade-up border-b border-white/10 pb-6"><StatusPill accent="amber" dot>Review</StatusPill><h1 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">Cases where Auditra needs you</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400 sm:text-base">Priority cases are sorted by impact, risk, and uncertainty. Technical traces stay behind details.</p></header>
+    {lastReviewEvent ? <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-100">{lastReviewEvent}</div> : null}
+    {error ? <InlineError error={error} /> : null}
+    <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <WorkspacePanel>
+        <SegmentedTabs tabs={[{ id: "high", label: "High", count: groups.high.length }, { id: "medium", label: "Medium", count: groups.medium.length }, { id: "resolved", label: "Resolved", count: groups.resolved.length }]} active={filter} onChange={setFilter} />
+        <div className="mt-4 max-h-[660px] space-y-2 overflow-y-auto pr-1">{rows.length ? rows.map((item) => <button key={item.case_id} type="button" className={`w-full rounded-lg border p-4 text-left transition ${focus?.case_id === item.case_id ? "border-cyan-400/30 bg-cyan-400/10" : "border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"}`} onClick={() => setSelectedCase(item)}><div className="flex items-start justify-between gap-3"><div><div className="text-sm font-semibold text-white">{caseTitle(item)}</div><div className="mt-1 text-xs text-slate-500">{reviewPriority(item)}</div></div><StatusPill accent={item.status === "MATCHED" ? "emerald" : "amber"}>{titleCase(item.status)}</StatusPill></div><p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-500">{caseShortExplanation(item)}</p><div className="mt-3 text-sm font-semibold text-rose-200">{money(item.decision.financial_impact)}</div></button>) : <div className="rounded-lg border border-dashed border-white/10 p-8 text-center text-sm text-slate-500">No cases in this group.</div>}</div>
+      </WorkspacePanel>
+      {focus ? <div className="space-y-5">
+        <WorkspacePanel className="border-amber-400/15"><SectionTitle icon={<ShieldAlert className="h-5 w-5" />} eyebrow={reviewPriority(focus)} title={caseTitle(focus)} detail={focus.payment_id} /><div className="mt-5 grid gap-3 sm:grid-cols-3"><Fact label="Result" value={titleCase(focus.decision.status)} /><Fact label="Confidence" value={pct(focus.decision.confidence_score)} /><Fact label="Exposure" value={money(focus.decision.financial_impact)} /></div></WorkspacePanel>
+        <div className="grid gap-5 lg:grid-cols-2"><TextPanel title="What happened?" text={caseShortExplanation(focus)} /><TextPanel title={focus.status === "HUMAN_REVIEW" || focus.status === "UNRESOLVED" ? "Why is it open?" : "Why?"} text={caseWhyItMatters(focus)} /></div>
+        <WorkspacePanel><SectionTitle title="Evidence" detail="The key records Auditra used for this decision." /> <div className="mt-4 grid gap-3 md:grid-cols-3">{evidence.map((item) => <Fact key={item.evidence_id} label={titleCase(item.entity_type)} value={item.summary} />)}</div></WorkspacePanel>
+        <WorkspacePanel><SectionTitle title="Verification" detail="Deterministic checks that support or challenge the result." /> <div className="mt-4 grid gap-2">{checks.slice(0, 5).map((check) => <div key={check.check} className="flex gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3">{check.passed ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-300" /> : <CircleAlert className="mt-0.5 h-4 w-4 text-rose-300" />}<div><div className="text-sm font-semibold text-white">{titleCase(check.check)}</div><div className="mt-1 text-xs leading-5 text-slate-500">{check.detail}</div></div></div>)}</div></WorkspacePanel>
+        <WorkspacePanel><SectionTitle title="Decision" detail="Record the human decision for this controller run." /> <textarea className="mt-4 min-h-[100px] w-full rounded-lg border border-white/10 bg-black/25 p-3 text-sm text-white" value={note} onChange={(event) => setNote(event.target.value)} /><div className="mt-4 grid gap-3 sm:grid-cols-3"><Action label="Approve" disabled={isBusy} onClick={() => submit("APPROVE")} tone="emerald" /><Action label="Reject" disabled={isBusy} onClick={() => submit("REJECT")} tone="rose" /><Action label="Keep open" disabled={isBusy} onClick={() => submit("MARK_UNRESOLVED")} tone="amber" /></div></WorkspacePanel>
+        <details className="rounded-lg border border-white/10 bg-slate-900/70 p-5"><summary className="cursor-pointer text-sm font-semibold text-white">View investigation details</summary><div className="mt-4 space-y-3 text-xs leading-5 text-slate-500"><div className="flex items-center gap-2 text-cyan-200"><GitBranch className="h-4 w-4" />{focus.graph.nodes.length} records / {focus.graph.edges.length} links</div><pre className="max-h-[360px] overflow-auto rounded-lg bg-black/30 p-4">{JSON.stringify({ ai: focus.ai_investigation, tools: focus.tool_calls, invariants: focus.invariants }, null, 2)}</pre></div></details>
+      </div> : <Empty title="No case selected" detail="Choose a case from the queue." />}
     </div>
-  );
+  </div>;
 }
 
-function FilterButton({ label, count, active, onClick }: { label: string; count: number; active: boolean; onClick: () => void }) {
-  return (
-    <button className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${active ? "border-indigo-200 bg-indigo-50/70" : "border-line bg-slate-50/80 hover:bg-white"}`} onClick={onClick}>
-      <span className="text-sm font-medium text-slate-800">{label}</span>
-      <Badge tone={active ? "review" : "muted"}>{count}</Badge>
-    </button>
-  );
-}
-
-function InfoCard({ title, content }: { title: string; content: string }) {
-  return (
-    <Card className="rounded-[32px] border-white/70 bg-white/90 p-6">
-      <div className="text-sm font-semibold text-slate-950">{title}</div>
-      <p className="mt-3 text-sm leading-7 text-muted">{content}</p>
-    </Card>
-  );
-}
+function Fact({ label, value }: { label: string; value: string }) { return <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4"><div className="text-[11px] font-semibold text-slate-500">{label}</div><div className="mt-2 text-sm font-semibold text-white">{value}</div></div>; }
+function TextPanel({ title, text }: { title: string; text: string }) { return <WorkspacePanel><div className="text-sm font-semibold text-white">{title}</div><p className="mt-3 text-sm leading-7 text-slate-400">{text}</p></WorkspacePanel>; }
+function Action({ label, disabled, onClick, tone }: { label: string; disabled: boolean; onClick: () => void; tone: "emerald" | "rose" | "amber" }) { const cls = tone === "emerald" ? "bg-emerald-400 text-emerald-950" : tone === "rose" ? "bg-rose-500 text-white" : "bg-amber-300 text-amber-950"; return <button type="button" disabled={disabled} onClick={onClick} className={`min-h-11 rounded-md px-4 text-sm font-semibold transition hover:brightness-110 disabled:opacity-50 ${cls}`}>{label}</button>; }
+function Empty({ title, detail, onClick }: { title: string; detail: string; onClick?: () => void }) { return <WorkspacePanel><div className="py-16 text-center"><h1 className="text-2xl font-semibold text-white">{title}</h1><p className="mt-2 text-sm text-slate-500">{detail}</p>{onClick ? <button type="button" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-md bg-white px-5 text-sm font-semibold text-slate-950" onClick={onClick}>Open audits <ArrowRight className="h-4 w-4" /></button> : null}</div></WorkspacePanel>; }

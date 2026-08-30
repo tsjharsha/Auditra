@@ -8,6 +8,7 @@ from .financial_world import AdapterIngestionResult, FinancialWorldBuildResult, 
 from .models import ControllerRun, DatasetBundle, EvaluationRun, ReviewRequest, ScenarioRequest
 from .postgres import optional_postgres_repository
 from .reconciliation import ReconciliationEngine
+from .runtime import controller_execution_metadata
 from .scenario_generator import ScenarioGenerator
 
 
@@ -140,13 +141,22 @@ class AuditraStore:
             self.latest_evaluation_id = evaluation.evaluation_run_id
             return evaluation
 
-    def compare_controllers(self, dataset_id: str) -> Dict[str, object]:
+    def compare_controllers(
+        self,
+        dataset_id: str,
+        ai_run: Optional[ControllerRun] = None,
+        ai_evaluation: Optional[EvaluationRun] = None,
+    ) -> Dict[str, object]:
         with self._lock:
             dataset = self.get_dataset(dataset_id)
             rows = []
             for label, enable_ai in (("deterministic_only", False), ("ai_assisted", True)):
-                run = ReconciliationEngine(enable_ai=enable_ai).run(dataset)
-                evaluation = self.evaluator.evaluate(dataset, run)
+                if enable_ai and ai_run is not None and ai_evaluation is not None:
+                    run = ai_run
+                    evaluation = ai_evaluation
+                else:
+                    run = ReconciliationEngine(enable_ai=enable_ai).run(dataset)
+                    evaluation = self.evaluator.evaluate(dataset, run)
                 self.controller_runs[run.run_id] = run
                 self.evaluation_runs[evaluation.evaluation_run_id] = evaluation
                 rows.append(
@@ -157,6 +167,7 @@ class AuditraStore:
                         "metrics": evaluation.metrics.model_dump(mode="json"),
                         "controller_metrics": run.metrics.model_dump(mode="json"),
                         "failures": len(evaluation.failures),
+                        "execution": controller_execution_metadata(run),
                     }
                 )
             self.latest_run_id = rows[-1]["controller_run_id"]  # type: ignore[index]

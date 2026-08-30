@@ -80,6 +80,27 @@ export interface UnderstandingStep {
   step: string;
   status: string;
   detail: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface RuntimeProviderStatus {
+  provider: string;
+  model: string;
+  execution_mode: "DETERMINISTIC" | "OFFLINE_AI" | "REAL_GROQ_AI" | "REAL_GEMINI_AI" | "REAL_OPENROUTER_AI" | "REAL_HUGGINGFACE_AI" | "REAL_OPENAI_AI" | "AI_UNAVAILABLE";
+  configured: boolean;
+  fallback_mode?: string | null;
+}
+
+export interface RuntimeAIStatus {
+  world_understanding: RuntimeProviderStatus;
+  investigation: RuntimeProviderStatus;
+  labels: Record<string, string>;
+}
+
+export interface HealthResponse {
+  status: string;
+  product: string;
+  ai: RuntimeAIStatus;
 }
 
 export interface WorldSummary {
@@ -266,11 +287,17 @@ export interface AIInvestigationResult {
   mode: string;
   prompt_version: string;
   llm_calls: number;
-  input_tokens: number;
-  output_tokens: number;
-  estimated_cost_usd: string;
+  input_tokens?: number | null;
+  output_tokens?: number | null;
+  total_tokens?: number | null;
+  estimated_cost_usd?: string | null;
   ai_unavailable: boolean;
   provider_error?: string | null;
+  fallback_reason?: string | null;
+  response_id?: string | null;
+  provider_attempts?: number;
+  provider_latency_ms?: number;
+  provider_trace: Array<Record<string, unknown>>;
   available_tools: string[];
   verification_requirements: string[];
   hypotheses: InvestigationHypothesis[];
@@ -357,6 +384,19 @@ export interface ControllerRun {
   metrics: RunMetrics;
   cases: ReconciliationCase[];
   audit_events: AuditEvent[];
+  execution: ControllerExecution;
+}
+
+export interface ControllerExecution {
+  execution_mode: string;
+  provider: string;
+  model: string;
+  prompt_version?: string | null;
+  investigation_count: number;
+  mode_counts: Record<string, number>;
+  real_provider_calls: number;
+  fallback_count: number;
+  provider_failures: number;
 }
 
 export interface FailureRecord {
@@ -399,6 +439,7 @@ export interface ComparisonRow {
   metrics: EvaluationMetrics;
   controller_metrics: RunMetrics;
   failures: number;
+  execution: ControllerExecution;
 }
 
 export interface ControllerComparison {
@@ -491,4 +532,4 @@ export type PageId =
   | "controller-runs"
   | "audit-trail";
 
-export type PrimaryPageId = "home" | "audits";
+export type PrimaryPageId = "home" | "worlds" | "audits" | "review" | "insights" | "settings";
