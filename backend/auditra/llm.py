@@ -23,6 +23,8 @@ REAL_GEMINI_AI = "REAL_GEMINI_AI"
 REAL_OPENROUTER_AI = "REAL_OPENROUTER_AI"
 REAL_HUGGINGFACE_AI = "REAL_HUGGINGFACE_AI"
 REAL_OPENAI_AI = "REAL_OPENAI_AI"
+REAL_ANTHROPIC_AI = "REAL_ANTHROPIC_AI"
+REAL_OLLAMA_AI = "REAL_OLLAMA_AI"
 AI_UNAVAILABLE = "AI_UNAVAILABLE"
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -87,7 +89,7 @@ class LLMProviderConfig:
     @classmethod
     def from_env(cls, prefix: str = "AUDITRA_LLM") -> "LLMProviderConfig":
         return cls(
-            provider=os.getenv(f"{prefix}_PROVIDER", os.getenv("AUDITRA_LLM_PROVIDER", "offline")),
+            provider=os.getenv(f"{prefix}_PROVIDER", os.getenv("AI_PROVIDER", os.getenv("AUDITRA_LLM_PROVIDER", "offline"))),
             model=os.getenv(f"{prefix}_MODEL", os.getenv("AUDITRA_OPENAI_MODEL", "gpt-5-mini")),
             temperature=float(os.getenv(f"{prefix}_TEMPERATURE", "0")),
             max_tokens=int(os.getenv(f"{prefix}_MAX_TOKENS", "1200")),
@@ -153,30 +155,64 @@ class LLMProviderConfig:
             output_cost_per_1m=None,
         )
 
+    @classmethod
+    def from_anthropic_env(cls, prefix: str = "AUDITRA_LLM") -> "LLMProviderConfig":
+        return cls(
+            provider="anthropic",
+            model=os.getenv(f"{prefix}_MODEL") or os.getenv("ANTHROPIC_MODEL") or "claude-3-5-haiku-latest",
+            temperature=float(os.getenv(f"{prefix}_TEMPERATURE", os.getenv("ANTHROPIC_TEMPERATURE", "0"))),
+            max_tokens=int(os.getenv(f"{prefix}_MAX_TOKENS", os.getenv("ANTHROPIC_MAX_TOKENS", "1200"))),
+            timeout_seconds=float(os.getenv(f"{prefix}_TIMEOUT", os.getenv("ANTHROPIC_TIMEOUT", "20"))),
+            max_retries=int(os.getenv(f"{prefix}_MAX_RETRIES", os.getenv("ANTHROPIC_MAX_RETRIES", "1"))),
+            input_cost_per_1m=None,
+            output_cost_per_1m=None,
+        )
+
+    @classmethod
+    def from_ollama_env(cls, prefix: str = "AUDITRA_LLM") -> "LLMProviderConfig":
+        return cls(
+            provider="ollama",
+            model=os.getenv(f"{prefix}_MODEL") or os.getenv("OLLAMA_MODEL") or "llama3.1",
+            temperature=float(os.getenv(f"{prefix}_TEMPERATURE", os.getenv("OLLAMA_TEMPERATURE", "0"))),
+            max_tokens=int(os.getenv(f"{prefix}_MAX_TOKENS", os.getenv("OLLAMA_MAX_TOKENS", "1200"))),
+            timeout_seconds=float(os.getenv(f"{prefix}_TIMEOUT", os.getenv("OLLAMA_TIMEOUT", "20"))),
+            max_retries=int(os.getenv(f"{prefix}_MAX_RETRIES", os.getenv("OLLAMA_MAX_RETRIES", "1"))),
+            input_cost_per_1m=None,
+            output_cost_per_1m=None,
+        )
+
 
 def resolve_llm_provider(scope: str) -> str:
     normalized = scope.strip().upper()
-    explicit = os.getenv(f"AUDITRA_{normalized}_LLM_PROVIDER") or os.getenv("AUDITRA_LLM_PROVIDER")
+    explicit = os.getenv(f"AUDITRA_{normalized}_LLM_PROVIDER") or os.getenv("AI_PROVIDER") or os.getenv("AUDITRA_LLM_PROVIDER")
     if explicit:
         return explicit.strip().lower()
     if normalized == "WORLD" and os.getenv("AUDITRA_USE_OPENAI_WORLD_BUILDER") == "1":
         return "openai"
     if normalized == "INVESTIGATION" and os.getenv("AUDITRA_USE_OPENAI_INVESTIGATOR") == "1":
         return "openai"
+    if os.getenv("GROQ_API_KEY"):
+        return "groq"
     if os.getenv("GEMINI_API_KEY"):
         return "gemini"
     if os.getenv("OPENROUTER_API_KEY"):
         return "openrouter"
-    if os.getenv("HF_TOKEN"):
+    if os.getenv("HF_TOKEN") or os.getenv("HF_API_KEY"):
         return "huggingface"
-    if os.getenv("GROQ_API_KEY"):
-        return "groq"
     return "offline"
 
 
 def llm_runtime_status(scope: str) -> Dict[str, Any]:
     provider = resolve_llm_provider(scope)
     prefix = f"AUDITRA_{scope.strip().upper()}_LLM"
+    if provider == "deterministic":
+        return {
+            "provider": "deterministic",
+            "model": "financial-control-engine",
+            "execution_mode": DETERMINISTIC,
+            "configured": True,
+            "fallback_mode": None,
+        }
     if provider == "groq":
         config = LLMProviderConfig.from_groq_env(prefix)
         configured = bool(os.getenv("GROQ_API_KEY"))
@@ -209,7 +245,7 @@ def llm_runtime_status(scope: str) -> Dict[str, Any]:
         }
     if provider == "huggingface":
         config = LLMProviderConfig.from_huggingface_env(prefix)
-        configured = bool(os.getenv("HF_TOKEN"))
+        configured = bool(os.getenv("HF_TOKEN") or os.getenv("HF_API_KEY"))
         return {
             "provider": "huggingface",
             "model": config.model,
@@ -226,6 +262,26 @@ def llm_runtime_status(scope: str) -> Dict[str, Any]:
             "execution_mode": REAL_OPENAI_AI if configured else AI_UNAVAILABLE,
             "configured": configured,
             "fallback_mode": OFFLINE_AI,
+        }
+    if provider == "anthropic":
+        config = LLMProviderConfig.from_anthropic_env(prefix)
+        return {
+            "provider": "anthropic",
+            "model": config.model,
+            "execution_mode": AI_UNAVAILABLE,
+            "configured": bool(os.getenv("ANTHROPIC_API_KEY")),
+            "fallback_mode": OFFLINE_AI,
+            "implementation": "architecture_supported_not_integrated",
+        }
+    if provider == "ollama":
+        config = LLMProviderConfig.from_ollama_env(prefix)
+        return {
+            "provider": "ollama",
+            "model": config.model,
+            "execution_mode": AI_UNAVAILABLE,
+            "configured": bool(os.getenv("OLLAMA_BASE_URL")),
+            "fallback_mode": OFFLINE_AI,
+            "implementation": "architecture_supported_not_integrated",
         }
     return {
         "provider": "offline",
@@ -427,25 +483,36 @@ class GroqProvider(LLMProvider):
         schema: Dict[str, Any],
         system_prompt: str,
         user_payload: Mapping[str, Any],
+        schema_mode: str = "json_schema",
     ) -> Dict[str, Any]:
         safe_schema_name = "".join(char for char in schema_name if char.isalnum() or char in "_-")[:64] or "AuditraOutput"
-        body: Dict[str, Any] = {
-            "model": self.config.model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": json.dumps(user_payload, default=str)},
-            ],
-            "temperature": self.config.temperature,
-            self.max_tokens_field: self.config.max_tokens,
-            "stream": False,
-            "response_format": {
+        effective_system_prompt = system_prompt
+        response_format: Dict[str, Any]
+        if schema_mode == "json_object":
+            effective_system_prompt = (
+                f"{system_prompt} Return only one JSON object. Validate it against this JSON Schema: "
+                f"{json.dumps(schema, default=str)}"
+            )
+            response_format = {"type": "json_object"}
+        else:
+            response_format = {
                 "type": "json_schema",
                 "json_schema": {
                     "name": safe_schema_name,
                     "strict": False,
                     "schema": schema,
                 },
-            },
+            }
+        body: Dict[str, Any] = {
+            "model": self.config.model,
+            "messages": [
+                {"role": "system", "content": effective_system_prompt},
+                {"role": "user", "content": json.dumps(user_payload, default=str)},
+            ],
+            "temperature": self.config.temperature,
+            self.max_tokens_field: self.config.max_tokens,
+            "stream": False,
+            "response_format": response_format,
         }
         try:
             with httpx.Client(timeout=self.config.timeout_seconds, transport=self.transport) as client:
@@ -468,6 +535,8 @@ class GroqProvider(LLMProvider):
         if response.status_code >= 500:
             raise LLMUnavailable(f"{self.service_name} service is unavailable", failure_type="provider_error")
         if response.status_code >= 400:
+            if schema_mode == "json_schema":
+                return self._request(api_key, schema_name, schema, system_prompt, user_payload, schema_mode="json_object")
             raise LLMUnavailable(f"{self.service_name} rejected the structured request", failure_type="invalid_request")
         try:
             payload = response.json()
@@ -543,6 +612,17 @@ class HuggingFaceProvider(GroqProvider):
 
     def __init__(self, config: Optional[LLMProviderConfig] = None, transport: Optional[httpx.BaseTransport] = None):
         super().__init__(config or LLMProviderConfig.from_huggingface_env(), transport=transport)
+
+    def generate_structured(
+        self,
+        schema_name: str,
+        schema: Dict[str, Any],
+        system_prompt: str,
+        user_payload: Mapping[str, Any],
+    ) -> LLMStructuredResponse:
+        if not os.getenv("HF_TOKEN") and os.getenv("HF_API_KEY"):
+            os.environ["HF_TOKEN"] = os.environ["HF_API_KEY"]
+        return super().generate_structured(schema_name, schema, system_prompt, user_payload)
 
 
 class GeminiProvider(LLMProvider):

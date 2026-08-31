@@ -1,0 +1,551 @@
+{
+  "artifact": "real_groq",
+  "artifact_version": 1,
+  "status": "PASS",
+  "generated_at": "2026-08-31T07:06:18.993751+00:00",
+  "dataset": {
+    "prompt": "Build an Indian e-commerce merchant with 80 orders, UPI and card payments, 2% platform fees, T+2 settlement, refunds, refund mismatches, partial settlements, duplicates, timing issues and conflicting evidence.",
+    "seed": 202,
+    "world_id": "FW_5472e64b3b0e",
+    "dataset_id": "WORLD_FW_5472e64b3b0e",
+    "dataset_version": 1,
+    "record_count": 83
+  },
+  "controller_version": "auditra-0.4.0",
+  "runtime": {
+    "world_understanding": {
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "execution_mode": "REAL_GROQ_AI",
+      "configured": true,
+      "fallback_mode": "OFFLINE_AI"
+    },
+    "investigation": {
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "execution_mode": "REAL_GROQ_AI",
+      "configured": true,
+      "fallback_mode": "OFFLINE_AI"
+    },
+    "labels": {
+      "deterministic": "DETERMINISTIC",
+      "offline": "OFFLINE_AI",
+      "groq": "REAL_GROQ_AI",
+      "gemini": "REAL_GEMINI_AI",
+      "openrouter": "REAL_OPENROUTER_AI",
+      "huggingface": "REAL_HUGGINGFACE_AI",
+      "openai": "REAL_OPENAI_AI",
+      "anthropic": "REAL_ANTHROPIC_AI",
+      "ollama": "REAL_OLLAMA_AI"
+    }
+  },
+  "provider_truth": {
+    "world_builder_provider": "groq",
+    "world_builder_mode": "REAL_GROQ_AI",
+    "investigation_mode_counts": {
+      "OFFLINE_AI": 37,
+      "REAL_GROQ_AI": 3
+    },
+    "actual_llm_calls": 3,
+    "real_provider_calls": 3
+  },
+  "world_builder": {
+    "provider": "groq",
+    "mode": "REAL_GROQ_AI",
+    "model": "openai/gpt-oss-20b",
+    "steps": [
+      {
+        "step": "Understand intent",
+        "status": "COMPLETED",
+        "detail": "groq model openai/gpt-oss-20b produced a validated world specification.",
+        "metadata": {
+          "execution_mode": "REAL_GROQ_AI",
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "prompt_version": "world-spec-v2",
+          "timestamp": "2026-08-31T07:06:08.526862+00:00",
+          "latency_ms": 2504.8525,
+          "attempts": 1,
+          "llm_calls": 1,
+          "input_tokens": 867,
+          "output_tokens": 1193,
+          "total_tokens": 2060,
+          "cost_usd": "0.000423",
+          "success": true,
+          "failure_type": null,
+          "response_id": "chatcmpl-dc69daaf-4239-4673-8ebe-0893e4093afa"
+        }
+      },
+      {
+        "step": "Validate structured output",
+        "status": "COMPLETED",
+        "detail": "Pydantic schema validation passed before deterministic generation.",
+        "metadata": {}
+      },
+      {
+        "step": "Record AI usage",
+        "status": "COMPLETED",
+        "detail": "calls=1, input_tokens=867, output_tokens=1193, cost_usd=0.000423",
+        "metadata": {
+          "execution_mode": "REAL_GROQ_AI",
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "prompt_version": "world-spec-v2",
+          "timestamp": "2026-08-31T07:06:08.526862+00:00",
+          "latency_ms": 2504.8525,
+          "attempts": 1,
+          "llm_calls": 1,
+          "input_tokens": 867,
+          "output_tokens": 1193,
+          "total_tokens": 2060,
+          "cost_usd": "0.000423",
+          "success": true,
+          "failure_type": null,
+          "response_id": "chatcmpl-dc69daaf-4239-4673-8ebe-0893e4093afa"
+        }
+      }
+    ]
+  },
+  "runs": {
+    "deterministic": {
+      "dataset_id": "WORLD_FW_5472e64b3b0e",
+      "controller_run_id": "RUN_f6cd59a58a02",
+      "evaluation_run_id": "EVAL_6b9316d5bdda",
+      "provider": "deterministic",
+      "model": "financial-control-engine",
+      "mode": "DETERMINISTIC",
+      "mode_counts": {
+        "DETERMINISTIC": 83
+      },
+      "record_count": 83,
+      "accuracy": 0.9639,
+      "precision": 0.9803,
+      "recall": 0.9531,
+      "f1": 0.9604,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "failures": 3,
+      "auto_resolution_rate": 0.7711,
+      "human_escalation_rate": 0.2289,
+      "unresolved_rate": 0.0,
+      "financial_volume": "341644.24",
+      "financial_amount_correctly_reconciled": "322022.43",
+      "financial_amount_incorrectly_classified": "19621.81",
+      "financial_error_impact": "4357.49",
+      "p50_latency_ms": 0.7467,
+      "p95_latency_ms": 0.9488,
+      "throughput_records_per_sec": 1190.96,
+      "llm_calls": 0,
+      "ai_invocation_rate": 0.0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0,
+      "estimated_cost_usd": "0.00",
+      "provider_failures": 0,
+      "fallback_count": 0,
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 8.0,
+          "true_positive": 5.0,
+          "false_positive": 0.0,
+          "false_negative": 3.0,
+          "precision": 1.0,
+          "recall": 0.625,
+          "f1": 0.7692
+        },
+        "DUPLICATE": {
+          "support": 3.0,
+          "true_positive": 3.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 39.0,
+          "true_positive": 39.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 16.0,
+          "true_positive": 16.0,
+          "false_positive": 3.0,
+          "false_negative": 0.0,
+          "precision": 0.8421,
+          "recall": 1.0,
+          "f1": 0.9143
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 4.0,
+          "true_positive": 4.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 2.0,
+          "true_positive": 2.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 4.0,
+          "true_positive": 4.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 7.0,
+          "true_positive": 7.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "failure_taxonomy": {
+        "OVER_ESCALATION": 3
+      }
+    },
+    "offline_ai": {
+      "dataset_id": "WORLD_FW_5472e64b3b0e",
+      "controller_run_id": "RUN_6b6bd3d1b1ee",
+      "evaluation_run_id": "EVAL_1f8ccdef91dc",
+      "provider": "offline",
+      "model": "offline-investigation-planner-v2",
+      "mode": "OFFLINE_AI",
+      "mode_counts": {
+        "OFFLINE_AI": 40
+      },
+      "record_count": 83,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "failures": 0,
+      "auto_resolution_rate": 0.8072,
+      "human_escalation_rate": 0.1928,
+      "unresolved_rate": 0.0,
+      "financial_volume": "341644.24",
+      "financial_amount_correctly_reconciled": "341644.24",
+      "financial_amount_incorrectly_classified": "0.00",
+      "financial_error_impact": "0.00",
+      "p50_latency_ms": 0.9072,
+      "p95_latency_ms": 2.062,
+      "throughput_records_per_sec": 828.35,
+      "llm_calls": 0,
+      "ai_invocation_rate": 0.4819,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "provider_failures": 0,
+      "fallback_count": 0,
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 8.0,
+          "true_positive": 8.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DUPLICATE": {
+          "support": 3.0,
+          "true_positive": 3.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 39.0,
+          "true_positive": 39.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 16.0,
+          "true_positive": 16.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 4.0,
+          "true_positive": 4.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 2.0,
+          "true_positive": 2.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 4.0,
+          "true_positive": 4.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 7.0,
+          "true_positive": 7.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "failure_taxonomy": {}
+    },
+    "real_groq_ai": {
+      "dataset_id": "WORLD_FW_5472e64b3b0e",
+      "controller_run_id": "RUN_d376660cd262",
+      "evaluation_run_id": "EVAL_3479a7f9d616",
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "mode": "REAL_GROQ_AI",
+      "mode_counts": {
+        "OFFLINE_AI": 37,
+        "REAL_GROQ_AI": 3
+      },
+      "record_count": 83,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "failures": 0,
+      "auto_resolution_rate": 0.8072,
+      "human_escalation_rate": 0.1928,
+      "unresolved_rate": 0.0,
+      "financial_volume": "341644.24",
+      "financial_amount_correctly_reconciled": "341644.24",
+      "financial_amount_incorrectly_classified": "0.00",
+      "financial_error_impact": "0.00",
+      "p50_latency_ms": 0.9881,
+      "p95_latency_ms": 4.0656,
+      "throughput_records_per_sec": 10.66,
+      "llm_calls": 3,
+      "ai_invocation_rate": 0.4819,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "provider_failures": 1,
+      "fallback_count": 37,
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 8.0,
+          "true_positive": 8.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DUPLICATE": {
+          "support": 3.0,
+          "true_positive": 3.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 39.0,
+          "true_positive": 39.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 16.0,
+          "true_positive": 16.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 4.0,
+          "true_positive": 4.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 2.0,
+          "true_positive": 2.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 4.0,
+          "true_positive": 4.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 7.0,
+          "true_positive": 7.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "failure_taxonomy": {}
+    }
+  },
+  "ai_lift": {
+    "real_groq_vs_deterministic": {
+      "accuracy_delta": 0.0361,
+      "f1_delta": 0.0396,
+      "financial_error_delta": "-4357.49",
+      "auto_resolution_delta": 0.0361,
+      "human_review_delta": -0.0361
+    },
+    "real_groq_vs_offline_ai": {
+      "accuracy_delta": 0.0,
+      "f1_delta": 0.0,
+      "financial_error_delta": "0.00",
+      "auto_resolution_delta": 0.0,
+      "human_review_delta": 0.0
+    }
+  },
+  "assurance": {
+    "report_id": "ASR_3479a7f9d616",
+    "model_version": "auditra-assurance-v1",
+    "dataset_id": "WORLD_FW_5472e64b3b0e",
+    "controller_run_id": "RUN_d376660cd262",
+    "evaluation_run_id": "EVAL_3479a7f9d616",
+    "score": 100.0,
+    "grade": "A",
+    "recommendation": "CONTROLLED_DEPLOYMENT",
+    "recommendation_detail": "Eligible for a limited deployment with monitoring, rollback, and exception review controls.",
+    "dimensions": {
+      "accuracy": 1.0,
+      "safe_autonomy": 1.0,
+      "correct_escalation": 1.0,
+      "anomaly_detection": 1.0,
+      "financial_impact_control": 1.0,
+      "evidence_coverage": 1.0
+    },
+    "weights": {
+      "accuracy": 0.35,
+      "safe_autonomy": 0.2,
+      "correct_escalation": 0.15,
+      "anomaly_detection": 0.15,
+      "financial_impact_control": 0.1,
+      "evidence_coverage": 0.05
+    },
+    "unsafe_auto_actions": 0,
+    "unsafe_auto_action_penalty": 0.0,
+    "unsafe_exposure": "0.00",
+    "measured_error_impact": "0.00",
+    "failure_fingerprint": {
+      "pattern": "NO_MEASURED_FAILURE",
+      "expected_status": null,
+      "frequency": 0,
+      "severity": "LOW",
+      "exposure": "0.00",
+      "root_cause": "No controller decisions differed from hidden ground truth.",
+      "target_anomalies": [
+        "CONFLICTING_EVIDENCE",
+        "REFUND_MISMATCH",
+        "TIMING_MISMATCH"
+      ]
+    },
+    "controls": [
+      {
+        "control": "Ground truth isolation",
+        "status": "PASSED",
+        "detail": "Truth was withheld until independent evaluation."
+      },
+      {
+        "control": "Evidence traceability",
+        "status": "PASSED",
+        "detail": "83/83 decisions carry evidence, invariants, and verification."
+      },
+      {
+        "control": "Unsafe autonomy",
+        "status": "PASSED",
+        "detail": "0 exception cases were auto-closed as normal."
+      },
+      {
+        "control": "Reproducibility",
+        "status": "PASSED",
+        "detail": "Dataset is reproducible from seed 202."
+      }
+    ]
+  },
+  "provenance": {
+    "artifact_source": "artifacts\\real_groq.json",
+    "dataset_id": "WORLD_FW_5472e64b3b0e",
+    "controller_version": "auditra-0.4.0",
+    "provider": "groq",
+    "model": "openai/gpt-oss-20b",
+    "mode": "REAL_GROQ_AI",
+    "record_count": 83
+  },
+  "limitations": [
+    "Groq is used only for prompt interpretation and investigation planning.",
+    "Financial records, verification, evaluation, and assurance remain deterministic.",
+    "Token or cost fields are null when the provider does not return enough information."
+  ],
+  "secret_safety": {
+    "secrets_printed": false,
+    "secrets_written": false,
+    "frontend_receives_api_key": false
+  }
+}

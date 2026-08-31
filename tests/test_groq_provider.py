@@ -109,6 +109,27 @@ class GroqProviderTests(unittest.TestCase):
         self.assertEqual(caught.exception.failure_type, "malformed_response")
         self.assertEqual(caught.exception.attempts, 2)
 
+
+    def test_groq_retries_with_json_object_when_schema_envelope_is_rejected(self) -> None:
+        bodies = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            body = json.loads(request.content)
+            bodies.append(body)
+            if len(bodies) == 1:
+                return httpx.Response(400, json={"error": {"message": "schema unsupported"}})
+            return groq_response({"candidate_labels": ["matched_low_risk"]}, prompt_tokens=90, completion_tokens=20)
+
+        with patch.dict(os.environ, {"GROQ_API_KEY": "local-test-key"}, clear=False):
+            provider = GroqProvider(config=self.config, transport=httpx.MockTransport(handler))
+            response = provider.generate_structured("Plan", {"type": "object"}, "Return JSON.", {})
+
+        self.assertEqual(bodies[0]["response_format"]["type"], "json_schema")
+        self.assertEqual(bodies[1]["response_format"]["type"], "json_object")
+        self.assertIn("JSON Schema", bodies[1]["messages"][0]["content"])
+        self.assertEqual(response.provider, "groq")
+        self.assertEqual(response.llm_calls, 1)
+
     def test_groq_investigation_plan_is_typed_and_labeled(self) -> None:
         plan = {
             "candidate_labels": ["refund_adjustment"],
@@ -152,6 +173,27 @@ class GroqProviderTests(unittest.TestCase):
         self.assertEqual(spec.record_count, 80)
         self.assertEqual(spec.understanding_source, "groq:openai/gpt-oss-20b")
         self.assertEqual(steps[0].metadata["execution_mode"], REAL_GROQ_AI)
+
+
+    def test_groq_world_spec_canonicalizes_common_anomaly_aliases(self) -> None:
+        output = {
+            "world_name": "Groq Commerce India",
+            "merchant_name": "Groq Commerce India",
+            "record_count": 80,
+            "currencies": ["INR"],
+            "payment_methods": ["UPI", "Card"],
+            "fee_rate": 0.02,
+            "settlement_delay_days": 2,
+            "anomaly_rates": {"duplicate": 0.03, "timing_issue": 0.04, "refund_mismatch": 0.05},
+        }
+        with patch.dict(os.environ, {"GROQ_API_KEY": "local-test-key"}, clear=False):
+            low_level = GroqProvider(config=self.config, transport=httpx.MockTransport(lambda _: groq_response(output)))
+            spec, _ = GroqWorldSpecProvider(llm_provider=low_level).parse("Build an INR world", seed=77)
+
+        self.assertEqual(spec.anomaly_rates["DUPLICATE_PAYMENT"], spec.anomaly_rates["DUPLICATE_PAYMENT"].quantize(spec.anomaly_rates["DUPLICATE_PAYMENT"]))
+        self.assertIn("TIMING_MISMATCH", spec.anomaly_rates)
+        self.assertIn("REFUND_MISMATCH", spec.anomaly_rates)
+        self.assertNotIn("duplicate", spec.anomaly_rates)
 
     def test_external_failure_falls_back_with_an_honest_label(self) -> None:
         with patch.dict(os.environ, {}, clear=False):

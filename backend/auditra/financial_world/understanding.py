@@ -220,6 +220,7 @@ class LLMWorldSpecProvider:
 
     def parse(self, prompt: str, seed: int = 42) -> Tuple[FinancialWorldSpec, List[UnderstandingStep]]:
         last_error: Optional[Exception] = None
+        deterministic_spec, _ = DeterministicPromptParser().parse(prompt, seed=seed)
         for _ in range(2):
             try:
                 response = self.llm_provider.generate_structured(
@@ -228,11 +229,26 @@ class LLMWorldSpecProvider:
                     system_prompt=(
                         "Convert the user prompt into a valid Auditra FinancialWorldSpec JSON object. "
                         "Do not generate financial records. The record generator remains deterministic. "
-                        "Only use supported currencies, payment methods and anomaly names from the schema."
+                        "Respect explicit numeric constraints from input_constraints. Use decimal rates such as 0.0200. "
+                        "Use only canonical anomaly names: AMOUNT_MISMATCH, MISSING_SETTLEMENT, DUPLICATE_PAYMENT, "
+                        "FEE_MISMATCH, REFUND_MISMATCH, PARTIAL_SETTLEMENT, TIMING_MISMATCH, CURRENCY_MISMATCH, "
+                        "CONFLICTING_EVIDENCE, ENTITY_LINK_FAILURE."
                     ),
-                    user_payload={"prompt": prompt, "seed": seed},
+                    user_payload={
+                        "prompt": prompt,
+                        "seed": seed,
+                        "input_constraints": {
+                            "record_count": deterministic_spec.record_count,
+                            "fee_rate": str(deterministic_spec.fee_rate),
+                            "settlement_delay_days": deterministic_spec.settlement_delay_days,
+                            "currencies": deterministic_spec.currencies,
+                            "payment_methods": deterministic_spec.payment_methods,
+                        },
+                    },
                 )
-                parsed = dict(response.output)
+                parsed = self._normalize_spec_fields(dict(response.output))
+                if re.search(r"\d{2,6}\s*(?:orders|records|transactions|payments)", prompt.lower()):
+                    parsed["record_count"] = deterministic_spec.record_count
                 parsed.setdefault("prompt", prompt)
                 parsed.setdefault("seed", seed)
                 parsed["understanding_source"] = f"{self.provider_label}:{response.model}"
@@ -277,6 +293,37 @@ class LLMWorldSpecProvider:
                 raise PromptUnderstandingError(f"{self.provider_label} world builder unavailable: {exc}") from exc
         raise PromptUnderstandingError(f"{self.provider_label} returned invalid FinancialWorldSpec: {last_error}")
 
+
+
+    def _normalize_spec_fields(self, parsed: Dict[str, object]) -> Dict[str, object]:
+        aliases = {
+            "AMOUNT": "AMOUNT_MISMATCH",
+            "AMOUNT_MISMATCHES": "AMOUNT_MISMATCH",
+            "MISSING": "MISSING_SETTLEMENT",
+            "DUPLICATE": "DUPLICATE_PAYMENT",
+            "DUPLICATES": "DUPLICATE_PAYMENT",
+            "DUPLICATE_PAYMENTS": "DUPLICATE_PAYMENT",
+            "FEE": "FEE_MISMATCH",
+            "FEE_DISCREPANCY": "FEE_MISMATCH",
+            "REFUND": "REFUND_MISMATCH",
+            "REFUND_MISMATCHES": "REFUND_MISMATCH",
+            "PARTIAL": "PARTIAL_SETTLEMENT",
+            "TIMING": "TIMING_MISMATCH",
+            "TIMING_ISSUE": "TIMING_MISMATCH",
+            "TIMING_ISSUES": "TIMING_MISMATCH",
+            "CURRENCY": "CURRENCY_MISMATCH",
+            "ENTITY_LINK": "ENTITY_LINK_FAILURE",
+            "LINK_FAILURE": "ENTITY_LINK_FAILURE",
+        }
+        raw_rates = parsed.get("anomaly_rates")
+        if isinstance(raw_rates, dict):
+            normalized = {}
+            for key, value in raw_rates.items():
+                canonical = str(key).strip().upper().replace(" ", "_").replace("-", "_")
+                canonical = aliases.get(canonical, canonical)
+                normalized[canonical] = value
+            parsed["anomaly_rates"] = normalized
+        return parsed
 
 class OpenAIWorldSpecProvider(LLMWorldSpecProvider):
     provider_label = "openai"
@@ -350,8 +397,15 @@ class WorldUnderstandingService:
 
     def understand(self, prompt: str, seed: int = 42) -> Tuple[FinancialWorldSpec, List[UnderstandingStep]]:
         provider = resolve_llm_provider("WORLD")
-        if provider in {"groq", "openai"}:
-            selected = self.groq if provider == "groq" else self.openai
+        providers = {
+            "groq": self.groq,
+            "gemini": self.gemini,
+            "openrouter": self.openrouter,
+            "huggingface": self.huggingface,
+            "openai": self.openai,
+        }
+        selected = providers.get(provider)
+        if selected is not None:
             try:
                 return selected.parse(prompt, seed=seed)
             except PromptUnderstandingError as exc:
@@ -385,4 +439,33 @@ class WorldUnderstandingService:
                     ),
                 )
                 return spec, steps
+        if provider in {"anthropic", "ollama"}:
+            spec, steps = self.parser.parse(prompt, seed=seed)
+            spec = spec.model_copy(update={"understanding_source": f"deterministic_fallback:{provider}:provider_not_integrated"})
+            steps.insert(
+                0,
+                UnderstandingStep(
+                    step="External AI fallback",
+                    status="WARNING",
+                    detail=f"{provider} is architecturally supported but not integrated; deterministic parsing completed the request.",
+                    metadata={
+                        "execution_mode": OFFLINE_AI,
+                        "provider": "deterministic",
+                        "model": "financial-world-parser",
+                        "prompt_version": "world-spec-v2",
+                        "timestamp": None,
+                        "latency_ms": 0.0,
+                        "attempts": 0,
+                        "llm_calls": 0,
+                        "input_tokens": None,
+                        "output_tokens": None,
+                        "total_tokens": None,
+                        "cost_usd": None,
+                        "success": False,
+                        "failure_type": "provider_not_integrated",
+                        "requested_provider": provider,
+                    },
+                ),
+            )
+            return spec, steps
         return self.parser.parse(prompt, seed=seed)

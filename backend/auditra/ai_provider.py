@@ -358,6 +358,23 @@ class HuggingFaceInvestigationProvider(LLMInvestigationProvider):
             or HuggingFaceLLMProvider(config=config or LLMProviderConfig.from_huggingface_env("AUDITRA_INVESTIGATION_LLM"))
         )
 
+
+class UnsupportedConfiguredInvestigationProvider(StructuredInvestigationProvider):
+    """Represents an explicitly requested provider that is not integrated yet."""
+
+    prompt_version = "investigation-plan-v2"
+
+    def __init__(self, provider_name: str, model_name: str):
+        self.provider_name = provider_name
+        self.model_name = model_name
+
+    def propose(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        raise LLMUnavailable(
+            f"{self.provider_name} provider is architecturally supported but not integrated",
+            failure_type="provider_not_integrated",
+            attempts=0,
+        )
+
 class TransparentFallbackInvestigationProvider(StructuredInvestigationProvider):
     """Uses offline planning after an external failure and labels the fallback."""
 
@@ -470,6 +487,12 @@ def runtime_investigation_provider() -> StructuredInvestigationProvider:
         return TransparentFallbackInvestigationProvider(HuggingFaceInvestigationProvider(config=_bounded_investigation_config(LLMProviderConfig.from_huggingface_env("AUDITRA_INVESTIGATION_LLM"))))
     if provider == "openai":
         return TransparentFallbackInvestigationProvider(OpenAIInvestigationProvider(config=_bounded_investigation_config(LLMProviderConfig.from_env("AUDITRA_INVESTIGATION_LLM"))))
+    if provider == "anthropic":
+        config = LLMProviderConfig.from_anthropic_env("AUDITRA_INVESTIGATION_LLM")
+        return TransparentFallbackInvestigationProvider(UnsupportedConfiguredInvestigationProvider("anthropic", config.model))
+    if provider == "ollama":
+        config = LLMProviderConfig.from_ollama_env("AUDITRA_INVESTIGATION_LLM")
+        return TransparentFallbackInvestigationProvider(UnsupportedConfiguredInvestigationProvider("ollama", config.model))
     return OfflineStructuredProvider()
 
 
@@ -550,5 +573,6 @@ __all__ = [
     "StructuredInvestigationProvider",
     "TransparentFallbackInvestigationProvider",
     "ToolPlanStep",
+    "UnsupportedConfiguredInvestigationProvider",
     "runtime_investigation_provider",
 ]

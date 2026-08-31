@@ -80,7 +80,7 @@ AI is bounded by design:
 - Deterministic invariants can override AI confidence.
 - Tool failures fail closed into human review.
 
-Local demos use an offline deterministic AI provider by default. Real OpenAI providers are opt-in through environment variables.
+Auditra uses a provider abstraction for external LLMs. The current real-model implementation used for this submission is Groq. Local demos can still run offline without secrets or network access.
 
 ## Financial Safety
 
@@ -245,18 +245,20 @@ python scripts/phase_c_concurrency.py --levels 1 5 10 25 50 --records 120 --seed
 python scripts/phase_c_demo_reliability.py --runs 10 --seed 42 --records 500
 ```
 
-## Optional OpenAI Providers
+## Optional LLM Providers
+
+Primary real-model submission path:
 
 ```powershell
-$env:OPENAI_API_KEY="..."
-$env:AUDITRA_USE_OPENAI_WORLD_BUILDER="1"
-$env:AUDITRA_USE_OPENAI_INVESTIGATOR="1"
-$env:AUDITRA_OPENAI_MODEL="gpt-5-mini"
-$env:AUDITRA_WORLD_LLM_TIMEOUT="30"
-$env:AUDITRA_INVESTIGATION_LLM_MAX_RETRIES="1"
+$env:AI_PROVIDER="groq"
+$env:GROQ_API_KEY="..."
+$env:GROQ_MODEL="openai/gpt-oss-20b"
+py -3.13 scripts/real_groq_validation.py
 ```
 
-Without these variables, Auditra runs fully offline.
+This writes measured provider evidence to `artifacts/real_groq.json`. Auditra also keeps implemented adapters for Gemini, OpenRouter, Hugging Face, and OpenAI behind the same provider interface. Anthropic and Ollama are represented as architecture-supported placeholders and are not claimed as integrated providers.
+
+Without provider variables, Auditra runs fully offline.
 
 ## Optional PostgreSQL
 
@@ -303,7 +305,7 @@ npx vite --host 127.0.0.1 --port 5174
 ## Limitations
 
 - Local generation is capped at 10,000 records; 50,000-record requests are rejected by input contract.
-- Live OpenAI smoke testing requires a real `OPENAI_API_KEY`; the repository includes provider tests and offline default behavior.
+- Live Groq evidence requires a real `GROQ_API_KEY`; without it `scripts/real_groq_validation.py` records a blocked artifact instead of fabricated metrics.
 - No authentication layer is implemented for the local prototype.
 - No credentialed Razorpay money-movement integration is included.
 - PostgreSQL migration execution requires an external database that was not available in this shell.
@@ -327,3 +329,4 @@ npx vite --host 127.0.0.1 --port 5174
 - [Galarix Integration Boundary](docs/galarix_integration.md)
 - [Engineering Decisions](docs/decisions.md)
 - [Final Quality Report](docs/final_quality_report.md)
+- [Final LLM Evidence](docs/final_llm_evidence.md)

@@ -11,8 +11,8 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from auditra.ai_provider import GeminiInvestigationProvider, HuggingFaceInvestigationProvider, OfflineStructuredProvider, OpenRouterInvestigationProvider, TransparentFallbackInvestigationProvider
-from auditra.financial_world.understanding import GeminiWorldSpecProvider, OpenRouterWorldSpecProvider
+from auditra.ai_provider import GeminiInvestigationProvider, HuggingFaceInvestigationProvider, OfflineStructuredProvider, OpenRouterInvestigationProvider, TransparentFallbackInvestigationProvider, runtime_investigation_provider
+from auditra.financial_world.understanding import GeminiWorldSpecProvider, OpenRouterWorldSpecProvider, WorldUnderstandingService
 from auditra.llm import (
     GEMINI_API_URL_TEMPLATE,
     HUGGINGFACE_API_URL,
@@ -26,6 +26,7 @@ from auditra.llm import (
     REAL_HUGGINGFACE_AI,
     REAL_OPENROUTER_AI,
     resolve_llm_provider,
+    AI_UNAVAILABLE,
 )
 from auditra.runtime import runtime_ai_status
 
@@ -137,6 +138,28 @@ class MultiProviderTests(unittest.TestCase):
         self.assertEqual(payload["investigation"]["execution_mode"], REAL_GEMINI_AI)
         self.assertNotIn("never-show", json.dumps(payload))
 
+
+    def test_ai_provider_alias_and_groq_first_auto_selection(self) -> None:
+        with patch.dict(os.environ, {"AI_PROVIDER": "groq", "GROQ_API_KEY": "g-test"}, clear=False):
+            self.assertEqual(resolve_llm_provider("INVESTIGATION"), "groq")
+            payload = runtime_ai_status()
+        self.assertEqual(payload["investigation"]["execution_mode"], "REAL_GROQ_AI")
+        self.assertNotIn("g-test", json.dumps(payload))
+
+        with patch.dict(os.environ, {"GROQ_API_KEY": "g-test", "GEMINI_API_KEY": "gemini-test", "HF_TOKEN": "hf-test"}, clear=True):
+            self.assertEqual(resolve_llm_provider("WORLD"), "groq")
+
+    def test_unsupported_provider_is_honest_and_falls_back(self) -> None:
+        with patch.dict(os.environ, {"AI_PROVIDER": "anthropic", "ANTHROPIC_API_KEY": "anthropic-test"}, clear=True):
+            payload = runtime_ai_status()
+            provider = runtime_investigation_provider()
+            proposal = provider.propose({"status": "AMOUNT_MISMATCH", "reason_codes": []})
+        self.assertEqual(payload["investigation"]["provider"], "anthropic")
+        self.assertEqual(payload["investigation"]["execution_mode"], AI_UNAVAILABLE)
+        self.assertEqual(payload["investigation"]["implementation"], "architecture_supported_not_integrated")
+        self.assertEqual(proposal["execution_mode"], "OFFLINE_AI")
+        self.assertEqual(proposal["fallback_reason"], "provider_not_integrated")
+
     def test_adapter_labels_for_new_providers(self) -> None:
         plan = {
             "candidate_labels": ["refund_adjustment"],
@@ -176,6 +199,26 @@ class MultiProviderTests(unittest.TestCase):
         self.assertEqual(first["fallback_reason"], "timeout")
         self.assertEqual(second["fallback_reason"], "provider_circuit_open:timeout")
         self.assertEqual(second["execution_mode"], "OFFLINE_AI")
+
+
+    def test_world_understanding_service_routes_implemented_providers(self) -> None:
+        spec = {
+            "world_name": "Provider Commerce",
+            "merchant_name": "Provider Commerce",
+            "record_count": 75,
+            "currencies": ["INR"],
+            "payment_methods": ["UPI", "CARD"],
+            "fee_rate": "0.0200",
+            "settlement_delay_days": 2,
+            "anomaly_rates": {"REFUND_MISMATCH": "0.0200"},
+        }
+        with patch.dict(os.environ, {"AI_PROVIDER": "gemini", "GEMINI_API_KEY": "gemini-test"}, clear=True):
+            result, steps = WorldUnderstandingService(
+                gemini=GeminiWorldSpecProvider(GeminiProvider(transport=httpx.MockTransport(lambda _: gemini_response(spec))))
+            ).understand("Build", 90)
+        self.assertEqual(result.seed, 90)
+        self.assertEqual(steps[0].metadata["provider"], "gemini")
+        self.assertEqual(steps[0].metadata["execution_mode"], REAL_GEMINI_AI)
 
     def test_world_adapters_validate_new_provider_specs(self) -> None:
         spec = {

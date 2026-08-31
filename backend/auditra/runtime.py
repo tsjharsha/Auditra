@@ -12,6 +12,8 @@ from .llm import (
     REAL_OPENROUTER_AI,
     REAL_GROQ_AI,
     REAL_OPENAI_AI,
+    REAL_ANTHROPIC_AI,
+    REAL_OLLAMA_AI,
     llm_runtime_status,
 )
 from .models import ControllerRun
@@ -37,7 +39,7 @@ def controller_execution_metadata(run: ControllerRun) -> Dict[str, Any]:
         }
 
     mode_counts = Counter(item.mode for item in investigations)
-    ordered_modes = [REAL_GEMINI_AI, REAL_OPENROUTER_AI, REAL_GROQ_AI, REAL_HUGGINGFACE_AI, REAL_OPENAI_AI, OFFLINE_AI, AI_UNAVAILABLE]
+    ordered_modes = [REAL_GROQ_AI, REAL_GEMINI_AI, REAL_OPENROUTER_AI, REAL_HUGGINGFACE_AI, REAL_OPENAI_AI, REAL_ANTHROPIC_AI, REAL_OLLAMA_AI, OFFLINE_AI, AI_UNAVAILABLE]
     execution_mode = next((mode for mode in ordered_modes if mode_counts.get(mode)), investigations[0].mode)
     representative = next((item for item in investigations if item.mode == execution_mode), investigations[0])
     traces = [trace for item in investigations for trace in item.provider_trace]
@@ -51,10 +53,16 @@ def controller_execution_metadata(run: ControllerRun) -> Dict[str, Any]:
         "real_provider_calls": sum(
             int(trace.get("llm_calls") or 0)
             for trace in traces
-            if trace.get("success") and trace.get("execution_mode") in {REAL_GEMINI_AI, REAL_OPENROUTER_AI, REAL_GROQ_AI, REAL_HUGGINGFACE_AI, REAL_OPENAI_AI}
+            if trace.get("success") and trace.get("execution_mode") in {REAL_GROQ_AI, REAL_GEMINI_AI, REAL_OPENROUTER_AI, REAL_HUGGINGFACE_AI, REAL_OPENAI_AI, REAL_ANTHROPIC_AI, REAL_OLLAMA_AI}
         ),
         "fallback_count": sum(1 for item in investigations if item.fallback_reason),
-        "provider_failures": sum(1 for trace in traces if trace.get("success") is False),
+        "provider_failures": sum(
+            1
+            for trace in traces
+            if trace.get("success") is False
+            and trace.get("failure_type") != "provider_budget_exhausted"
+            and not str(trace.get("failure_type") or "").startswith("provider_circuit_open")
+        ),
     }
 
 
@@ -75,6 +83,9 @@ def runtime_ai_status() -> Dict[str, Any]:
             "gemini": REAL_GEMINI_AI,
             "openrouter": REAL_OPENROUTER_AI,
             "huggingface": REAL_HUGGINGFACE_AI,
+            "openai": REAL_OPENAI_AI,
+            "anthropic": REAL_ANTHROPIC_AI,
+            "ollama": REAL_OLLAMA_AI,
         },
     }
 

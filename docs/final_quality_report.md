@@ -17,7 +17,7 @@ Date: 2026-08-25
 | Concurrency | PASS: 1, 5, 10, 25, and 50 simultaneous local runs completed without duplicate IDs or state corruption |
 | Security scan | PASS: no real secrets found; only placeholder env examples and expected docs references |
 | PostgreSQL migration | NOT RUN locally: no `AUDITRA_DATABASE_URL` and no `psql` in shell |
-| Live OpenAI smoke | BLOCKED: no real `OPENAI_API_KEY` configured; provider path is covered by tests and remains opt-in |
+| Live Groq smoke | See `artifacts/real_groq.json`; the runner records `BLOCKED` if no `GROQ_API_KEY` is configured and measured metrics when Groq executes |
 | Python environment audit | ENV ISSUE: global `sentence-transformers` requires a newer `transformers`; Auditra does not declare either package |
 
 ## Scored Assessment
@@ -25,7 +25,7 @@ Date: 2026-08-25
 | Area | Score | Evidence |
 | --- | ---: | --- |
 | Financial correctness | 8.5/10 | Decimal money models, invariant tests, refund/currency/fee/timing property tests, no critical correctness issue open |
-| AI depth | 8.0/10 | Structured world understanding, bounded investigation plans, hypotheses, self-challenge, tool traces, offline and opt-in OpenAI providers |
+| AI depth | 8.0/10 | Structured world understanding, bounded investigation plans, hypotheses, self-challenge, tool traces, offline mode plus opt-in Groq, Gemini, OpenRouter, Hugging Face, and OpenAI providers |
 | Agent reliability | 8.0/10 | Tool failures now fail closed; tool plan cap; evidence lookup rejects hallucinated entities |
 | Evidence | 8.0/10 | Evidence graph and case views show source records, verification, decisions, and tool traces |
 | Verification | 8.5/10 | Deterministic invariants can block unsafe AI conclusions and force review |
@@ -69,7 +69,7 @@ Date: 2026-08-25
 | Item | Status |
 | --- | --- |
 | Full demo works | GO |
-| Real AI path works | BLOCKED for live external smoke without `OPENAI_API_KEY`; provider integration tests pass |
+| Real AI path works | GO when `artifacts/real_groq.json` has `status: PASS`; provider integration tests pass and missing-key runs are labeled honestly |
 | AI vs baseline is measured | GO |
 | World Builder works | GO |
 | Audit works | GO |
@@ -86,4 +86,4 @@ Date: 2026-08-25
 | Clean repository | GO |
 | Five-minute demo reproducible | GO |
 
-Final decision: GO for the local reproducible Razorpay submission package. Do not claim live external OpenAI execution until a real `OPENAI_API_KEY` is configured and a smoke test is run.
+Final decision: GO for the local reproducible Razorpay submission package. Do not claim live external Groq execution unless `artifacts/real_groq.json` shows a measured `PASS` run with `REAL_GROQ_AI` and `llm_calls > 0`.

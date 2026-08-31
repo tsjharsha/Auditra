@@ -48,6 +48,6 @@ The remaining AI-assisted held-out failure is a classification error in a hard a
 ## Remaining Limitations
 
 - 50,000-record local benchmark requests are rejected by the 10,000-record input contract.
-- Live OpenAI smoke testing requires a real `OPENAI_API_KEY`; the default submission path is offline and deterministic.
+- Live Groq evidence requires a real `GROQ_API_KEY`; local fallback/offline behavior remains available without secrets.
 - No live PostgreSQL migration was applied in this shell because no database/`psql` was available.
 - No authentication layer is included in this prototype.

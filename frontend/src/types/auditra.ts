@@ -86,9 +86,10 @@ export interface UnderstandingStep {
 export interface RuntimeProviderStatus {
   provider: string;
   model: string;
-  execution_mode: "DETERMINISTIC" | "OFFLINE_AI" | "REAL_GROQ_AI" | "REAL_GEMINI_AI" | "REAL_OPENROUTER_AI" | "REAL_HUGGINGFACE_AI" | "REAL_OPENAI_AI" | "AI_UNAVAILABLE";
+  execution_mode: "DETERMINISTIC" | "OFFLINE_AI" | "REAL_GROQ_AI" | "REAL_GEMINI_AI" | "REAL_OPENROUTER_AI" | "REAL_HUGGINGFACE_AI" | "REAL_OPENAI_AI" | "REAL_ANTHROPIC_AI" | "REAL_OLLAMA_AI" | "AI_UNAVAILABLE";
   configured: boolean;
   fallback_mode?: string | null;
+  implementation?: string | null;
 }
 
 export interface RuntimeAIStatus {

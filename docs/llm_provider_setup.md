@@ -7,7 +7,7 @@ Auditra can run with offline deterministic planning or a real external LLM provi
 Set one of these values in project-root `.env`:
 
 ```env
-AUDITRA_LLM_PROVIDER=gemini
+AI_PROVIDER=groq
 ```
 
 Supported values:
@@ -18,6 +18,8 @@ Supported values:
 - `openrouter`
 - `huggingface`
 - `openai`
+- `anthropic` (architecture-supported placeholder; not integrated)
+- `ollama` (architecture-supported placeholder; not integrated)
 
 You can also scope providers separately:
 
@@ -26,27 +28,27 @@ AUDITRA_WORLD_LLM_PROVIDER=gemini
 AUDITRA_INVESTIGATION_LLM_PROVIDER=openrouter
 ```
 
-If no provider is set, Auditra auto-selects the first configured key in this order: Gemini, OpenRouter, Hugging Face, Groq, then offline.
+If no provider is set, Auditra auto-selects the first configured key in this order: Groq, Gemini, OpenRouter, Hugging Face, then offline. Use an explicit provider when testing a specific model.
 
 ## Recommended Buildathon Default
 
-Start with Gemini:
+Use Groq for the submission path:
 
 ```env
-AUDITRA_LLM_PROVIDER=gemini
-GEMINI_API_KEY=your_key_here
-GEMINI_MODEL=gemini-2.5-flash
-GEMINI_TIMEOUT=20
-GEMINI_MAX_TOKENS=1200
-GEMINI_MAX_RETRIES=1
+AI_PROVIDER=groq
+GROQ_API_KEY=your_key_here
+GROQ_MODEL=openai/gpt-oss-20b
+GROQ_TIMEOUT=20
+GROQ_MAX_TOKENS=1200
+GROQ_MAX_RETRIES=1
 ```
 
-Why: best first candidate for structured output reliability and natural-language understanding on a free tier.
+Auditra remains model-agnostic, but the real-model evidence artifact for this submission is generated through Groq.
 
 ## Groq
 
 ```env
-AUDITRA_LLM_PROVIDER=groq
+AI_PROVIDER=groq
 GROQ_API_KEY=your_key_here
 GROQ_MODEL=openai/gpt-oss-20b
 GROQ_TIMEOUT=20
@@ -98,11 +100,23 @@ Invoke-RestMethod http://127.0.0.1:8002/health | ConvertTo-Json -Depth 5
 
 Expected labels include:
 
+- `REAL_GROQ_AI`
 - `REAL_GEMINI_AI`
 - `REAL_OPENROUTER_AI`
 - `REAL_HUGGINGFACE_AI`
-- `REAL_GROQ_AI`
+- `REAL_OPENAI_AI`
 - `OFFLINE_AI`
+- `AI_UNAVAILABLE` for configured-but-not-integrated placeholders such as Anthropic/Ollama
+
+## Real Groq Evidence
+
+After configuring `GROQ_API_KEY`, generate measured evidence:
+
+```powershell
+py -3.13 scripts/real_groq_validation.py
+```
+
+This writes `artifacts/real_groq.json` with dataset provenance, model/mode labels, measured controller metrics, token fields when returned by Groq, cost only when calculable, and AI lift against deterministic and offline runs. If the key is missing, the artifact records `BLOCKED` instead of fabricating numbers.
 
 ## Run Verification
 
