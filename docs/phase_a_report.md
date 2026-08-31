@@ -8,9 +8,9 @@ Phase A made the AI layer real, measurable and fail-closed without giving it aut
 
 ## Implementation Summary
 
-- Added shared `LLMProvider` abstractions with `OpenAIProvider`, `MockProvider` and `OfflineProvider`.
+- Added shared `LLMProvider` abstractions with external, mock and offline providers; current submission evidence uses Groq through that interface.
 - Added env-configured model, temperature, max tokens, timeout, retry count and token-cost fields.
-- Replaced direct world-builder OpenAI calls with typed structured-output validation and one malformed-output retry.
+- Replaced direct world-builder model calls with typed structured-output validation and malformed-output retry behavior.
 - Added strict `FinancialWorldSpec` validation for currencies, payment methods, anomaly names and rates.
 - Changed the AI investigator to execute provider-selected typed tool plans through a bounded allowlist.
 - Added fail-closed `ai_unavailable` results that escalate to `HUMAN_REVIEW` instead of fabricating offline hypotheses.
@@ -88,4 +88,4 @@ The standard `ScenarioGenerator` mixed benchmark still shows no classification l
 - Malformed structured output retries once and then fails closed.
 - Tool calls are allowlisted, typed through mapped call paths, input-validated, logged and capped.
 - Public/controller-visible payload tests assert no `ground_truth`, `expected_status`, hidden `scenario`, or visible `"anomaly":` labels.
-- Default local runs use the offline provider; real OpenAI calls require explicit environment configuration and `OPENAI_API_KEY`.
+- Default local runs can use the offline provider; real Groq evidence requires explicit environment configuration and `GROQ_API_KEY`.

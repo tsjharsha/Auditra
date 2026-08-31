@@ -51,7 +51,7 @@ def _clear_provider() -> None:
         os.environ.pop(key, None)
 
 
-def _summarize(run: ControllerRun, evaluation: EvaluationRun) -> Dict[str, Any]:
+def _summarize(dataset: DatasetBundle, run: ControllerRun, evaluation: EvaluationRun) -> Dict[str, Any]:
     metrics = evaluation.metrics
     execution = controller_execution_metadata(run)
     traces = [trace for case in run.cases if case.ai_investigation for trace in case.ai_investigation.provider_trace]
@@ -66,6 +66,8 @@ def _summarize(run: ControllerRun, evaluation: EvaluationRun) -> Dict[str, Any]:
         if trace.get("success") is False and trace.get("failure_type")
     )
     token_totals = _sum_trace_tokens(traces)
+    confusion_totals = _confusion_totals(metrics.confusion_matrix)
+    financial_review = _financial_review_amounts(dataset, run)
     return {
         "dataset_id": evaluation.dataset_id,
         "controller_run_id": run.run_id,
@@ -79,6 +81,10 @@ def _summarize(run: ControllerRun, evaluation: EvaluationRun) -> Dict[str, Any]:
         "precision": metrics.precision,
         "recall": metrics.recall,
         "f1": metrics.f1,
+        "true_positives": confusion_totals["true_positives"],
+        "true_negatives": confusion_totals["true_negatives"],
+        "false_positives": confusion_totals["false_positives"],
+        "false_negatives": confusion_totals["false_negatives"],
         "false_positive_rate": metrics.false_positive_rate,
         "false_negative_rate": metrics.false_negative_rate,
         "failures": len(evaluation.failures),
@@ -88,6 +94,8 @@ def _summarize(run: ControllerRun, evaluation: EvaluationRun) -> Dict[str, Any]:
         "financial_volume": str(run.metrics.total_payment_volume),
         "financial_amount_correctly_reconciled": str(metrics.financial_amount_correctly_reconciled),
         "financial_amount_incorrectly_classified": str(metrics.financial_amount_incorrectly_classified),
+        "financial_amount_escalated": financial_review["escalated"],
+        "financial_amount_unresolved": financial_review["unresolved"],
         "financial_error_impact": str(metrics.financial_impact_of_errors),
         "p50_latency_ms": metrics.median_latency_ms,
         "p95_latency_ms": metrics.p95_latency_ms,
@@ -102,10 +110,79 @@ def _summarize(run: ControllerRun, evaluation: EvaluationRun) -> Dict[str, Any]:
         "fallback_count": execution["fallback_count"],
         "fallback_reasons": dict(sorted(fallback_reasons.items())),
         "failure_types": dict(sorted(failure_types.items())),
+        "confusion_matrix": metrics.confusion_matrix,
         "class_metrics": metrics.class_metrics,
         "failure_taxonomy": metrics.failure_taxonomy,
     }
 
+
+
+def _confusion_totals(matrix: Dict[str, Dict[str, int]]) -> Dict[str, int]:
+    labels = sorted(set(matrix) | {predicted for row in matrix.values() for predicted in row})
+    total = sum(int(count) for row in matrix.values() for count in row.values())
+    true_positives = sum(int(matrix.get(label, {}).get(label, 0)) for label in labels)
+    false_positives = sum(
+        int(matrix.get(actual, {}).get(label, 0))
+        for label in labels
+        for actual in labels
+        if actual != label
+    )
+    false_negatives = sum(
+        int(matrix.get(label, {}).get(predicted, 0))
+        for label in labels
+        for predicted in labels
+        if predicted != label
+    )
+    true_negatives = max(0, (len(labels) * total) - true_positives - false_positives - false_negatives)
+    return {
+        "true_positives": true_positives,
+        "true_negatives": true_negatives,
+        "false_positives": false_positives,
+        "false_negatives": false_negatives,
+    }
+
+
+def _financial_review_amounts(dataset: DatasetBundle, run: ControllerRun) -> Dict[str, str]:
+    payment_amounts = {payment.payment_id: payment.amount for payment in dataset.payments}
+    escalated = Decimal("0.00")
+    unresolved = Decimal("0.00")
+    for case in run.cases:
+        amount = payment_amounts.get(case.payment_id, case.decision.financial_impact)
+        if str(case.status) == "HUMAN_REVIEW":
+            escalated += amount
+        if str(case.status) == "UNRESOLVED":
+            unresolved += amount
+    return {"escalated": str(escalated), "unresolved": str(unresolved)}
+
+
+def _smoke_cases(run: ControllerRun, limit: int = 10) -> list[Dict[str, Any]]:
+    rows = []
+    for case in run.cases:
+        ai = case.ai_investigation
+        if ai is None:
+            continue
+        trace = ai.provider_trace[0] if ai.provider_trace else {}
+        rows.append({
+            "case_id": case.case_id,
+            "payment_id": case.payment_id,
+            "provider": ai.provider,
+            "model": ai.model,
+            "mode": ai.mode,
+            "success": not ai.ai_unavailable and ai.fallback_reason is None,
+            "fallback_reason": ai.fallback_reason,
+            "decision": str(case.status),
+            "verification_passed": case.decision.verification.passed if case.decision.verification else None,
+            "latency_ms": ai.provider_latency_ms,
+            "input_tokens": ai.input_tokens,
+            "output_tokens": ai.output_tokens,
+            "total_tokens": ai.total_tokens,
+            "estimated_cost_usd": str(ai.estimated_cost_usd) if ai.estimated_cost_usd is not None else None,
+            "trace_success": trace.get("success"),
+            "trace_failure_type": trace.get("failure_type"),
+        })
+        if len(rows) >= limit:
+            break
+    return rows
 
 def _sum_trace_tokens(traces: Iterable[Dict[str, Any]]) -> Dict[str, Optional[int]]:
     totals = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
@@ -139,7 +216,7 @@ def _run_controller(dataset: DatasetBundle, *, label: str, provider: Optional[st
         _clear_provider()
     run = ReconciliationEngine(enable_ai=enable_ai).run(dataset)
     evaluation = IndependentEvaluator().evaluate(dataset, run)
-    return {"label": label, "run": run, "evaluation": evaluation, "summary": _summarize(run, evaluation)}
+    return {"label": label, "run": run, "evaluation": evaluation, "summary": _summarize(dataset, run, evaluation)}
 
 
 def _blocked(reason: str) -> Dict[str, Any]:
@@ -223,6 +300,7 @@ def main() -> int:
             "offline_ai": offline["summary"],
             "real_groq_ai": groq["summary"],
         },
+        "smoke_cases": _smoke_cases(groq["run"], limit=10),
         "ai_lift": {
             "real_groq_vs_deterministic": _lift(deterministic["summary"], groq["summary"]),
             "real_groq_vs_offline_ai": _lift(offline["summary"], groq["summary"]),

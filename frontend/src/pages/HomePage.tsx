@@ -1,7 +1,7 @@
 ﻿import { ArrowRight, Banknote, CheckCircle2, PlayCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { InlineError, MetricTile, StatusPill, WorkspacePanel } from "../components/WorkspaceUI";
 import { useAuditra } from "../hooks/useAuditra";
-import { compact, money, pct, titleCase } from "../lib/format";
+import { compact, executionLabel, money, pct, titleCase } from "../lib/format";
 import { attentionCases, auditHealthLabel, auditHealthRatio, potentialExposure } from "../lib/product";
 
 const stages = ["Create", "Close", "Verify", "Challenge", "Assure"];
@@ -13,7 +13,7 @@ export function HomePage() {
   const mode = runtimeAI?.investigation.execution_mode ?? "AI_UNAVAILABLE";
   return <div className="space-y-7">
     <section className="animate-fade-up overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_34%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(7,10,16,0.98))] p-6 sm:p-8 lg:p-10">
-      <div className="max-w-4xl"><StatusPill accent={mode === "REAL_GROQ_AI" ? "cyan" : "amber"} dot>{mode}</StatusPill><h1 className="mt-5 text-4xl font-semibold leading-tight text-white sm:text-6xl">AUDITRA</h1><p className="mt-4 max-w-2xl text-xl leading-8 text-slate-300">From financial intent to verified control.</p><p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400">Create a controlled payment world, audit it, investigate exceptions with bounded AI, verify the result, then challenge the controller before deployment.</p></div>
+      <div className="max-w-4xl"><StatusPill accent={mode === "REAL_GROQ_AI" ? "cyan" : "amber"} dot>{executionLabel(mode)}</StatusPill><h1 className="mt-5 text-4xl font-semibold leading-tight text-white sm:text-6xl">AUDITRA</h1><p className="mt-4 max-w-2xl text-xl leading-8 text-slate-300">From financial intent to verified control.</p><p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400">Create a controlled payment world, audit it, investigate exceptions with bounded AI, verify the result, then challenge the controller before deployment.</p></div>
       <div className="mt-7 flex flex-wrap gap-3"><button type="button" className="inline-flex min-h-12 items-center gap-2 rounded-md bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 px-6 text-sm font-semibold text-white shadow-[0_18px_44px_rgba(14,165,233,0.25)] transition hover:brightness-110" onClick={() => setActivePage("worlds")}><Sparkles className="h-4 w-4" />Create financial world</button><button type="button" className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/10 bg-white/[0.06] px-5 text-sm font-semibold text-white hover:bg-white/[0.1] disabled:opacity-50" disabled={isBusy} onClick={() => void runFiveMinuteDemo()}>{isBusy ? busyLabel || "Running" : <PlayCircle className="h-4 w-4" />}{isBusy ? statusMessage : "Run demo"}</button></div>
       <div className="mt-8 grid max-w-4xl grid-cols-5 gap-1 rounded-lg border border-white/10 bg-black/20 p-2">{stages.map((stage, index) => <div key={stage} className="text-center"><span className="mx-auto grid h-8 w-8 place-items-center rounded-md bg-cyan-400/10 text-xs font-semibold text-cyan-200">{index + 1}</span><span className="mt-2 block text-[11px] text-slate-500">{stage}</span></div>)}</div>
     </section>

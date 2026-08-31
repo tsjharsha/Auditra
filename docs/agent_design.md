@@ -72,4 +72,4 @@ Each hypothesis records:
 
 ## Provider Boundary
 
-`OfflineStructuredProvider` is the default and performs no network calls. `OpenAIProvider` is opt-in and uses structured output validation. Configure model, timeout, retries, max tokens and token-cost assumptions with environment variables such as `AUDITRA_WORLD_LLM_MODEL`, `AUDITRA_INVESTIGATION_LLM_TIMEOUT` and `AUDITRA_INVESTIGATION_LLM_MAX_RETRIES`.
+`OfflineStructuredProvider` performs no network calls. Real providers are opt-in through the shared LLM interface, with Groq as the primary submission path and Gemini/OpenRouter/Hugging Face/OpenAI preserved as implemented adapters. Configure provider, model, timeout, retries, max tokens and token-cost assumptions with environment variables such as `AI_PROVIDER`, `GROQ_MODEL`, `AUDITRA_WORLD_LLM_MODEL`, `AUDITRA_INVESTIGATION_LLM_TIMEOUT` and `AUDITRA_INVESTIGATION_LLM_MAX_RETRIES`.

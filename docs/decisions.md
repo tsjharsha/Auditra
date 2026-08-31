@@ -6,12 +6,13 @@ LLMs can create world specs or investigation plans. They do not create financial
 
 ## Offline Demo By Default
 
-Both the world builder and investigator support opt-in OpenAI providers. The default path is deterministic and offline so the demo runs without secrets or network calls.
+Both the world builder and investigator use a provider-agnostic LLM interface. Groq is the primary real-model submission path; Gemini, OpenRouter, Hugging Face and OpenAI remain optional implemented adapters. Offline/deterministic operation remains available so the demo runs without secrets or network calls.
 
 Environment flags:
 
 - `AUDITRA_USE_OPENAI_WORLD_BUILDER=1`
 - `AUDITRA_USE_OPENAI_INVESTIGATOR=1`
+- `GROQ_API_KEY`
 - `OPENAI_API_KEY`
 - `AUDITRA_OPENAI_MODEL`
 - `AUDITRA_WORLD_LLM_TIMEOUT`

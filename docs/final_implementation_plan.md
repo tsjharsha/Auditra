@@ -5,7 +5,7 @@ This plan is now the implementation record for the final productization pass.
 ## Completed P0
 
 - Financial World Builder module with typed `FinancialWorldSpec`.
-- Natural-language prompt parsing with deterministic offline path and opt-in OpenAI Responses API path.
+- Natural-language prompt parsing with deterministic offline path and opt-in provider path; Groq is the primary real-model submission provider.
 - Schema preview for MERCHANT, ORDER, PAYMENT, SETTLEMENT, REFUND, and FEE_RULE.
 - Relationship model preview.
 - Deterministic world generation from prompt plus seed.

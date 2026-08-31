@@ -1,3 +1,4 @@
+import { executionLabel } from "../../lib/format";
 import { ExternalLink, Send } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
@@ -41,7 +42,7 @@ export function InvestigationDetail({
             <div className="mt-2 flex flex-wrap gap-2">
               <Badge tone={statusTone(item.status)}>{item.status}</Badge>
               <Badge tone={riskTone(item.risk_score)}>Risk {item.risk_score.toFixed(1)}</Badge>
-              {ai ? <Badge tone={ai.ai_unavailable ? "danger" : "review"}>{ai.mode}</Badge> : <Badge tone="muted">AI not needed</Badge>}
+              {ai ? <Badge tone={ai.ai_unavailable ? "danger" : "review"}>{executionLabel(ai.mode)}</Badge> : <Badge tone="muted">AI not needed</Badge>}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">

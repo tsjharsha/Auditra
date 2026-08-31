@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuditra } from "../hooks/useAuditra";
+import { executionLabel } from "../lib/format";
 import { normalizePageId } from "../lib/navigation";
 import { cn } from "../lib/utils";
 import type { PrimaryPageId } from "../types/auditra";
@@ -112,7 +113,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="truncate">{isBusy ? busyLabel : statusMessage}</span>
             </span>
             <span className={healthy ? "shrink-0 text-emerald-300" : "shrink-0 text-rose-300"}>
-              {healthy ? provider?.execution_mode ?? "API live" : "API offline"}
+              {healthy ? executionLabel(provider?.execution_mode) : "API offline"}
             </span>
           </div>
         </div>
@@ -143,7 +144,7 @@ function ProviderBadge({ mode, model }: { mode: string; model: string }) {
       title={mode + " / " + model}
     >
       <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", real ? "bg-cyan-300" : unavailable ? "bg-rose-300" : "bg-amber-300")} />
-      <span className="truncate">{mode}</span>
+      <span className="truncate">{executionLabel(mode)}</span>
     </span>
   );
 }

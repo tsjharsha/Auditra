@@ -40,3 +40,9 @@ export function jsonPreview(value: unknown, length = 360) {
   const text = JSON.stringify(value ?? {}, null, 2);
   return text.length > length ? `${text.slice(0, length)}...` : text;
 }
+
+
+export function executionLabel(value?: string | null) {
+  if (!value) return "Unknown";
+  return value.replace(/_/g, " ");
+}

@@ -24,7 +24,7 @@ Scenario ground truth exists only for evaluation. `DatasetIndex` strips `ground_
 
 ## Secret Handling
 
-- Do not commit Razorpay, OpenAI, database, payout, or webhook secrets.
+- Do not commit Razorpay, Groq, OpenAI, database, payout, or webhook secrets.
 - Provider adapters should read credentials from environment variables.
 - The local demo uses an offline provider and makes no network LLM calls.
 - `.env` is ignored; `.env.example` contains placeholders only.

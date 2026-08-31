@@ -159,6 +159,62 @@ Where AI did not help: the older synthetic MIXED scale benchmark remains mostly 
 
 Where AI is intentionally not used: direct financial arithmetic, final invariant checks, ground-truth access, and authoritative settlement math.
 
+## Real Groq AI Evidence
+
+Source artifact: `artifacts/real_groq.json`
+
+| Field | Value |
+| --- | --- |
+| Artifact status | `PASS` |
+| Provider | Groq |
+| Model | `openai/gpt-oss-20b` |
+| Dataset | `WORLD_FW_5472e64b3b0e` |
+| Dataset version | `1` |
+| Cases | 83 |
+| Mode | `REAL_GROQ_AI` |
+| Accuracy | 100.00% |
+| Precision | 100.00% |
+| Recall | 100.00% |
+| F1 | 100.00% |
+| True positives | 83 |
+| True negatives | 747 |
+| False positives | 0 |
+| False negatives | 0 |
+| Financial volume | INR 341644.24 |
+| Correct amount | INR 341644.24 |
+| Incorrect amount | INR 0.00 |
+| Escalated amount | INR 51767.71 |
+| Unresolved amount | INR 0.00 |
+| Financial error impact | INR 0.00 |
+| P50 latency | 4.1553 ms |
+| P95 latency | 10.4772 ms |
+| Throughput | 7.75 records/sec |
+| LLM calls | 1 |
+| AI invocation rate | 48.19% |
+| Input tokens | N/A |
+| Output tokens | N/A |
+| Total tokens | N/A |
+| Estimated cost | USD 0.00 |
+| Fallback count | 39 |
+| Fallback reasons | `{"provider_circuit_open:rate_limit": 38, "rate_limit": 1}` |
+
+The smoke artifact contains 10 case rows. During the latest live run Groq completed the world-builder request and 1 real investigation call(s), then the provider returned a rate limit and Auditra fell back to `OFFLINE_AI` for the remaining AI-needed cases. This is intentionally preserved in the artifact instead of being hidden.
+
+Comparison on the same generated dataset:
+
+| Mode | Accuracy | F1 | Financial error | Human review | LLM calls |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Deterministic baseline | 96.39% | 96.04% | INR 4357.49 | 22.89% | 0 |
+| Offline AI | 100.00% | 100.00% | INR 0.00 | 19.28% | 0 |
+| Real Groq AI | 100.00% | 100.00% | INR 0.00 | 19.28% | 1 |
+
+Measured lift:
+
+| Comparison | Accuracy delta | F1 delta | Financial error delta | Auto-resolution delta | Human-review delta |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Real Groq vs deterministic | 0.0361 | 0.0396 | INR -4357.49 | 0.0361 | -0.0361 |
+| Real Groq vs offline AI | 0.0 | 0.0 | INR 0.00 | 0.0 | 0.0 |
+
 ## Failure Handling
 
 Auditra does not hide failures. The frozen demo still has 2 classification errors with INR 647.36 financial error impact. Phase C also preserved a replay artifact for a scale-timeout crash that was fixed.

@@ -1,3 +1,4 @@
+import { executionLabel } from "../lib/format";
 import { useMemo, useState } from "react";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -95,7 +96,7 @@ const columns: Column<ReconciliationCase>[] = [
   {
     key: "ai",
     header: "AI",
-    value: (row) => (row.ai_investigation ? <Badge tone="review">{row.ai_investigation.mode}</Badge> : <Badge tone="muted">not invoked</Badge>),
+    value: (row) => (row.ai_investigation ? <Badge tone="review">{executionLabel(row.ai_investigation.mode)}</Badge> : <Badge tone="muted">not invoked</Badge>),
     sortValue: (row) => row.ai_investigation?.mode ?? "",
   },
 ];

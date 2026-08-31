@@ -44,7 +44,7 @@ The generator creates:
 - fee rules
 - hidden ground truth cases
 
-Optional OpenAI world understanding can produce the `FinancialWorldSpec`, but it does not generate records. The structured output is validated before generation, malformed output is retried once, and invalid specs fail the build.
+Optional real-provider world understanding, with Groq as the primary submission path, can produce the `FinancialWorldSpec`, but it does not generate records. The structured output is validated before generation, malformed output is retried/fallback-labeled, and invalid specs fail or fall back honestly.
 
 ## Validation
 

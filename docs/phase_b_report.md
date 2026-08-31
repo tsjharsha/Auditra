@@ -58,4 +58,4 @@ Phase B productized Auditra into a Vite, React, TypeScript and Tailwind applicat
 - Run history is in-memory in the browser session and reflects runs performed during the current visit.
 - Human review records are submitted to the backend, but the reviewed case status is not rewritten in-place by the current API.
 - The frontend bundle is large because React Flow and Recharts are loaded eagerly. Code splitting is a good next optimization.
-- The app defaults to the offline structured AI path unless OpenAI environment variables are configured for the backend.
+- The app can run with the offline structured AI path unless a real provider such as Groq is configured for the backend.
