@@ -2,7 +2,7 @@
 
 Source of truth: `artifacts/real_groq.json`
 Generated at: `2026-08-31T07:21:06.132930+00:00`
-Artifact status: `PASS`
+Artifact status: `PARTIAL_RATE_LIMITED`
 
 ## 1. Provider Architecture
 
@@ -53,7 +53,7 @@ The artifact includes `10` smoke case rows with case ID, provider, model, mode, 
 
 During the latest live run, Groq completed the world-builder request and `1` real investigation call(s). Groq then returned a rate limit and Auditra fell back to `OFFLINE_AI` for remaining AI-needed cases. Fallback reasons: `{"provider_circuit_open:rate_limit": 38, "rate_limit": 1}`.
 
-This is reported as measured behavior, not hidden.
+This is reported as measured behavior, not hidden. The run should not be described as a clean full-provider pass because rate limits forced fallback after the first live investigation call.
 
 ## 7. Real Groq Evaluation
 

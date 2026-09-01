@@ -222,7 +222,7 @@ def _run_controller(dataset: DatasetBundle, *, label: str, provider: Optional[st
 def _blocked(reason: str) -> Dict[str, Any]:
     return {
         "artifact": "real_groq",
-        "status": "BLOCKED",
+        "status": "BLOCKED_MISSING_KEY",
         "reason": reason,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "runtime": runtime_ai_status(),
@@ -266,12 +266,25 @@ def main() -> int:
         "real_provider_calls": controller_execution_metadata(groq["run"])["real_provider_calls"],
     }
 
-    status = "PASS" if (
+    rate_limited = any(
+        "rate_limit" in str(key).lower()
+        for key in [*groq["summary"].get("fallback_reasons", {}), *groq["summary"].get("failure_types", {})]
+    )
+    full_real_path = (
         provider_truth["world_builder_provider"] == "groq"
         and provider_truth["world_builder_mode"] == "REAL_GROQ_AI"
         and provider_truth["actual_llm_calls"] > 0
+        and provider_truth["real_provider_calls"] > 0
         and groq["summary"]["mode"] == "REAL_GROQ_AI"
-    ) else "PARTIAL"
+    )
+    if full_real_path and groq["summary"]["fallback_count"] == 0 and groq["summary"]["provider_failures"] == 0:
+        status = "PASS_FULL_REAL"
+    elif full_real_path and rate_limited:
+        status = "PARTIAL_RATE_LIMITED"
+    elif full_real_path and groq["summary"]["fallback_count"] > 0:
+        status = "PASS_WITH_FALLBACK"
+    else:
+        status = "FAILED_PROVIDER"
 
     payload = {
         "artifact": "real_groq",
@@ -328,7 +341,7 @@ def main() -> int:
     }
     _write_artifact(payload)
     print(json.dumps({"status": status, "artifact": str(ARTIFACT_PATH), "llm_calls": groq["summary"]["llm_calls"]}, indent=2))
-    return 0 if status == "PASS" else 1
+    return 0 if status in {"PASS_FULL_REAL", "PASS_WITH_FALLBACK", "PARTIAL_RATE_LIMITED"} else 1
 
 
 if __name__ == "__main__":

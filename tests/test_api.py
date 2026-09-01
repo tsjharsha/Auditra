@@ -52,6 +52,31 @@ class ApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 422)
 
+    def test_submission_report_exports(self) -> None:
+        client = TestClient(app)
+        world_response = client.post(
+            "/challenges/settlement-reconciliation/build",
+            json={"record_count": 60, "seed": 7},
+        )
+        self.assertEqual(world_response.status_code, 200)
+        world = world_response.json()
+        audit_response = client.post(f"/worlds/{world['world_id']}/audit")
+        self.assertEqual(audit_response.status_code, 200)
+        audit = audit_response.json()
+        evaluation_run_id = audit["evaluation"]["evaluation_run_id"]
+
+        report_response = client.get(f"/reports/{evaluation_run_id}")
+        self.assertEqual(report_response.status_code, 200)
+        report = report_response.json()
+        self.assertEqual(report["track_fit"]["track"], "Razorpay AI Buildathon Track 04 - AI Finance Controller")
+        self.assertIn("controller_run", report)
+        self.assertIn("assurance", report)
+
+        csv_response = client.get(f"/reports/{evaluation_run_id}/exceptions.csv")
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertIn("text/csv", csv_response.headers["content-type"])
+        self.assertTrue(csv_response.text.startswith("case_id,payment_id,status"))
+
     def test_ingestion_rejects_oversized_entity_payload(self) -> None:
         client = TestClient(app)
         response = client.post("/ingest/json", json={"payload": {"orders": [{} for _ in range(10001)]}, "seed": 42})

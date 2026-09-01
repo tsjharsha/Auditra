@@ -1,7 +1,7 @@
 {
   "artifact": "real_groq",
   "artifact_version": 1,
-  "status": "PASS",
+  "status": "PARTIAL_RATE_LIMITED",
   "generated_at": "2026-08-31T07:21:06.132930+00:00",
   "dataset": {
     "prompt": "Build an Indian e-commerce merchant with 80 orders, UPI and card payments, 2% platform fees, T+2 settlement, refunds, refund mismatches, partial settlements, duplicates, timing issues and conflicting evidence.",
@@ -1125,5 +1125,6 @@
     "secrets_printed": false,
     "secrets_written": false,
     "frontend_receives_api_key": false
-  }
+  },
+  "status_detail": "Groq completed the world-builder request and at least one real investigation call, then rate limits triggered honest offline fallback for remaining AI-needed cases."
 }

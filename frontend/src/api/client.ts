@@ -29,6 +29,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+async function blobRequest(path: string): Promise<Blob> {
+  const response = await fetch(`${API_BASE}${path}`);
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(body || response.statusText);
+  }
+  return response.blob();
+}
+
 export const auditraApi = {
   health: () => request<HealthResponse>("/health"),
   challenges: () =>
@@ -59,6 +68,10 @@ export const auditraApi = {
     }),
   assurance: (evaluationRunId: string) =>
     request<AssuranceReport>(`/audits/${encodeURIComponent(evaluationRunId)}/assurance`),
+  submissionReport: (evaluationRunId: string) =>
+    request<Record<string, unknown>>(`/reports/${encodeURIComponent(evaluationRunId)}`),
+  exceptionReportCsv: (evaluationRunId: string) =>
+    blobRequest(`/reports/${encodeURIComponent(evaluationRunId)}/exceptions.csv`),
   redTeam: (evaluationRunId: string, recordCount = 200, seed = 84) =>
     request<RedTeamResult>(`/audits/${encodeURIComponent(evaluationRunId)}/red-team`, {
       method: "POST",

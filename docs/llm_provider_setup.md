@@ -116,7 +116,7 @@ After configuring `GROQ_API_KEY`, generate measured evidence:
 py -3.13 scripts/real_groq_validation.py
 ```
 
-This writes `artifacts/real_groq.json` with dataset provenance, model/mode labels, measured controller metrics, token fields when returned by Groq, cost only when calculable, and AI lift against deterministic and offline runs. If the key is missing, the artifact records `BLOCKED` instead of fabricating numbers.
+This writes `artifacts/real_groq.json` with dataset provenance, model/mode labels, measured controller metrics, token fields when returned by Groq, cost only when calculable, and AI lift against deterministic and offline runs. If the key is missing, the artifact records `BLOCKED_MISSING_KEY` instead of fabricating numbers.
 
 ## Run Verification
 

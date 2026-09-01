@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import csv
+import io
 import json
 import os
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
@@ -209,6 +211,92 @@ def audit_world(world_id: str) -> Dict[str, Any]:
             "comparison": comparison,
             "survival_status": "CONTROLLER SURVIVED" if not evaluation.failures else f"CONTROLLER FAILED {len(evaluation.failures)} CASES",
         }
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/reports/{evaluation_run_id}")
+def get_submission_report(evaluation_run_id: str) -> Dict[str, Any]:
+    try:
+        evaluation = store.get_evaluation_run(evaluation_run_id)
+        run = store.get_controller_run(evaluation.controller_run_id)
+        dataset = store.get_dataset(evaluation.dataset_id)
+        assurance = assurance_report(dataset, run, evaluation)
+        exceptions = [
+            case for case in run.cases
+            if str(case.status) not in {"MATCHED", "FEE_EXPLAINED", "REFUND_ADJUSTED"}
+        ]
+        return {
+            "product": "Auditra",
+            "positioning": "AI Finance Controller for Razorpay-style payment reconciliation",
+            "track_fit": {
+                "track": "Razorpay AI Buildathon Track 04 - AI Finance Controller",
+                "closed_loop": "orders -> payments -> fees/GST -> refunds -> settlements -> exceptions",
+                "record_count": run.metrics.transactions_processed,
+                "reports_match_rate": True,
+                "reports_unresolved_exceptions": True,
+                "reports_throughput": True,
+                "reports_measured_accuracy": True,
+            },
+            "dataset": _public_dataset(dataset),
+            "controller_run": public_controller_run(run),
+            "evaluation": evaluation.model_dump(mode="json"),
+            "assurance": assurance,
+            "exception_summary": {
+                "count": len(exceptions),
+                "financial_exposure": str(sum((case.decision.financial_impact for case in exceptions), start=0)),
+                "top_cases": [case.model_dump(mode="json") for case in exceptions[:25]],
+            },
+            "disclosure": {
+                "ground_truth_access": "Hidden truth is withheld until independent evaluation.",
+                "money_math": "Financial arithmetic and invariant checks are deterministic.",
+                "ai_authority": "AI can investigate ambiguous exceptions but cannot override verification controls.",
+            },
+        }
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/reports/{evaluation_run_id}/exceptions.csv")
+def get_exception_report_csv(evaluation_run_id: str) -> Response:
+    try:
+        evaluation = store.get_evaluation_run(evaluation_run_id)
+        run = store.get_controller_run(evaluation.controller_run_id)
+        failures = {failure.case_id: failure for failure in evaluation.failures}
+        rows = [
+            case for case in run.cases
+            if str(case.status) not in {"MATCHED", "FEE_EXPLAINED", "REFUND_ADJUSTED"}
+        ]
+        buffer = io.StringIO()
+        writer = csv.DictWriter(
+            buffer,
+            fieldnames=[
+                "case_id", "payment_id", "status", "hidden_truth_check", "confidence",
+                "financial_impact", "risk_score", "ai_mode", "llm_calls", "tool_calls", "reason",
+            ],
+        )
+        writer.writeheader()
+        for case in rows:
+            failure = failures.get(case.case_id)
+            ai = case.ai_investigation
+            writer.writerow({
+                "case_id": case.case_id,
+                "payment_id": case.payment_id,
+                "status": str(case.status),
+                "hidden_truth_check": "MISMATCH" if failure else "VERIFIED",
+                "confidence": case.decision.confidence_score,
+                "financial_impact": str(case.decision.financial_impact),
+                "risk_score": case.risk_score,
+                "ai_mode": ai.mode if ai else "DETERMINISTIC",
+                "llm_calls": ai.llm_calls if ai else 0,
+                "tool_calls": len(case.tool_calls),
+                "reason": failure.root_cause if failure else (case.decision.reason_codes[0] if case.decision.reason_codes else "Evidence-backed exception"),
+            })
+        return Response(
+            content=buffer.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="auditra-exceptions-{evaluation_run_id}.csv"'},
+        )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

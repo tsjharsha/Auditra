@@ -17,7 +17,7 @@ Date: 2026-08-25
 | Concurrency | PASS: 1, 5, 10, 25, and 50 simultaneous local runs completed without duplicate IDs or state corruption |
 | Security scan | PASS: no real secrets found; only placeholder env examples and expected docs references |
 | PostgreSQL migration | NOT RUN locally: no `AUDITRA_DATABASE_URL` and no `psql` in shell |
-| Live Groq smoke | See `artifacts/real_groq.json`; the runner records `BLOCKED` if no `GROQ_API_KEY` is configured and measured metrics when Groq executes |
+| Live Groq smoke | See `artifacts/real_groq.json`; the runner records `BLOCKED_MISSING_KEY` if no `GROQ_API_KEY` is configured and uses `PASS_FULL_REAL`, `PASS_WITH_FALLBACK`, or `PARTIAL_RATE_LIMITED` for measured provider executions |
 | Python environment audit | ENV ISSUE: global `sentence-transformers` requires a newer `transformers`; Auditra does not declare either package |
 
 ## Scored Assessment
@@ -69,7 +69,7 @@ Date: 2026-08-25
 | Item | Status |
 | --- | --- |
 | Full demo works | GO |
-| Real AI path works | GO when `artifacts/real_groq.json` has `status: PASS`; provider integration tests pass and missing-key runs are labeled honestly |
+| Real AI path works | GO when `artifacts/real_groq.json` has an honest measured status such as `PASS_FULL_REAL`, `PASS_WITH_FALLBACK`, or `PARTIAL_RATE_LIMITED`; provider integration tests pass and missing-key runs are labeled honestly |
 | AI vs baseline is measured | GO |
 | World Builder works | GO |
 | Audit works | GO |
@@ -86,4 +86,4 @@ Date: 2026-08-25
 | Clean repository | GO |
 | Five-minute demo reproducible | GO |
 
-Final decision: GO for the local reproducible Razorpay submission package. Do not claim live external Groq execution unless `artifacts/real_groq.json` shows a measured `PASS` run with `REAL_GROQ_AI` and `llm_calls > 0`.
+Final decision: GO for the local reproducible Razorpay submission package. Do not claim a full no-fallback Groq execution unless `artifacts/real_groq.json` shows `PASS_FULL_REAL` with `REAL_GROQ_AI`, `llm_calls > 0`, and zero fallback. If the artifact shows `PARTIAL_RATE_LIMITED`, describe it as real-provider evidence with honest fallback disclosure.
