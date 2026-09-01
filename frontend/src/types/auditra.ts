@@ -162,6 +162,20 @@ export interface WorldBuildResult {
   ground_truth?: { status: "LOCKED"; records: number };
 }
 
+export interface IngestionResult {
+  adapter: string;
+  dataset_id: string;
+  rows_seen: Record<string, number>;
+  rows_loaded: Record<string, number>;
+  schema_warnings: string[];
+  validation: {
+    world_id: string;
+    valid: boolean;
+    checks: Array<{ check_id: string; status: string; detail: string; count: number }>;
+  };
+  dataset: VisibleDataset | null;
+}
+
 export interface WorldPreview {
   spec: FinancialWorldSpec;
   schema_preview: SchemaPreview;
@@ -199,6 +213,8 @@ export interface EvaluationMetrics {
   f1: number;
   false_positive_rate: number;
   false_negative_rate: number;
+  exception_false_positive_rate: number;
+  exception_false_negative_rate: number;
   match_rate: number;
   automatic_resolution_rate: number;
   escalation_rate: number;
@@ -465,6 +481,18 @@ export interface ChallengeDefinition {
   record_count: number;
   anomaly_mode: AnomalyMode;
   accent: "cyan" | "rose" | "amber" | "indigo";
+  operational_scenario?: string;
+}
+
+export interface SettlementBrief {
+  mode: "DETERMINISTIC_SETTLEMENT_BRIEF";
+  disclosure: string;
+  answers: Array<{
+    id: string;
+    question: string;
+    answer: string;
+    supporting_case_ids: string[];
+  }>;
 }
 
 export interface FailureFingerprint {

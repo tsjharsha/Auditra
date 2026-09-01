@@ -1,23 +1,82 @@
 # Final Five-Minute Demo Script
 
-Target: 5 minutes or less.
+Target: five minutes. Use the default Payment settlement close scenario with 500 records and seed 42.
 
-Frozen run: seed `42`, world `FW_0a7d61b20d15`, dataset `WORLD_FW_0a7d61b20d15`.
+## 0:00 - 0:25: The Job
 
-| Time | Screen | Action | Spoken line | Metric | Transition |
-| --- | --- | --- | --- | --- | --- |
-| 0:00-0:20 | Home | Open `http://127.0.0.1:5174/` | "Most financial AI demos start with a dataset. Auditra starts one step earlier." | Product loop: CREATE -> STRESS -> AUDIT -> PROVE | Click `Run 5-Minute Demo` |
-| 0:20-0:55 | World Builder | Show prompt understanding and generated schema | "The prompt becomes a typed financial world spec, not free-form model output." | 500 orders, INR 2148789.81 payment volume | Open World Explorer |
-| 0:55-1:25 | Financial World | Show merchants, orders, payments, settlements, refunds, and fee rules | "The synthetic world is controlled so we can know what the controller should find." | 506 payments, 486 settlements, 60 refunds, 112 anomalies | Open Reconciliation |
-| 1:25-2:05 | Controller | Show audit stages and metrics | "The controller audits every transaction with deterministic financial controls and bounded AI investigation." | 99.60% accuracy, 99.21% auto-resolution, 0.79% human review | Open Investigations |
-| 2:05-2:50 | Investigation | Select the highlighted review case | "AI investigates exceptions, but evidence and verification remain structured." | 112 AI-investigated cases, 0 external LLM calls by default | Open Evidence Graph |
-| 2:50-3:25 | Evidence Graph | Show payment, order, settlement, refund, decision, and verification nodes | "The reviewer can see why a decision happened and which records support it." | Graph evidence is generated from visible records only | Open Human Review |
-| 3:25-3:55 | Human Review | Show escalated cases | "When evidence is conflicting or unsafe, Auditra escalates instead of pretending certainty." | 4 human-review cases in the demo run | Open Evaluation Lab |
-| 3:55-4:35 | Evaluation Lab | Show AI vs baseline table | "The AI is measured against hidden ground truth after the run." | Baseline failures 15, AI failures 2 | Click Break Controller if time allows |
-| 4:35-5:00 | Break The Controller | Show stress run result | "The point is not a perfect demo. The point is a controller that shows where it fails." | Frozen demo error impact INR 647.36 | End on Failure Report |
+Open the Close page.
 
-Closing line:
+Say: "Auditra is a payment operations controller. It reconciles a settlement batch across payments, fees, refunds, and settlements, then brings only the decisions that need attention to a reviewer."
 
-```text
-Auditra explores a problem that becomes increasingly important as financial operations become agentic: how do you verify that financial AI is actually correct?
-```
+Select Payment settlement close. Keep 500 records selected.
+
+## 0:25 - 0:50: Build The Controlled Batch
+
+Click Build batch.
+
+Say: "The batch is synthetic and repeatable, but its truth labels are locked. The controller cannot see the expected answer before it makes a decision."
+
+Point out the execution disclosure: offline structured mode is reproducible without a provider key; live-provider mode is labeled only when real calls occur.
+
+## 0:50 - 1:35: Run The Audit
+
+Click Run audit.
+
+Say: "The controller applies deterministic money controls first. Bounded AI can investigate ambiguous cases, but it cannot perform authoritative math or override verification."
+
+After the result appears, point out only four numbers:
+
+- Match rate
+- Needs review
+- At-risk amount
+- Throughput
+
+## 1:35 - 2:30: The One Exception
+
+Open Inspect evidence on the priority decision.
+
+Say: "This is the decision that matters: the expected and actual settlement do not tie out. Auditra shows the variance, the supporting payment/refund/settlement evidence, and whether deterministic checks agree."
+
+On Review, show the evidence and verification sections.
+
+Say: "A reviewer can approve, reject, or keep this open. The review event records the configured reviewer identity."
+
+## 2:30 - 3:10: Honest Measurement
+
+Return to Close and point to Close assurance, then open Audit.
+
+Say: "The controller is evaluated after the run against hidden ground truth. We report exact status accuracy, macro F1, missed-exception rate, financial impact, and the cases that still differed from truth."
+
+Important disclosure:
+
+- The default demo is an offline structured controller with zero external calls.
+- The separate Groq artifact is PARTIAL_RATE_LIMITED, not a full external-LLM claim.
+- A real-provider run is only called fully real when its artifact is PASS_FULL_REAL.
+
+## 3:10 - 4:15: Attack The Weakness
+
+On Audit, show the assurance verdict and launch the targeted retest.
+
+Say: "One good batch is not enough. Auditra fingerprints the measured failure pattern, generates an adversarial retest around it, and changes its deployment recommendation based on the result."
+
+Point out the assurance score, unsafe auto-actions, failure fingerprint, and retest verdict.
+
+## 4:15 - 5:00: Close
+
+Return to Close and click Audit report or Exception CSV.
+
+Say: "Auditra closes one finance-ops loop over more than 50 records and exports the evidence. It does not ask Razorpay to trust an AI controller. It measures whether the controller should be trusted."
+
+## Judge Questions
+
+### Is this actually AI?
+
+AI is bounded to interpreting setup and investigating ambiguous exceptions. Settlement arithmetic, controls, invariants, verification, and assurance are deterministic. The UI discloses whether a run used an offline structured investigator or a real provider.
+
+### Why synthetic data?
+
+Track 04 requests synthetic data. Synthetic batches make the demo safe, repeatable, and measurable against hidden ground truth.
+
+### Why show failures?
+
+Finance controllers must report uncertainty honestly. Auditra lists open exceptions, financial exposure, and measured errors, then retests the failure pattern.

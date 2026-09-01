@@ -512,6 +512,10 @@ class EvaluationMetrics(AuditraModel):
     f1: float
     false_positive_rate: float
     false_negative_rate: float
+    # Explicit names make the binary exception-detection meaning visible to API consumers.
+    # The legacy names are retained for backward-compatible reports.
+    exception_false_positive_rate: float = 0.0
+    exception_false_negative_rate: float = 0.0
     match_rate: float
     automatic_resolution_rate: float
     escalation_rate: float

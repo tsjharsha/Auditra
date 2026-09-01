@@ -329,7 +329,8 @@ export function AuditraProvider({ children }: { children: ReactNode }) {
   const reviewMutation = useMutation({
     mutationFn: ({ caseId, action, note }: { caseId: string; action: ReviewAction; note: string }) => {
       if (!audit) throw new Error("No controller run is available for review");
-      return auditraApi.review(caseId, audit.controller_run.run_id, action, "demo_reviewer", note);
+      const reviewer = import.meta.env.VITE_AUDITRA_REVIEWER ?? "finance_reviewer";
+      return auditraApi.review(caseId, audit.controller_run.run_id, action, reviewer, note);
     },
     onSuccess: (result) => {
       setLastReviewEvent(`${result.action} recorded for ${result.case_id}`);

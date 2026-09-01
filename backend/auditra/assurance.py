@@ -16,27 +16,27 @@ REVIEW_VALUES = {item.value for item in TERMINAL_REVIEW_STATUSES}
 CHALLENGES: List[Dict[str, Any]] = [
     {
         "challenge_id": "settlement-reconciliation", "name": "Settlement & Reconciliation",
-        "description": "Close a Razorpay-style payment batch across orders, fees, refunds, and T+2 settlements.",
+        "description": "Close a Razorpay-style payment batch across captured payments, fee/GST deductions, refunds, and T+2 settlements.",
         "risk": "Incorrect settlement closure can hide merchant exposure and reconciliation breaks.",
-        "recommended": True, "record_count": 500, "anomaly_mode": "STRESSED", "accent": "cyan",
+        "operational_scenario": "Payment settlement close", "recommended": True, "record_count": 500, "anomaly_mode": "STRESSED", "accent": "cyan",
     },
     {
         "challenge_id": "refund-integrity", "name": "Refund Integrity Attack",
-        "description": "Test post-settlement refunds, partial refunds, and conflicting refund evidence.",
+        "description": "Trace post-settlement and partial refunds against the expected net settlement.",
         "risk": "Refunds can be detached from the original payment and silently distort net settlement.",
-        "recommended": False, "record_count": 400, "anomaly_mode": "ADVERSARIAL", "accent": "rose",
+        "operational_scenario": "Refund net-settlement control", "recommended": False, "record_count": 400, "anomaly_mode": "ADVERSARIAL", "accent": "rose",
     },
     {
         "challenge_id": "fee-leakage", "name": "Fee Leakage Control",
-        "description": "Verify pricing rules and detect fee drift across payment methods.",
+        "description": "Verify payment-method fees and GST assumptions against the resulting settlement.",
         "risk": "Small fee errors compound into material merchant and platform leakage.",
-        "recommended": False, "record_count": 400, "anomaly_mode": "STRESSED", "accent": "amber",
+        "operational_scenario": "Fee and GST variance", "recommended": False, "record_count": 400, "anomaly_mode": "STRESSED", "accent": "amber",
     },
     {
         "challenge_id": "black-swan-close", "name": "Black Swan Close",
-        "description": "Compound duplicates, delays, missing links, and contradictory evidence.",
+        "description": "Stress a peak-day batch with duplicates, delayed settlements, missing links, and contradictory evidence.",
         "risk": "Interacting anomalies can make a confident controller unsafe under peak pressure.",
-        "recommended": False, "record_count": 600, "anomaly_mode": "CHAOS", "accent": "indigo",
+        "operational_scenario": "Peak-day exception close", "recommended": False, "record_count": 600, "anomaly_mode": "CHAOS", "accent": "indigo",
     },
 ]
 

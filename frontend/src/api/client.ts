@@ -62,6 +62,11 @@ export const auditraApi = {
       method: "POST",
       body: JSON.stringify(spec),
     }),
+  ingest: (adapter: "json" | "csv" | "razorpay_test", payload: Record<string, unknown>, seed = 42) =>
+    request<import("../types/auditra").IngestionResult>(`/ingest/${encodeURIComponent(adapter)}`, {
+      method: "POST",
+      body: JSON.stringify({ payload, seed }),
+    }),
   auditWorld: (worldId: string) =>
     request<AuditWorldResult>(`/worlds/${encodeURIComponent(worldId)}/audit`, {
       method: "POST",
@@ -72,6 +77,8 @@ export const auditraApi = {
     request<Record<string, unknown>>(`/reports/${encodeURIComponent(evaluationRunId)}`),
   exceptionReportCsv: (evaluationRunId: string) =>
     blobRequest(`/reports/${encodeURIComponent(evaluationRunId)}/exceptions.csv`),
+  settlementBrief: (evaluationRunId: string) =>
+    request<import("../types/auditra").SettlementBrief>(`/reports/${encodeURIComponent(evaluationRunId)}/settlement-brief`),
   redTeam: (evaluationRunId: string, recordCount = 200, seed = 84) =>
     request<RedTeamResult>(`/audits/${encodeURIComponent(evaluationRunId)}/red-team`, {
       method: "POST",

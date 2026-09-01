@@ -103,6 +103,8 @@ class IndependentEvaluator:
             f1=round(f1, 4),
             false_positive_rate=round(false_positive_count / max(expected_normal_count, 1), 4),
             false_negative_rate=round(false_negative_count / max(expected_exception_count, 1), 4),
+            exception_false_positive_rate=round(false_positive_count / max(expected_normal_count, 1), 4),
+            exception_false_negative_rate=round(false_negative_count / max(expected_exception_count, 1), 4),
             match_rate=controller_run.metrics.match_rate,
             automatic_resolution_rate=controller_run.metrics.automatic_resolution_rate,
             escalation_rate=round(escalation_count / max(total, 1), 4),

@@ -20,12 +20,12 @@ The controller never receives hidden labels. It closes the batch, bounded AI inv
 
 ## What The Demo Shows
 
-1. Build a Razorpay-style payment operations batch with 50+ synthetic records.
-2. Run the AI Finance Controller.
-3. See match rate, auto-closed cases, human review, throughput, and financial exposure.
-4. Drill into one exception with evidence, tool activity, and verification checks.
-5. Download audit JSON or exceptions CSV.
-6. Run assurance and targeted red-team retest against the controller's weakest failure pattern.
+1. Choose one payment-operations scenario: settlement close, refund net settlement, fee/GST variance, or peak-day exceptions.
+2. Build a Razorpay-style batch with 50+ synthetic records and locked hidden truth.
+3. Run the controller and see match rate, needs-review count, at-risk amount, and throughput.
+4. Open one priority exception to compare expected and actual settlement, evidence, and verification checks.
+5. Read a data-derived settlement brief, then export the audit JSON or exceptions CSV.
+6. Run assurance and a targeted red-team retest against the controller's weakest measured failure pattern.
 
 ## Product Surface
 
@@ -37,6 +37,10 @@ The frontend is intentionally focused for judges:
 - `Audit JSON` / `Exceptions CSV`: exports a lightweight submission report.
 
 Advanced pages still exist for world exploration, review, insights, settings, evidence graph, and evaluation lab, but the first screen keeps the story simple.
+
+## Submission Flow
+
+![Auditra submission flow](docs/assets/submission_flow.svg)
 
 ## Architecture
 
@@ -64,7 +68,9 @@ POST /worlds/{world_id}/audit
 GET  /audits/{evaluation_run_id}/assurance
 POST /audits/{evaluation_run_id}/red-team
 GET  /reports/{evaluation_run_id}
+GET  /reports/{evaluation_run_id}/settlement-brief
 GET  /reports/{evaluation_run_id}/exceptions.csv
+POST /datasets/{dataset_id}/audit
 ```
 
 Report endpoints are read-only and derive from existing controller and evaluation artifacts.
@@ -82,6 +88,20 @@ AI is bounded by design:
 
 ## Metrics
 
+### Metric Semantics
+
+Accuracy is exact final-status agreement against hidden ground truth. F1 is macro F1 across the active reconciliation statuses.
+
+Exception false-positive rate means normal payments raised as exceptions. Exception false-negative rate means true exceptions that were incorrectly closed as normal. This distinction is intentional: a final-status classification error is not automatically a missed financial exception.
+
+### Razorpay-Style Operations
+
+Auditra keeps the submission narrow, but makes the payment-operations loop concrete:
+
+- **Payment settlement close:** captured payments, fee/GST deductions, refunds, and T+2 settlement reconciliation.
+- **Refund net-settlement control:** post-settlement and partial refunds against expected net settlement.
+- **Fee and GST variance:** fee-rule and GST assumptions compared with the resulting settlement.
+- **Peak-day exception close:** duplicates, delayed settlements, missing links, and conflicting evidence.
 ### Offline Reproducible Demo
 
 Runs without API keys and is suitable for a clean clone.

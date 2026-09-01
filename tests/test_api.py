@@ -71,6 +71,13 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(report["track_fit"]["track"], "Razorpay AI Buildathon Track 04 - AI Finance Controller")
         self.assertIn("controller_run", report)
         self.assertIn("assurance", report)
+        self.assertIn("exception_false_negative_rate", report["evaluation"]["metrics"])
+        self.assertIn("metric_definitions", report)
+
+        brief_response = client.get(f"/reports/{evaluation_run_id}/settlement-brief")
+        self.assertEqual(brief_response.status_code, 200)
+        self.assertEqual(brief_response.json()["mode"], "DETERMINISTIC_SETTLEMENT_BRIEF")
+        self.assertEqual(len(brief_response.json()["answers"]), 3)
 
         csv_response = client.get(f"/reports/{evaluation_run_id}/exceptions.csv")
         self.assertEqual(csv_response.status_code, 200)

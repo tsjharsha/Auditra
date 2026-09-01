@@ -1,51 +1,45 @@
 import {
-  ArrowRight,
-  Banknote,
-  Bot,
-  CheckCircle2,
-  CircleAlert,
-  Download,
-  FileJson,
-  Gauge,
-  LockKeyhole,
-  PlayCircle,
-  RefreshCw,
-  ShieldCheck,
-  Sparkles,
-  Timer,
+  ArrowRight, Check, ChevronRight, CircleAlert, Download, FileJson, Gauge,
+  Layers3, LoaderCircle, LockKeyhole, Play, Sparkles, Timer, WalletCards,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { auditraApi } from "../api/client";
 import { InlineError, MetricTile, ProgressBar, StatusPill, WorkspacePanel } from "../components/WorkspaceUI";
 import { useAuditra } from "../hooks/useAuditra";
-import { compact, executionLabel, money, pct, titleCase } from "../lib/format";
-import { attentionCases, auditHealthLabel, auditHealthRatio, caseShortExplanation, caseTitle, potentialExposure } from "../lib/product";
-import type { AuditWorldResult, ReconciliationCase } from "../types/auditra";
+import { compact, money, pct, titleCase } from "../lib/format";
+import { attentionCases, caseShortExplanation, caseTitle, potentialExposure } from "../lib/product";
+import type { ReconciliationCase, SettlementBrief } from "../types/auditra";
 
-const closeLoop = ["Orders", "Payments", "Fees + GST", "Refunds", "Settlements", "Exceptions"];
+const flow = ["Capture", "Reconcile", "Review", "Close"];
 
 export function HomePage() {
   const {
-    world,
-    audit,
-    assurance,
-    runtimeAI,
-    buildChallenge,
-    auditWorld,
-    setActivePage,
-    setSelectedCase,
-    isBusy,
-    busyLabel,
-    statusMessage,
-    error,
+    world, audit, assurance, challenges, selectedChallengeId, setSelectedChallengeId, runtimeAI,
+    buildChallenge, auditWorld, setActivePage, setSelectedCase, isBusy, busyLabel, statusMessage, error,
   } = useAuditra();
   const [recordCount, setRecordCount] = useState(500);
-  const attention = attentionCases(audit);
-  const exposure = potentialExposure(attention);
-  const mode = runtimeAI?.investigation.execution_mode ?? "AI_UNAVAILABLE";
-  const focus = attention[0] ?? audit?.controller_run.cases[0] ?? null;
+  const [brief, setBrief] = useState<SettlementBrief | null>(null);
+  const [briefError, setBriefError] = useState(false);
+  const [exporting, setExporting] = useState<"report" | "exceptions" | null>(null);
+  const activeChallenge = useMemo(
+    () => challenges.find((item) => item.challenge_id === selectedChallengeId) ?? challenges[0],
+    [challenges, selectedChallengeId],
+  );
+  const exceptions = attentionCases(audit);
+  const focus = exceptions[0] ?? audit?.controller_run.cases[0] ?? null;
+  const exposure = potentialExposure(exceptions);
+  const execution = audit?.controller_run.execution;
+  const mode = runtimeAI?.investigation.execution_mode ?? "OFFLINE_AI";
 
-  async function runClose() {
-    const target = world ?? (await buildChallenge(recordCount));
+  useEffect(() => {
+    setBrief(null);
+    setBriefError(false);
+    if (!audit) return;
+    void auditraApi.settlementBrief(audit.evaluation.evaluation_run_id).then(setBrief).catch(() => setBriefError(true));
+  }, [audit?.evaluation.evaluation_run_id]);
+
+  async function runController() {
+    const target = world && world.challenge?.challenge_id === selectedChallengeId ? world : await buildChallenge(recordCount);
     await auditWorld(target);
   }
 
@@ -54,221 +48,154 @@ export function HomePage() {
     setActivePage("review");
   }
 
+  async function exportReport() {
+    if (!audit) return;
+    setExporting("report");
+    try {
+      const report = await auditraApi.submissionReport(audit.evaluation.evaluation_run_id);
+      downloadText("auditra-submission-" + audit.evaluation.evaluation_run_id + ".json", JSON.stringify(report, null, 2), "application/json");
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  async function exportExceptions() {
+    if (!audit) return;
+    setExporting("exceptions");
+    try {
+      downloadBlob("auditra-exceptions-" + audit.evaluation.evaluation_run_id + ".csv", await auditraApi.exceptionReportCsv(audit.evaluation.evaluation_run_id));
+    } finally {
+      setExporting(null);
+    }
+  }
+
   return (
-    <div className="space-y-7">
-      <section className="animate-fade-up overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_18%_10%,rgba(34,211,238,0.24),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(99,102,241,0.22),transparent_30%),linear-gradient(135deg,rgba(9,13,22,0.98),rgba(3,7,18,0.98))] p-5 shadow-[0_24px_80px_rgba(2,6,23,0.36)] sm:p-8 lg:p-10">
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_430px] xl:items-end">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusPill accent="cyan" dot>Razorpay Payment Operations</StatusPill>
-              <StatusPill accent={mode.startsWith("REAL_") ? "emerald" : mode === "AI_UNAVAILABLE" ? "rose" : "amber"}>{executionLabel(mode)}</StatusPill>
-            </div>
-            <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight text-white sm:text-6xl">
-              AI Finance Controller for payment reconciliation.
-            </h1>
-            <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300 sm:text-lg">
-              Close a synthetic Razorpay-style batch across payments, refunds, fees, GST, and settlements. Auditra reports match rate, throughput, open exceptions, financial exposure, and the evidence behind every decision.
-            </p>
+    <div className="space-y-6 pb-8">
+      <section className="hero-surface rise-in">
+        <div className="hero-grid">
+          <div className="max-w-3xl">
+            <div className="eyebrow-row"><span className="signal-dot" />Payment operations<span className="eyebrow-divider" />Reconciliation workspace</div>
+            <h1 className="hero-title">Close the settlement batch with confidence.</h1>
+            <p className="hero-copy">Auditra reconciles payments, fees, refunds, and settlements, then brings the few decisions that need a human to the surface.</p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <button
-                type="button"
-                className="inline-flex min-h-12 items-center gap-2 rounded-md bg-white px-5 text-sm font-semibold text-slate-950 shadow-[0_18px_44px_rgba(255,255,255,0.12)] transition hover:bg-cyan-50 disabled:opacity-50"
-                disabled={isBusy}
-                onClick={() => void buildChallenge(recordCount)}
-              >
-                {isBusy && busyLabel === "Building challenge" ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Build batch
+              <button type="button" className="button-secondary" disabled={isBusy} onClick={() => void buildChallenge(recordCount)}>
+                {isBusy && busyLabel === "Building challenge" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Build batch
               </button>
-              <button
-                type="button"
-                className="inline-flex min-h-12 items-center gap-2 rounded-md bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 px-6 text-sm font-semibold text-white shadow-[0_18px_44px_rgba(14,165,233,0.28)] transition hover:brightness-110 disabled:opacity-50"
-                disabled={isBusy}
-                onClick={() => void runClose()}
-              >
-                {isBusy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
-                Run controller
+              <button type="button" className="button-primary" disabled={isBusy} onClick={() => void runController()}>
+                {isBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current" />} Run audit
               </button>
-              {audit ? (
-                <button
-                  type="button"
-                  className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/10 bg-white/[0.06] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.1]"
-                  onClick={() => openCase(focus)}
-                >
-                  Inspect evidence <ArrowRight className="h-4 w-4" />
-                </button>
-              ) : null}
+              {audit ? <button type="button" className="button-quiet" onClick={() => openCase(focus)}>Review priority case <ArrowRight className="h-4 w-4" /></button> : null}
             </div>
-            <div className="mt-4 text-sm text-cyan-100/80">{isBusy ? `${busyLabel}: ${statusMessage}` : statusMessage}</div>
+            <div className="mt-4 flex min-h-5 items-center gap-2 text-sm text-[#9a9792]">
+              {isBusy ? <span className="inline-flex h-4 w-4 rounded-full border-2 border-[#c7ff54]/30 border-t-[#c7ff54] animate-spin" /> : null}
+              {isBusy ? busyLabel + ": " + statusMessage : statusMessage}
+            </div>
           </div>
 
-          <WorkspacePanel className="bg-black/25 p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-xs font-semibold text-cyan-300">Submission batch</div>
-                <div className="mt-1 text-lg font-semibold text-white">Synthetic finance close</div>
-              </div>
-              <LockKeyhole className="h-5 w-5 text-emerald-300" />
+          <aside className="batch-card">
+            <div className="flex items-center justify-between">
+              <div><div className="section-kicker">Batch configuration</div><div className="mt-1 text-lg font-semibold text-white">{activeChallenge?.operational_scenario ?? "Settlement close"}</div></div>
+              <LockKeyhole className="h-5 w-5 text-[#c7ff54]" />
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              {[100, 500, 1000].map((count) => (
-                <button
-                  key={count}
-                  type="button"
-                  className={`min-h-10 rounded-md border px-3 text-sm font-semibold transition ${recordCount === count ? "border-cyan-300 bg-cyan-300 text-slate-950" : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08]"}`}
-                  onClick={() => setRecordCount(count)}
-                >
-                  {compact(count)}
-                </button>
-              ))}
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              {[100, 500, 1000].map((count) => <button key={count} type="button" className={"record-option " + (recordCount === count ? "record-option-active" : "")} onClick={() => setRecordCount(count)}>{compact(count)}</button>)}
             </div>
-            <div className="mt-5 grid gap-2">
-              {closeLoop.map((item, index) => (
-                <div key={item} className="flex items-center gap-3 rounded-md border border-white/[0.07] bg-white/[0.035] p-3">
-                  <span className="grid h-7 w-7 place-items-center rounded-md bg-cyan-400/10 text-xs font-bold text-cyan-200">{index + 1}</span>
-                  <span className="text-sm font-medium text-slate-200">{item}</span>
-                </div>
-              ))}
+            <div className="mt-5 border-t border-white/10 pt-4">
+              <div className="flex items-center justify-between text-xs text-[#9a9792]"><span>AI execution</span><span className={mode.startsWith("REAL_") ? "text-[#70f0bf]" : "text-[#f7c74d]"}>{mode.startsWith("REAL_") ? "Live provider" : "Offline structured"}</span></div>
+              <p className="mt-2 text-sm leading-6 text-[#c7c4bf]">Financial controls remain deterministic in every execution mode.</p>
             </div>
-          </WorkspacePanel>
+          </aside>
+        </div>
+      </section>
+
+      <section className="rise-in-delayed">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><div className="section-kicker">Choose the operation</div><h2 className="mt-1 text-xl font-semibold text-white">What should this batch prove?</h2></div><span className="text-sm text-[#9a9792]">Synthetic records, locked truth, repeatable seed.</span></div>
+        <div className="scenario-grid mt-4">
+          {challenges.slice(0, 4).map((challenge, index) => {
+            const selected = challenge.challenge_id === selectedChallengeId;
+            return <button key={challenge.challenge_id} type="button" className={"scenario-option " + (selected ? "scenario-option-active" : "")} onClick={() => setSelectedChallengeId(challenge.challenge_id)}>
+              <span className="scenario-index">0{index + 1}</span>
+              <span className="mt-4 block text-left text-base font-semibold text-white">{challenge.operational_scenario ?? challenge.name}</span>
+              <span className="mt-2 block text-left text-sm leading-5 text-[#9a9792]">{challenge.description}</span>
+              {selected ? <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-[#c7ff54]">Selected <Check className="h-3.5 w-3.5" /></span> : null}
+            </button>;
+          })}
+          {!challenges.length ? <div className="scenario-option animate-pulse text-sm text-[#9a9792]">Loading operations...</div> : null}
         </div>
       </section>
 
       {error ? <InlineError error={error} /> : null}
 
-      <section className="animate-fade-up-delayed grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricTile label="Match rate" value={audit ? pct(audit.controller_run.metrics.match_rate, 1) : "Ready"} detail={audit ? "Closed and independently checked" : "Run the controller"} icon={<CheckCircle2 className="h-4 w-4" />} accent={audit ? "emerald" : "cyan"} />
-        <MetricTile label="Open exceptions" value={audit ? compact(attention.length) : compact(world?.summary.anomalies)} detail={audit ? auditHealthLabel(audit) : "Hidden anomalies locked"} icon={<CircleAlert className="h-4 w-4" />} accent={attention.length ? "amber" : "emerald"} />
-        <MetricTile label="Throughput" value={audit ? `${compact(audit.controller_run.metrics.throughput_records_per_sec)} / sec` : compact(world?.summary.payments)} detail={audit ? "Local controller speed" : "Payment records"} icon={<Timer className="h-4 w-4" />} accent="indigo" />
-        <MetricTile label="Financial exposure" value={audit ? money(exposure) : money(world?.summary.payment_volume)} detail={audit ? `${money(audit.evaluation.metrics.financial_impact_of_errors)} measured error` : "Payment volume"} icon={<Banknote className="h-4 w-4" />} accent={exposure ? "rose" : "cyan"} />
-      </section>
-
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <WorkspacePanel className="animate-fade-up-delayed-2">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div className="text-xs font-semibold text-cyan-300">Controller evidence</div>
-              <h2 className="mt-1 text-2xl font-semibold text-white">{audit ? "The close has been measured" : world ? "Batch ready for close" : "Build the payment batch first"}</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                {audit
-                  ? "The controller never saw hidden truth during reconciliation. Evaluation runs after the close and records what passed, what failed, and what needs human review."
-                  : "Auditra generates a deterministic synthetic batch with hidden truth, then withholds that truth until independent evaluation."}
-              </p>
-            </div>
-            {assurance ? <StatusPill accent={assurance.recommendation === "CONTROLLED_DEPLOYMENT" ? "emerald" : assurance.recommendation === "HUMAN_SUPERVISED" ? "amber" : "rose"}>Assurance {assurance.score.toFixed(1)}</StatusPill> : null}
+      {!audit ? <section className="process-strip rise-in-delayed-2">
+        {flow.map((item, index) => <div key={item} className="process-step"><span className="process-number">{index + 1}</span><span className="text-sm font-semibold text-white">{item}</span>{index < flow.length - 1 ? <ChevronRight className="process-arrow" /> : null}</div>)}
+        <p className="col-span-full mt-1 max-w-2xl text-sm leading-6 text-[#9a9792]">The controller does not see the answer labels. It reconciles the batch first; hidden-truth evaluation happens only after the run.</p>
+      </section> : <>
+        <section className="rise-in-delayed">
+          <div className="result-header"><div><div className="section-kicker">Batch close result</div><h2 className="mt-1 text-2xl font-semibold text-white">Here is what needs attention.</h2></div><StatusPill accent={assurance ? assuranceAccent(assurance.recommendation) : "amber"}>{assurance ? assurance.recommendation.replace(/_/g, " ") : "Verifying close"}</StatusPill></div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricTile label="Match rate" value={pct(audit.controller_run.metrics.match_rate, 1)} detail="Payments closed automatically" icon={<Check className="h-4 w-4" />} accent="emerald" />
+            <MetricTile label="Needs review" value={compact(exceptions.length)} detail={exceptions.length ? "Prioritized by risk and exposure" : "No open exception"} icon={<CircleAlert className="h-4 w-4" />} accent={exceptions.length ? "amber" : "emerald"} />
+            <MetricTile label="At-risk amount" value={money(exposure)} detail="Open financial exposure" icon={<WalletCards className="h-4 w-4" />} accent={exposure ? "rose" : "emerald"} />
+            <MetricTile label="Throughput" value={compact(audit.controller_run.metrics.throughput_records_per_sec) + "/s"} detail={compact(audit.controller_run.metrics.transactions_processed) + " transactions processed"} icon={<Timer className="h-4 w-4" />} accent="cyan" />
           </div>
+        </section>
 
-          {audit ? (
-            <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-              <div className="rounded-lg border border-white/10 bg-black/20 p-4">
-                <div className="flex justify-between text-xs text-slate-500"><span>Hidden-truth accuracy</span><span>{pct(audit.evaluation.metrics.accuracy, 1)}</span></div>
-                <div className="mt-2"><ProgressBar value={auditHealthRatio(audit)} accent="emerald" /></div>
-                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                  <Fact label="Auto-closed" value={pct(audit.controller_run.metrics.automatic_resolution_rate, 1)} />
-                  <Fact label="Human review" value={pct(audit.controller_run.metrics.human_review_rate, 1)} />
-                  <Fact label="LLM calls" value={compact(audit.controller_run.metrics.llm_calls)} />
-                  <Fact label="Tool calls" value={compact(audit.controller_run.metrics.agent_tool_calls)} />
-                </div>
-              </div>
-              <div className="rounded-lg border border-white/10 bg-black/20 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-semibold text-amber-300">Priority exception</div>
-                    <h3 className="mt-1 text-lg font-semibold text-white">{focus ? caseTitle(focus) : "No open exception"}</h3>
-                  </div>
-                  {focus ? <StatusPill accent="amber">{titleCase(focus.status)}</StatusPill> : <StatusPill accent="emerald">Verified</StatusPill>}
-                </div>
-                <p className="mt-3 text-sm leading-6 text-slate-400">{focus ? caseShortExplanation(focus) : "Every transaction in this batch was safely resolved."}</p>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <button type="button" className="inline-flex min-h-10 items-center gap-2 rounded-md bg-white px-4 text-sm font-semibold text-slate-950" onClick={() => openCase(focus)}>Open evidence <ArrowRight className="h-4 w-4" /></button>
-                  <button type="button" className="inline-flex min-h-10 items-center gap-2 rounded-md border border-white/10 px-4 text-sm font-semibold text-slate-300 hover:bg-white/[0.06]" onClick={() => downloadAuditJson(audit)}><FileJson className="h-4 w-4" />Audit JSON</button>
-                  <button type="button" className="inline-flex min-h-10 items-center gap-2 rounded-md border border-white/10 px-4 text-sm font-semibold text-slate-300 hover:bg-white/[0.06]" onClick={() => downloadExceptionsCsv(audit)}><Download className="h-4 w-4" />Exceptions CSV</button>
-                </div>
-              </div>
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+          <WorkspacePanel className="case-spotlight">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><div className="section-kicker text-[#ffb08d]">Priority decision</div><h2 className="mt-1 text-xl font-semibold text-white">{focus ? caseTitle(focus) : "Everything tied out"}</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#c7c4bf]">{focus ? caseShortExplanation(focus) : "No financial decision remains open in this batch."}</p></div><StatusPill accent={focus ? "amber" : "emerald"}>{focus ? titleCase(focus.status) : "Verified"}</StatusPill></div>
+            {focus ? <div className="mt-6 grid gap-3 sm:grid-cols-3"><Fact label="Expected settlement" value={money(focus.decision.expected_settlement)} /><Fact label="Actual settlement" value={money(focus.decision.actual_settlement)} /><Fact label="Variance" value={money(focus.decision.difference ?? focus.decision.financial_impact)} emphasis /></div> : null}
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button type="button" className="button-primary" onClick={() => openCase(focus)}>Inspect evidence <ArrowRight className="h-4 w-4" /></button>
+              <button type="button" className="button-secondary" disabled={exporting !== null} onClick={() => void exportReport()}>{exporting === "report" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <FileJson className="h-4 w-4" />} Audit report</button>
+              <button type="button" className="button-quiet" disabled={exporting !== null} onClick={() => void exportExceptions()}>{exporting === "exceptions" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Exception CSV</button>
             </div>
-          ) : (
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <ProofPoint icon={<ShieldCheck />} label="Ground truth locked" detail="The controller cannot inspect answer labels." />
-              <ProofPoint icon={<Bot />} label="Bounded AI" detail="AI investigates; deterministic controls verify." />
-              <ProofPoint icon={<Gauge />} label="Measured result" detail="Accuracy, throughput, exceptions, and exposure." />
-            </div>
-          )}
-        </WorkspacePanel>
+          </WorkspacePanel>
+          <WorkspacePanel className="assurance-panel">
+            <div className="section-kicker">Close assurance</div>
+            <div className="mt-3 flex items-end justify-between gap-3"><div><div className="text-4xl font-semibold text-white">{assurance ? assurance.score.toFixed(1) : "..."}</div><div className="mt-1 text-sm text-[#9a9792]">Independent control score</div></div><Gauge className="h-9 w-9 text-[#c7ff54]" /></div>
+            <div className="mt-5"><ProgressBar value={(assurance?.score ?? 0) / 100} accent={assurance ? assuranceAccent(assurance.recommendation) : "amber"} /></div>
+            <p className="mt-5 text-sm leading-6 text-[#c7c4bf]">{assurance?.recommendation_detail ?? "Hidden-truth evaluation is checking how safely this controller closed the batch."}</p>
+            <button type="button" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#c7ff54]" onClick={() => setActivePage("audits")}>See controls and retest <ArrowRight className="h-4 w-4" /></button>
+          </WorkspacePanel>
+        </section>
 
-        <WorkspacePanel className="animate-fade-up-delayed-2 border-cyan-400/15">
-          <div className="text-xs font-semibold text-cyan-300">5-minute story</div>
-          <h2 className="mt-1 text-xl font-semibold text-white">What Razorpay should remember</h2>
-          <div className="mt-5 space-y-3">
-            {[
-              ["Close the books", "One payment batch, 50+ records minimum, full reconciliation loop."],
-              ["Show the misses", "Honest exception list and financial impact, not a perfect-looking toy."],
-              ["Prove trust", "Hidden-truth evaluation plus adversarial retest before deployment."],
-            ].map(([label, detail], index) => (
-              <div key={label} className="flex gap-3 rounded-md border border-white/[0.07] bg-white/[0.035] p-3">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-indigo-400/10 text-sm font-bold text-indigo-200">{index + 1}</span>
-                <div>
-                  <div className="text-sm font-semibold text-white">{label}</div>
-                  <div className="mt-1 text-xs leading-5 text-slate-500">{detail}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </WorkspacePanel>
-      </section>
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)]">
+          <WorkspacePanel>
+            <div className="flex items-center justify-between gap-4"><div><div className="section-kicker">Operational brief</div><h2 className="mt-1 text-xl font-semibold text-white">Answers from this close</h2></div><Layers3 className="h-5 w-5 text-[#f7c74d]" /></div>
+            <div className="mt-5 grid gap-3">{brief?.answers.map((answer) => <button key={answer.id} type="button" className="brief-answer" onClick={() => openCase(audit.controller_run.cases.find((item) => answer.supporting_case_ids.includes(item.case_id)) ?? focus)}><span className="text-sm font-semibold text-white">{answer.question}</span><span className="mt-1 block text-left text-sm leading-6 text-[#9a9792]">{answer.answer}</span></button>)}
+              {!brief && !briefError ? <div className="py-6 text-sm text-[#9a9792]">Preparing the close brief...</div> : null}
+              {briefError ? <div className="py-3 text-sm text-[#ffb08d]">The close completed, but the optional operational brief could not load.</div> : null}
+            </div>
+            {brief ? <p className="mt-4 text-xs leading-5 text-[#77736e]">{brief.disclosure}</p> : null}
+          </WorkspacePanel>
+          <WorkspacePanel>
+            <div className="section-kicker">Execution disclosure</div><h2 className="mt-1 text-xl font-semibold text-white">What powered this run?</h2>
+            <div className="mt-5 space-y-3"><ExecutionRow label="Investigation mode" value={execution?.execution_mode.startsWith("REAL_") ? "Live provider" : "Offline structured controller"} tone={execution?.execution_mode.startsWith("REAL_") ? "mint" : "yellow"} /><ExecutionRow label="Provider calls" value={String(execution?.real_provider_calls ?? 0)} /><ExecutionRow label="Fallbacks" value={String(execution?.fallback_count ?? 0)} /><ExecutionRow label="AI role" value="Investigate only; controls decide" /></div>
+            <p className="mt-5 text-xs leading-5 text-[#77736e]">Money math, invariants, and final verification are deterministic in every run.</p>
+          </WorkspacePanel>
+        </section>
+      </>}
     </div>
   );
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-md border border-white/[0.07] bg-white/[0.035] p-3"><div className="text-[11px] text-slate-500">{label}</div><div className="mt-1 font-semibold text-white">{value}</div></div>;
+function Fact({ label, value, emphasis = false }: { label: string; value: string; emphasis?: boolean }) {
+  return <div className={"fact-box " + (emphasis ? "fact-box-emphasis" : "")}><div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#77736e]">{label}</div><div className="mt-2 text-lg font-semibold text-white">{value}</div></div>;
 }
 
-function ProofPoint({ icon, label, detail }: { icon: ReactNode; label: string; detail: string }) {
-  return <div className="rounded-lg border border-white/10 bg-black/20 p-4"><div className="text-cyan-300 [&>svg]:h-5 [&>svg]:w-5">{icon}</div><div className="mt-3 text-sm font-semibold text-white">{label}</div><div className="mt-1 text-xs leading-5 text-slate-500">{detail}</div></div>;
+function ExecutionRow({ label, value, tone }: { label: string; value: string; tone?: "mint" | "yellow" }) {
+  const color = tone === "mint" ? "text-[#70f0bf]" : tone === "yellow" ? "text-[#f7c74d]" : "text-white";
+  return <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] pb-3 text-sm last:border-0 last:pb-0"><span className="text-[#9a9792]">{label}</span><span className={"max-w-[65%] text-right font-semibold " + color}>{value}</span></div>;
 }
 
-function downloadAuditJson(audit: AuditWorldResult) {
-  const report = {
-    product: "Auditra",
-    positioning: "AI Finance Controller for Razorpay-style payment reconciliation",
-    world: audit.world,
-    controller_run: audit.controller_run,
-    evaluation: audit.evaluation,
-    comparison: audit.comparison,
-    survival_status: audit.survival_status,
-  };
-  downloadText(`auditra-audit-${audit.evaluation.evaluation_run_id}.json`, JSON.stringify(report, null, 2), "application/json");
+function assuranceAccent(recommendation: string) {
+  if (recommendation === "CONTROLLED_DEPLOYMENT") return "emerald" as const;
+  if (recommendation === "HUMAN_SUPERVISED") return "amber" as const;
+  return "rose" as const;
 }
 
-function downloadExceptionsCsv(audit: AuditWorldResult) {
-  const failures = new Map(audit.evaluation.failures.map((failure) => [failure.case_id, failure]));
-  const rows = attentionCases(audit).map((item) => {
-    const failure = failures.get(item.case_id);
-    return [
-      item.case_id,
-      item.payment_id,
-      item.status,
-      failure ? "MISMATCH" : "VERIFIED",
-      item.decision.confidence_score,
-      item.decision.financial_impact,
-      item.risk_score,
-      item.ai_investigation?.mode ?? "DETERMINISTIC",
-      item.ai_investigation?.llm_calls ?? 0,
-      item.tool_calls.length,
-      failure?.root_cause ?? item.decision.reason_codes[0] ?? caseShortExplanation(item),
-    ];
-  });
-  const header = ["case_id", "payment_id", "status", "hidden_truth_check", "confidence", "financial_impact", "risk_score", "ai_mode", "llm_calls", "tool_calls", "reason"];
-  const csv = [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
-  downloadText(`auditra-exceptions-${audit.evaluation.evaluation_run_id}.csv`, csv, "text/csv");
-}
-
-function csvCell(value: unknown) {
-  const text = String(value ?? "");
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
-function downloadText(filename: string, body: string, type: string) {
-  const blob = new Blob([body], { type });
+function downloadText(filename: string, body: string, type: string) { downloadBlob(filename, new Blob([body], { type })); }
+function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
