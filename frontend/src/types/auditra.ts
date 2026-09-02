@@ -466,9 +466,36 @@ export interface ControllerComparison {
   comparison: ComparisonRow[];
 }
 
+export interface CashPosition {
+  expected_net_settlement: string;
+  recorded_settlement: string;
+  pending_unsettled: string;
+  settlement_variance: string;
+  expected_case_count: number;
+  unsettled_case_count: number;
+  variance_case_count: number;
+  status: "WITHIN_TOLERANCE" | "PENDING_SETTLEMENT" | "INVESTIGATION_REQUIRED";
+}
+
+export interface ControllerAlert {
+  alert_id: string;
+  severity: "CRITICAL" | "HIGH" | "WARNING" | "RESOLVED";
+  category: string;
+  title: string;
+  summary: string;
+  status: ReconciliationStatus;
+  financial_exposure: string;
+  risk_score: number;
+  case_id?: string | null;
+  payment_id?: string | null;
+  verification_state: "PASSED" | "FAILED" | "NOT_APPLICABLE";
+  source: string;
+}
 export interface AuditWorldResult {
   world: WorldBuildResult;
   controller_run: ControllerRun;
+  cash_position: CashPosition;
+  controller_alerts: ControllerAlert[];
   evaluation: EvaluationRun;
   comparison: ControllerComparison;
   survival_status: string;
@@ -534,6 +561,8 @@ export interface RedTeamResult {
   generated_cases: number;
   world: WorldBuildResult;
   controller_run: ControllerRun;
+  cash_position: CashPosition;
+  controller_alerts: ControllerAlert[];
   evaluation: EvaluationRun;
   assurance: AssuranceReport;
   comparison: {

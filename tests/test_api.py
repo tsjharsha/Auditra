@@ -63,6 +63,14 @@ class ApiTests(unittest.TestCase):
         audit_response = client.post(f"/worlds/{world['world_id']}/audit")
         self.assertEqual(audit_response.status_code, 200)
         audit = audit_response.json()
+        cash_position = audit["cash_position"]
+        self.assertEqual(set(cash_position), {
+            "expected_net_settlement", "recorded_settlement", "pending_unsettled", "settlement_variance",
+            "expected_case_count", "unsettled_case_count", "variance_case_count", "status",
+        })
+        self.assertGreater(float(cash_position["expected_net_settlement"]), 0)
+        self.assertTrue(audit["controller_alerts"])
+        self.assertIn(audit["controller_alerts"][0]["severity"], {"CRITICAL", "HIGH", "WARNING", "RESOLVED"})
         evaluation_run_id = audit["evaluation"]["evaluation_run_id"]
 
         report_response = client.get(f"/reports/{evaluation_run_id}")
@@ -73,6 +81,8 @@ class ApiTests(unittest.TestCase):
         self.assertIn("assurance", report)
         self.assertIn("exception_false_negative_rate", report["evaluation"]["metrics"])
         self.assertIn("metric_definitions", report)
+        self.assertEqual(report["cash_position"], cash_position)
+        self.assertEqual(report["controller_alerts"], audit["controller_alerts"])
 
         brief_response = client.get(f"/reports/{evaluation_run_id}/settlement-brief")
         self.assertEqual(brief_response.status_code, 200)

@@ -1,10 +1,10 @@
 # AUDITRA
 
-### AI Finance Controller for Razorpay-style payment reconciliation.
+## AI Finance Controller for Razorpay-style Payment Operations
 
 Built for Razorpay AI Buildathon 2026 - Track 04: AI Finance Controller.
 
-Auditra closes a synthetic finance-ops batch across orders, payments, fees/GST, refunds, and settlements. It reports match rate, auto-resolution, human review, unresolved exceptions, throughput, and financial error impact, then verifies every controller decision against hidden ground truth.
+Auditra closes a synthetic Razorpay-style payment-operations batch across orders, payments, fees/GST, refunds, and settlements. It exposes expected cash, recorded cash, pending/unsettled cash, and settlement variance from deterministic reconciliation artifacts; bounded AI investigates ambiguous exceptions while hidden-ground-truth evaluation independently measures accuracy.
 
 > Do not trust the AI. Measure whether you should.
 
@@ -22,7 +22,7 @@ The controller never receives hidden labels. It closes the batch, bounded AI inv
 
 1. Choose one payment-operations scenario: settlement close, refund net settlement, fee/GST variance, or peak-day exceptions.
 2. Build a Razorpay-style batch with 50+ synthetic records and locked hidden truth.
-3. Run the controller and see match rate, auto-resolution, human review, unresolved rate, throughput, and measured financial error impact.
+3. Run Finance Close and see authoritative cash position, current-run controller alerts, match rate, human review, throughput, and measured financial error impact.
 4. Open one priority exception to compare expected and actual settlement, evidence, and verification checks.
 5. Read a data-derived settlement brief, then export the audit JSON or exceptions CSV.
 6. Run assurance and a targeted red-team retest against the controller's weakest measured failure pattern.
@@ -32,7 +32,7 @@ The controller never receives hidden labels. It closes the batch, bounded AI inv
 The frontend is intentionally focused for judges:
 
 - `Build batch`: generates the synthetic payment operations world and locks hidden ground truth.
-- `Run controller`: reconciles payments, fees, refunds, and settlements.
+- `Run Finance Close`: reconciles payments, fees, refunds, and settlements.
 - `Inspect evidence`: opens the priority exception and its evidence chain.
 - `Audit JSON` / `Exceptions CSV`: exports a lightweight submission report.
 

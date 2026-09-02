@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from .assurance import CHALLENGES, assurance_report, challenge_spec, targeted_retest_spec
 from .financial_world import FinancialWorldSpec
+from .finance_control import cash_position, controller_alerts
 from .models import ReviewRequest, ScenarioMode, ScenarioRequest
 from .runtime import controller_execution_metadata, public_controller_run, runtime_ai_status
 from .storage import AuditraStore
@@ -122,6 +123,8 @@ def _audit_payload(dataset_id: str, *, world=None) -> Dict[str, Any]:
         "world": store.world_service.public_build_result(world) if world else None,
         "dataset": _public_dataset(dataset),
         "controller_run": public_controller_run(controller_run),
+        "cash_position": cash_position(controller_run).model_dump(mode="json"),
+        "controller_alerts": [alert.model_dump(mode="json") for alert in controller_alerts(controller_run)],
         "evaluation": evaluation.model_dump(mode="json"),
         "comparison": comparison,
         "survival_status": "CONTROLLER SURVIVED" if not evaluation.failures else f"CONTROLLER FAILED {len(evaluation.failures)} CASES",
@@ -284,6 +287,8 @@ def get_submission_report(evaluation_run_id: str) -> Dict[str, Any]:
             },
             "dataset": _public_dataset(dataset),
             "controller_run": public_controller_run(run),
+            "cash_position": cash_position(run).model_dump(mode="json"),
+            "controller_alerts": [alert.model_dump(mode="json") for alert in controller_alerts(run)],
             "evaluation": evaluation.model_dump(mode="json"),
             "assurance": assurance,
             "metric_definitions": {
@@ -392,6 +397,8 @@ def red_team_audit(evaluation_run_id: str, request: RedTeamRequest = RedTeamRequ
             "generated_cases": request.record_count,
             "world": store.world_service.public_build_result(world),
             "controller_run": public_controller_run(run),
+            "cash_position": cash_position(run).model_dump(mode="json"),
+            "controller_alerts": [alert.model_dump(mode="json") for alert in controller_alerts(run)],
             "evaluation": evaluation.model_dump(mode="json"),
             "assurance": retest,
             "comparison": {

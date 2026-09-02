@@ -501,6 +501,41 @@ class RunMetrics(AuditraModel):
         return money(value)
 
 
+class CashPosition(AuditraModel):
+    expected_net_settlement: Decimal
+    recorded_settlement: Decimal
+    pending_unsettled: Decimal
+    settlement_variance: Decimal
+    expected_case_count: int
+    unsettled_case_count: int
+    variance_case_count: int
+    status: str
+
+    @field_validator("expected_net_settlement", "recorded_settlement", "pending_unsettled", "settlement_variance")
+    @classmethod
+    def quantize_cash_position_money(cls, value: Decimal) -> Decimal:
+        return money(value)
+
+
+class ControllerAlert(AuditraModel):
+    alert_id: str
+    severity: str
+    category: str
+    title: str
+    summary: str
+    status: ReconciliationStatus
+    financial_exposure: Decimal = Decimal("0.00")
+    risk_score: float = 0.0
+    case_id: Optional[str] = None
+    payment_id: Optional[str] = None
+    verification_state: str = "NOT_APPLICABLE"
+    source: str = "controller_run"
+
+    @field_validator("financial_exposure")
+    @classmethod
+    def quantize_alert_exposure(cls, value: Decimal) -> Decimal:
+        return money(value)
+
 class FailureRecord(AuditraModel):
     case_id: str
     payment_id: str
