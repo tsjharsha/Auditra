@@ -7,8 +7,6 @@ import { compact, money, pct } from "../lib/format";
 import { attentionCases, caseShortExplanation, caseTitle, potentialExposure } from "../lib/product";
 import type { ReconciliationCase, SettlementBrief } from "../types/auditra";
 
-const controlFlow = ["Capture", "Reconcile", "Review", "Close", "Assure"];
-
 export function HomePage() {
   const { world, audit, assurance, challenges, selectedChallengeId, setSelectedChallengeId, runtimeAI, buildChallenge, auditWorld, setActivePage, setSelectedCase, isBusy, busyLabel, statusMessage, error } = useAuditra();
   const [recordCount, setRecordCount] = useState(500);
@@ -57,8 +55,7 @@ export function HomePage() {
           <div className="product-name">AUDITRA</div>
           <h1 className="control-title">Finance control</h1>
           <p className="control-copy">Close a payment operations batch, surface the few exceptions that matter, and measure whether the controller earned trust.</p>
-          <div className="control-flow" aria-label="Auditra control workflow">{controlFlow.map((step) => <span key={step}>{step}</span>)}</div>
-        </div>
+</div>
         <div className="control-config">
           <label className="control-label" htmlFor="operation">Operation</label>
           <select id="operation" className="control-select" value={selectedChallengeId} onChange={(event) => setSelectedChallengeId(event.target.value)}>
@@ -66,7 +63,7 @@ export function HomePage() {
           </select>
           <div className="control-meta">{compact(recordCount)} records · Synthetic · Ground truth locked</div>
           <div className="mt-4 flex flex-wrap gap-2" aria-label="Record count">{[100, 500, 1000].map((count) => <button key={count} type="button" aria-pressed={recordCount === count} className={`record-option min-w-14 px-3 ${recordCount === count ? "record-option-active" : ""}`} onClick={() => setRecordCount(count)}>{compact(count)}</button>)}</div>
-          <div className="mt-4 flex flex-wrap gap-2"><button type="button" className="button-primary" disabled={isBusy} onClick={() => void runController()}>{isBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current" />}{isBusy ? busyLabel || "Running" : "Run controller"}</button><button type="button" className="button-secondary" disabled={isBusy} onClick={() => void buildChallenge(recordCount)}><Sparkles className="h-4 w-4" />Build batch</button></div>
+          <div className="mt-4 flex flex-wrap gap-2"><button type="button" className="button-primary" disabled={isBusy} onClick={() => void runController()}>{isBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current" />}{isBusy ? busyLabel || "Running" : "Run controller"}</button><button type="button" className="button-quiet" disabled={isBusy} onClick={() => void buildChallenge(recordCount)}><Sparkles className="h-4 w-4" />Build batch</button></div>
           <div className="control-status-row"><span className={`control-status ${mode.startsWith("REAL_") ? "" : "warning"}`}>AI investigation: {mode.startsWith("REAL_") ? "Live provider" : "Offline structured"}</span><span className="control-status">Money controls: deterministic</span></div>
         </div>
       </div>
@@ -84,7 +81,7 @@ export function HomePage() {
           <Kpi label="Human review" value={compact(exceptions.length)} detail="needs attention" tone={exceptions.length ? "warning" : "positive"} />
           <Kpi label="Exposure" value={money(potentialExposure(exceptions))} detail="open financial impact" tone={exceptions.length ? "danger" : "positive"} />
           <Kpi label="Auto-resolution" value={pct(audit.controller_run.metrics.automatic_resolution_rate, 1)} detail="closed safely" tone="positive" />
-          <Kpi label="Measured error" value={money(audit.evaluation.metrics.financial_impact_of_errors)} detail="after truth reveal" tone={Number(audit.evaluation.metrics.financial_impact_of_errors) ? "danger" : "positive"} />
+          <Kpi label="Unresolved" value={pct(audit.controller_run.metrics.unresolved_rate, 1)} detail="no safe closure" tone={audit.controller_run.metrics.unresolved_rate ? "danger" : "positive"} />
         </div>
       </section>
 
@@ -93,7 +90,7 @@ export function HomePage() {
         {focus ? <><div className="evidence-state"><EvidenceState label="Payment" present={hasEvidence(focus, "Payment")} /><EvidenceState label="Refund" present={hasEvidence(focus, "Refund")} /><EvidenceState label="Fee / GST" present={hasEvidence(focus, "FeeRule")} /><EvidenceState label="Settlement" present={hasEvidence(focus, "Settlement")} /></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" className="button-primary" onClick={() => openCase(focus)}><ShieldCheck className="h-4 w-4" />Investigate</button><button type="button" className="button-secondary" onClick={() => openCase(focus)}>Review case <ArrowRight className="h-4 w-4" /></button><button type="button" className="button-quiet" disabled={exporting !== null} onClick={() => void exportReport()}>{exporting === "report" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <FileJson className="h-4 w-4" />}Export audit</button><button type="button" className="button-quiet" disabled={exporting !== null} onClick={() => void exportExceptions()}>{exporting === "exceptions" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Exceptions CSV</button></div></> : null}
       </section>
 
-      <section className="assurance-summary"><div><div className="section-kicker">Assurance</div><h2 className="mt-1 text-xl font-semibold text-white">Should this controller be trusted?</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#aaa7a1]">The controller sees evidence, not evaluator labels. Auditra verifies the close deterministically and reveals hidden truth only after the decision.</p><div className="assurance-flow mt-4"><span>Controller decision</span><span>Evidence</span><span>Deterministic verification</span><span>Hidden-truth evaluation</span></div></div><div className="lg:text-right"><div className="assurance-score">{assurance ? assurance.score.toFixed(1) : "…"}</div><div className="mt-1 text-sm text-[#aaa7a1]">Independent control score</div><button type="button" className="button-secondary mt-4" onClick={() => setActivePage("insights")}>View assurance <ArrowRight className="h-4 w-4" /></button></div></section>
+      <section className="assurance-summary"><div><div className="section-kicker">Assurance</div><h2 className="mt-1 text-xl font-semibold text-white">Should this controller be trusted?</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#aaa7a1]">The controller sees evidence, not evaluator labels. Auditra verifies the close deterministically and reveals hidden truth only after the decision.</p><div className="assurance-flow mt-4"><span>Controller decision</span><span>Evidence</span><span>Deterministic verification</span><span>Hidden-truth evaluation</span></div></div><div className="lg:text-right"><div className="assurance-score">{assurance ? assurance.score.toFixed(1) : "…"}</div><div className="mt-1 text-sm text-[#aaa7a1]">Independent control score</div><div className="mt-2 text-xs text-[#77746e]">Measured financial error: {money(audit.evaluation.metrics.financial_impact_of_errors)}</div><button type="button" className="button-secondary mt-4" onClick={() => setActivePage("insights")}>View assurance <ArrowRight className="h-4 w-4" /></button></div></section>
 
       <details className="border-b border-white/10 pb-4"><summary className="cursor-pointer text-sm font-semibold text-[#c7c4bf]">Close brief and execution disclosure</summary><div className="mt-4 grid gap-6 lg:grid-cols-2"><div>{brief?.answers.slice(0, 3).map((answer) => <button key={answer.id} type="button" className="brief-answer" onClick={() => openCase(audit.controller_run.cases.find((item) => answer.supporting_case_ids.includes(item.case_id)) ?? focus)}><span className="text-sm font-semibold text-white">{answer.question}</span><span className="mt-1 block text-left text-sm leading-6 text-[#9a9792]">{answer.answer}</span></button>)}{!brief && !briefError ? <div className="text-sm text-[#9a9792]">Preparing close brief...</div> : null}{briefError ? <div className="text-sm text-[#ffb08d]">The close completed, but the optional brief could not load.</div> : null}</div><div className="space-y-3 text-sm"><Disclosure label="AI investigation" value={execution?.execution_mode.startsWith("REAL_") ? "Live provider" : "Offline structured"} /><Disclosure label="Provider calls" value={String(execution?.real_provider_calls ?? 0)} /><Disclosure label="Fallback" value={execution?.fallback_count ? "Rate-limited: offline fallback active" : "None"} /><Disclosure label="Financial controls" value="Deterministic" /></div></div></details>
     </>}

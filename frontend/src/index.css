@@ -52,14 +52,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   text-transform: uppercase;
 }
 
-.control-header { border-bottom: 1px solid rgba(255,255,255,0.12); padding: 0 0 1.5rem; }
+.control-header { border-bottom: 1px solid rgba(255,255,255,0.12); padding: 0 0 1.35rem; }
 .control-header-grid { display: grid; gap: 1.5rem; }
 @media (min-width: 1024px) { .control-header-grid { grid-template-columns: minmax(0, 1fr) minmax(370px, 0.72fr); align-items: end; } }
 .product-name { color: #c7ff54; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; }
-.control-title { margin: 0.35rem 0 0; color: #fffdf7; font-size: clamp(1.9rem, 3vw, 2.75rem); font-weight: 650; letter-spacing: 0; line-height: 1.08; }
-.control-copy { max-width: 620px; margin-top: 0.65rem; color: #aaa7a1; font-size: 0.925rem; line-height: 1.55; }
-.control-flow { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 1rem; color: #77746e; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.control-flow span:not(:last-child)::after { content: "→"; margin-left: 0.55rem; color: #4e4c48; }
+.control-title { margin: 0.35rem 0 0; color: #fffdf7; font-size: clamp(1.8rem, 2.7vw, 2.5rem); font-weight: 650; letter-spacing: 0; line-height: 1.08; }
+.control-copy { max-width: 620px; margin-top: 0.55rem; color: #aaa7a1; font-size: 0.9rem; line-height: 1.55; }
 .control-config { border-left: 2px solid #c7ff54; padding-left: 1rem; }
 .control-label { display: block; color: #aaa7a1; font-size: 0.69rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 .control-select { width: 100%; margin-top: 0.5rem; border: 0; border-bottom: 1px solid rgba(255,255,255,0.2); background: transparent; padding: 0.4rem 0; color: #fffdf7; font-size: 1rem; font-weight: 650; }
