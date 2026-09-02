@@ -83,6 +83,7 @@ class DeterministicPromptParser:
         mode = self._mode(lowered)
         record_count = self._record_count(lowered)
         fee_rate = self._fee_rate(lowered)
+        gst_rate = self._gst_rate(lowered)
         settlement_days = self._settlement_days(lowered)
         payment_methods = self._payment_methods(lowered)
         currencies = self._currencies(lowered)
@@ -102,6 +103,7 @@ class DeterministicPromptParser:
             currencies=currencies,
             payment_methods=payment_methods,
             fee_rate=fee_rate,
+            gst_rate=gst_rate,
             fixed_fee=Decimal("0.00"),
             settlement_delay_days=settlement_days,
             refund_rate=refund_rate,
@@ -124,7 +126,7 @@ class DeterministicPromptParser:
             UnderstandingStep(step="Extract financial entities", detail="MERCHANT, ORDER, PAYMENT, SETTLEMENT, REFUND and FEE_RULE selected."),
             UnderstandingStep(step="Build schema", detail="Canonical Auditra finance schema prepared for preview."),
             UnderstandingStep(step="Build relationship model", detail="Order-payment-settlement-refund-fee relationships derived."),
-            UnderstandingStep(step="Configure rules", detail=f"{self._percent(spec.fee_rate)} fee, T+{spec.settlement_delay_days}, {self._mode_value(spec.anomaly_mode)} anomaly mode."),
+            UnderstandingStep(step="Configure rules", detail=f"{self._percent(spec.fee_rate)} fee + {self._percent(spec.gst_rate)} GST, T+{spec.settlement_delay_days}, {self._mode_value(spec.anomaly_mode)} anomaly mode."),
         ]
         return spec, steps
 
@@ -140,6 +142,12 @@ class DeterministicPromptParser:
             match = re.search(r"(?:fee|fees|commission).*?(\d+(?:\.\d+)?)\s*%", text)
         if not match:
             return Decimal("0.0200")
+        return rate(Decimal(match.group(1)) / Decimal("100"))
+
+    def _gst_rate(self, text: str) -> Decimal:
+        match = re.search(r"(?:gst|tax).*?(\d+(?:\.\d+)?)\s*%", text)
+        if not match:
+            return Decimal("0.1800")
         return rate(Decimal(match.group(1)) / Decimal("100"))
 
     def _settlement_days(self, text: str) -> int:
@@ -240,6 +248,7 @@ class LLMWorldSpecProvider:
                         "input_constraints": {
                             "record_count": deterministic_spec.record_count,
                             "fee_rate": str(deterministic_spec.fee_rate),
+                            "gst_rate": str(deterministic_spec.gst_rate),
                             "settlement_delay_days": deterministic_spec.settlement_delay_days,
                             "currencies": deterministic_spec.currencies,
                             "payment_methods": deterministic_spec.payment_methods,

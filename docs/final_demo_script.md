@@ -24,18 +24,18 @@ Click Run audit.
 
 Say: "The controller applies deterministic money controls first. Bounded AI can investigate ambiguous cases, but it cannot perform authoritative math or override verification."
 
-After the result appears, point out only four numbers:
+After the result appears, point out the six decision metrics:
 
-- Match rate
-- Needs review
-- At-risk amount
+- Match rate and auto-resolution
+- Human review and unresolved rate
 - Throughput
+- Measured financial error impact
 
 ## 1:35 - 2:30: The One Exception
 
 Open Inspect evidence on the priority decision.
 
-Say: "This is the decision that matters: the expected and actual settlement do not tie out. Auditra shows the variance, the supporting payment/refund/settlement evidence, and whether deterministic checks agree."
+Say: "This is the decision that matters: the expected and actual settlement do not tie out. Auditra shows the variance, the linked order, payment, fee/GST, refund, and settlement evidence, and whether deterministic checks agree."
 
 On Review, show the evidence and verification sections.
 

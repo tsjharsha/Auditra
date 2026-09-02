@@ -77,6 +77,7 @@ export function HomePage() {
             <div className="eyebrow-row"><span className="signal-dot" />Payment operations<span className="eyebrow-divider" />Reconciliation workspace</div>
             <h1 className="hero-title">Close the settlement batch with confidence.</h1>
             <p className="hero-copy">Auditra reconciles payments, fees, refunds, and settlements, then brings the few decisions that need a human to the surface.</p>
+            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-[#c7ff54]">Do not trust the AI. Measure whether you should.</p>
             <div className="mt-7 flex flex-wrap gap-3">
               <button type="button" className="button-secondary" disabled={isBusy} onClick={() => void buildChallenge(recordCount)}>
                 {isBusy && busyLabel === "Building challenge" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Build batch
@@ -132,18 +133,20 @@ export function HomePage() {
       </section> : <>
         <section className="rise-in-delayed">
           <div className="result-header"><div><div className="section-kicker">Batch close result</div><h2 className="mt-1 text-2xl font-semibold text-white">Here is what needs attention.</h2></div><StatusPill accent={assurance ? assuranceAccent(assurance.recommendation) : "amber"}>{assurance ? assurance.recommendation.replace(/_/g, " ") : "Verifying close"}</StatusPill></div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricTile label="Match rate" value={pct(audit.controller_run.metrics.match_rate, 1)} detail="Payments closed automatically" icon={<Check className="h-4 w-4" />} accent="emerald" />
-            <MetricTile label="Needs review" value={compact(exceptions.length)} detail={exceptions.length ? "Prioritized by risk and exposure" : "No open exception"} icon={<CircleAlert className="h-4 w-4" />} accent={exceptions.length ? "amber" : "emerald"} />
-            <MetricTile label="At-risk amount" value={money(exposure)} detail="Open financial exposure" icon={<WalletCards className="h-4 w-4" />} accent={exposure ? "rose" : "emerald"} />
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <MetricTile label="Match rate" value={pct(audit.controller_run.metrics.match_rate, 1)} detail="All records reconciled" icon={<Check className="h-4 w-4" />} accent="emerald" />
+            <MetricTile label="Auto-resolution" value={pct(audit.controller_run.metrics.automatic_resolution_rate, 1)} detail="Closed without a human" icon={<Gauge className="h-4 w-4" />} accent="cyan" />
+            <MetricTile label="Human review" value={pct(audit.controller_run.metrics.human_review_rate, 1)} detail={compact(exceptions.length) + " priority cases"} icon={<CircleAlert className="h-4 w-4" />} accent={exceptions.length ? "amber" : "emerald"} />
+            <MetricTile label="Unresolved" value={pct(audit.controller_run.metrics.unresolved_rate, 1)} detail="No safe closure" icon={<WalletCards className="h-4 w-4" />} accent={audit.controller_run.metrics.unresolved_rate ? "rose" : "emerald"} />
             <MetricTile label="Throughput" value={compact(audit.controller_run.metrics.throughput_records_per_sec) + "/s"} detail={compact(audit.controller_run.metrics.transactions_processed) + " transactions processed"} icon={<Timer className="h-4 w-4" />} accent="cyan" />
+            <MetricTile label="Financial error" value={money(audit.evaluation.metrics.financial_impact_of_errors)} detail="Measured after truth reveal" icon={<WalletCards className="h-4 w-4" />} accent={Number(audit.evaluation.metrics.financial_impact_of_errors) ? "rose" : "emerald"} />
           </div>
         </section>
 
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
           <WorkspacePanel className="case-spotlight">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><div className="section-kicker text-[#ffb08d]">Priority decision</div><h2 className="mt-1 text-xl font-semibold text-white">{focus ? caseTitle(focus) : "Everything tied out"}</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#c7c4bf]">{focus ? caseShortExplanation(focus) : "No financial decision remains open in this batch."}</p></div><StatusPill accent={focus ? "amber" : "emerald"}>{focus ? titleCase(focus.status) : "Verified"}</StatusPill></div>
-            {focus ? <div className="mt-6 grid gap-3 sm:grid-cols-3"><Fact label="Expected settlement" value={money(focus.decision.expected_settlement)} /><Fact label="Actual settlement" value={money(focus.decision.actual_settlement)} /><Fact label="Variance" value={money(focus.decision.difference ?? focus.decision.financial_impact)} emphasis /></div> : null}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><div className="section-kicker text-[#ffb08d]">Priority decision</div><h2 className="mt-1 text-xl font-semibold text-white">{focus ? caseTitle(focus) : "Everything tied out"}</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#c7c4bf]">{focus ? caseShortExplanation(focus) : "No financial decision remains open in this batch."}</p></div><StatusPill accent={focus ? "amber" : "emerald"}>{focus ? decisionLabel(focus.status) : "AUTO_RESOLVE"}</StatusPill></div>
+            {focus ? <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"><Fact label="Order" value={focus.order_id ?? "Unavailable"} /><Fact label="Payment" value={focus.payment_id} /><Fact label="Fee" value={money(focus.decision.expected_fee)} /><Fact label="GST" value={money(focus.decision.expected_gst)} /><Fact label="Refund" value={money(focus.decision.refund_total)} /><Fact label="Expected settlement" value={money(focus.decision.expected_settlement)} /><Fact label="Actual settlement" value={money(focus.decision.actual_settlement)} /><Fact label="Variance" value={money(focus.decision.difference ?? focus.decision.financial_impact)} emphasis /></div> : null}
             <div className="mt-6 flex flex-wrap gap-3">
               <button type="button" className="button-primary" onClick={() => openCase(focus)}>Inspect evidence <ArrowRight className="h-4 w-4" /></button>
               <button type="button" className="button-secondary" disabled={exporting !== null} onClick={() => void exportReport()}>{exporting === "report" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <FileJson className="h-4 w-4" />} Audit report</button>
@@ -170,13 +173,19 @@ export function HomePage() {
           </WorkspacePanel>
           <WorkspacePanel>
             <div className="section-kicker">Execution disclosure</div><h2 className="mt-1 text-xl font-semibold text-white">What powered this run?</h2>
-            <div className="mt-5 space-y-3"><ExecutionRow label="Investigation mode" value={execution?.execution_mode.startsWith("REAL_") ? "Live provider" : "Offline structured controller"} tone={execution?.execution_mode.startsWith("REAL_") ? "mint" : "yellow"} /><ExecutionRow label="Provider calls" value={String(execution?.real_provider_calls ?? 0)} /><ExecutionRow label="Fallbacks" value={String(execution?.fallback_count ?? 0)} /><ExecutionRow label="AI role" value="Investigate only; controls decide" /></div>
+            <div className="mt-5 space-y-3"><ExecutionRow label="Investigation mode" value={execution?.execution_mode.startsWith("REAL_") ? "Live provider" : "Offline structured controller"} tone={execution?.execution_mode.startsWith("REAL_") ? "mint" : "yellow"} /><ExecutionRow label="Provider calls" value={String(execution?.real_provider_calls ?? 0)} /><ExecutionRow label="Fallbacks" value={execution?.fallback_count ? "Provider rate-limited / offline fallback active" : "0"} tone={execution?.fallback_count ? "yellow" : "mint"} /><ExecutionRow label="AI role" value="Investigate only; controls decide" /></div>
             <p className="mt-5 text-xs leading-5 text-[#77736e]">Money math, invariants, and final verification are deterministic in every run.</p>
           </WorkspacePanel>
         </section>
       </>}
     </div>
   );
+}
+
+function decisionLabel(status: string) {
+  if (["MATCHED", "FEE_EXPLAINED", "REFUND_ADJUSTED", "DUPLICATE"].includes(status)) return "AUTO_RESOLVE";
+  if (status === "HUMAN_REVIEW") return "HUMAN_REVIEW";
+  return "UNRESOLVED";
 }
 
 function Fact({ label, value, emphasis = false }: { label: string; value: string; emphasis?: boolean }) {

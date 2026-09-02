@@ -24,6 +24,18 @@ class ReconciliationTests(unittest.TestCase):
         self.assertGreaterEqual(evaluation.metrics.accuracy, 0.80)
         self.assertGreater(sum(len(case.tool_calls) for case in run.cases), 0)
 
+    def test_missing_settlement_fails_closed_without_auto_resolution(self) -> None:
+        dataset = ScenarioGenerator().generate(ScenarioRequest(mode=ScenarioMode.MIXED, record_count=80, seed=42))
+        run = ReconciliationEngine(enable_ai=False).run(dataset)
+        case = next(item for item in run.cases if item.status == "MISSING_SETTLEMENT")
+
+        self.assertEqual(case.decision.status, "MISSING_SETTLEMENT")
+        self.assertIn("MISSING_SETTLEMENT", case.decision.reason_codes)
+        self.assertIsNone(case.decision.actual_settlement)
+        self.assertNotIn(str(case.status), {"MATCHED", "FEE_EXPLAINED", "REFUND_ADJUSTED"})
+        self.assertTrue(any(item.type == "Payment" for item in case.graph.nodes))
+        self.assertFalse(any(item.type == "Settlement" for item in case.graph.nodes))
+
     def test_required_exception_types_are_present(self) -> None:
         dataset = ScenarioGenerator().generate(ScenarioRequest(mode=ScenarioMode.MIXED, record_count=80, seed=42))
         run = ReconciliationEngine().run(dataset)

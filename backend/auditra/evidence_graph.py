@@ -74,7 +74,7 @@ def build_evidence_items(
                 entity_type="fee_rule",
                 entity_id=fee_rule.fee_rule_id,
                 source=fee_rule.source,
-                summary=f"Fee rule {fee_rule.fee_rule_id}: {fee_rule.percent_bps} bps plus {fee_rule.fixed_fee}",
+                summary=f"Fee rule {fee_rule.fee_rule_id}: {fee_rule.percent_bps} bps + {fee_rule.fixed_fee} fixed, GST {fee_rule.gst_bps} bps",
                 payload=fee_rule.model_dump(mode="json"),
             )
         )
@@ -255,7 +255,7 @@ def build_graph(
                 type="FeeRule",
                 label=fee_rule.fee_rule_id,
                 evidence_id=f"EVD_FEE_RULE_{fee_rule.fee_rule_id}",
-                data={"percent_bps": fee_rule.percent_bps, "fixed_fee": str(fee_rule.fixed_fee)},
+                data={"percent_bps": fee_rule.percent_bps, "fixed_fee": str(fee_rule.fixed_fee), "gst_bps": fee_rule.gst_bps},
             )
         )
         edges.append(

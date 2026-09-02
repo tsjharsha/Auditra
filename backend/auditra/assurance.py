@@ -96,7 +96,7 @@ def assurance_report(dataset: DatasetBundle, run: ControllerRun, evaluation: Eva
         "accuracy": evaluation.metrics.accuracy,
         "safe_autonomy": safe_auto / max(len(auto_cases), 1),
         "correct_escalation": correct_escalations / max(len(escalated), 1),
-        "anomaly_detection": 1.0 - evaluation.metrics.false_negative_rate,
+        "anomaly_detection": 1.0 - evaluation.metrics.exception_false_negative_rate,
         "financial_impact_control": max(0.0, 1.0 - float(error_impact / total_volume)),
         "evidence_coverage": evidence_complete / max(len(cases), 1),
     }

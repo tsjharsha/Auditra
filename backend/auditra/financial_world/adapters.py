@@ -166,6 +166,7 @@ class CanonicalRecordBuilder:
             merchant_id=str(row.get("merchant_id") or "MCH_DEFAULT"),
             currency=str(row.get("currency") or "INR"),
             percent_bps=int(percent_bps or 200),
+            gst_bps=int(row.get("gst_bps") or 1800),
             fixed_fee=Decimal(str(row.get("fixed_fee") or "0.00")),
             active_from=self._time(row.get("active_from"), idx) if row.get("active_from") else self.base_time - timedelta(days=365),
             original=dict(row),

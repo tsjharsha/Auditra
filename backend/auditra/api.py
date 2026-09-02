@@ -68,7 +68,7 @@ store = AuditraStore()
 app = FastAPI(
     title="Auditra API",
     version="0.4.0",
-    description="Scenario lab and independent assurance for autonomous finance controllers.",
+    description="AI Finance Controller for Razorpay-style payment reconciliation, with independent assurance.",
 )
 
 app.add_middleware(

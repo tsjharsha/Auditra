@@ -198,6 +198,7 @@ class FeeRule(SourceRecord):
     currency: str = "INR"
     percent_bps: int = 200
     fixed_fee: Decimal = Decimal("3.00")
+    gst_bps: int = 1800
     active_from: datetime
     active_to: Optional[datetime] = None
 
@@ -207,6 +208,13 @@ class FeeRule(SourceRecord):
         value = money(value)
         if value < 0:
             raise ValueError("fixed fee cannot be negative")
+        return value
+
+    @field_validator("percent_bps", "gst_bps")
+    @classmethod
+    def validate_basis_points(cls, value: int) -> int:
+        if value < 0 or value > 10000:
+            raise ValueError("basis points must be between 0 and 10000")
         return value
 
     @field_validator("active_from", "active_to")
@@ -229,6 +237,9 @@ class FeeRule(SourceRecord):
         percentage = (money(amount) * Decimal(self.percent_bps)) / Decimal(10000)
         return money(percentage + self.fixed_fee)
 
+
+    def calculate_gst(self, fee: Decimal) -> Decimal:
+        return money(money(fee) * Decimal(self.gst_bps) / Decimal(10000))
 
 class EvidenceItem(AuditraModel):
     evidence_id: str
@@ -387,6 +398,7 @@ class ControllerDecision(AuditraModel):
     expected_settlement: Optional[Decimal] = None
     actual_settlement: Optional[Decimal] = None
     expected_fee: Optional[Decimal] = None
+    expected_gst: Optional[Decimal] = None
     refund_total: Decimal = Decimal("0.00")
     difference: Optional[Decimal] = None
     reason_codes: List[str] = Field(default_factory=list)
@@ -400,7 +412,7 @@ class ControllerDecision(AuditraModel):
     ai_investigation: Optional[AIInvestigationResult] = None
     verification: Optional[VerificationResult] = None
 
-    @field_validator("financial_impact", "expected_settlement", "actual_settlement", "expected_fee", "refund_total", "difference")
+    @field_validator("financial_impact", "expected_settlement", "actual_settlement", "expected_fee", "expected_gst", "refund_total", "difference")
     @classmethod
     def quantize_optional_money(cls, value: Optional[Decimal]) -> Optional[Decimal]:
         if value is None:

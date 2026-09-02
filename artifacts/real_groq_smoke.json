@@ -1,0 +1,1149 @@
+{
+  "artifact": "real_groq_smoke",
+  "artifact_version": 2,
+  "status": "FAILED_PROVIDER",
+  "generated_at": "2026-09-01T19:36:31.885432+00:00",
+  "dataset": {
+    "prompt": "Build an Indian e-commerce merchant with 20 orders, UPI and card payments, 2% platform fees, 18% GST on platform fees, T+2 settlement, refunds, stressed anomaly coverage with refund mismatches, partial settlements, duplicates, timing issues and conflicting evidence.",
+    "seed": 202,
+    "world_id": "FW_a81b5bc43515",
+    "dataset_id": "WORLD_FW_a81b5bc43515",
+    "dataset_version": 1,
+    "requested_records": 20,
+    "record_count": 21,
+    "case_limit": 10
+  },
+  "controller_version": "auditra-0.4.0",
+  "runtime": {
+    "world_understanding": {
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "execution_mode": "REAL_GROQ_AI",
+      "configured": true,
+      "fallback_mode": "OFFLINE_AI"
+    },
+    "investigation": {
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "execution_mode": "REAL_GROQ_AI",
+      "configured": true,
+      "fallback_mode": "OFFLINE_AI"
+    },
+    "labels": {
+      "deterministic": "DETERMINISTIC",
+      "offline": "OFFLINE_AI",
+      "groq": "REAL_GROQ_AI",
+      "gemini": "REAL_GEMINI_AI",
+      "openrouter": "REAL_OPENROUTER_AI",
+      "huggingface": "REAL_HUGGINGFACE_AI",
+      "openai": "REAL_OPENAI_AI",
+      "anthropic": "REAL_ANTHROPIC_AI",
+      "ollama": "REAL_OLLAMA_AI"
+    }
+  },
+  "provider_truth": {
+    "world_builder_provider": "deterministic",
+    "world_builder_mode": "OFFLINE_AI",
+    "investigation_mode_counts": {
+      "OFFLINE_AI": 9
+    },
+    "actual_llm_calls": 0,
+    "real_provider_calls": 0,
+    "world_builder_llm_calls": 0,
+    "total_real_llm_calls": 0
+  },
+  "provider_evidence": {
+    "provider": "offline",
+    "model": "offline-investigation-planner-v2",
+    "world_builder_llm_calls": 0,
+    "total_real_llm_calls": 0,
+    "investigation_real_llm_calls": 0,
+    "world_builder_successful_real_calls": 0,
+    "investigation_successful_real_calls": 0,
+    "successful_real_calls": 0,
+    "fallback_calls": 9,
+    "fallback_reasons": {
+      "provider_circuit_open:rate_limit": 8,
+      "rate_limit": 1
+    },
+    "provider_failures": 1
+  },
+  "world_builder": {
+    "provider": "deterministic",
+    "mode": "OFFLINE_AI",
+    "model": "financial-world-parser",
+    "steps": [
+      {
+        "step": "External AI fallback",
+        "status": "WARNING",
+        "detail": "groq could not return a valid spec; deterministic parsing completed the request.",
+        "metadata": {
+          "execution_mode": "OFFLINE_AI",
+          "provider": "deterministic",
+          "model": "financial-world-parser",
+          "prompt_version": "world-spec-v2",
+          "timestamp": "2026-09-01T19:36:24.319223+00:00",
+          "latency_ms": 4963.1797,
+          "attempts": 1,
+          "llm_calls": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "success": false,
+          "failure_type": "invalid_request",
+          "requested_provider": "groq"
+        }
+      },
+      {
+        "step": "Understand intent",
+        "status": "COMPLETED",
+        "detail": "Parsed merchant, volume, payment rails, fees, settlement policy and anomaly intent.",
+        "metadata": {
+          "execution_mode": "DETERMINISTIC",
+          "provider": "deterministic",
+          "model": "financial-world-parser",
+          "success": true
+        }
+      },
+      {
+        "step": "Extract financial entities",
+        "status": "COMPLETED",
+        "detail": "MERCHANT, ORDER, PAYMENT, SETTLEMENT, REFUND and FEE_RULE selected.",
+        "metadata": {}
+      },
+      {
+        "step": "Build schema",
+        "status": "COMPLETED",
+        "detail": "Canonical Auditra finance schema prepared for preview.",
+        "metadata": {}
+      },
+      {
+        "step": "Build relationship model",
+        "status": "COMPLETED",
+        "detail": "Order-payment-settlement-refund-fee relationships derived.",
+        "metadata": {}
+      },
+      {
+        "step": "Configure rules",
+        "status": "COMPLETED",
+        "detail": "2.00% fee + 18.00% GST, T+2, STRESSED anomaly mode.",
+        "metadata": {}
+      }
+    ]
+  },
+  "runs": {
+    "deterministic": {
+      "dataset_id": "WORLD_FW_a81b5bc43515",
+      "controller_run_id": "RUN_dabdb8e1c146",
+      "evaluation_run_id": "EVAL_da34f4c720db",
+      "provider": "deterministic",
+      "model": "financial-control-engine",
+      "mode": "DETERMINISTIC",
+      "mode_counts": {
+        "DETERMINISTIC": 21
+      },
+      "record_count": 21,
+      "exception_count": 9,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "true_positives": 21,
+      "true_negatives": 189,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "exception_false_positive_rate": 0.0,
+      "exception_false_negative_rate": 0.0,
+      "failures": 0,
+      "auto_resolution_rate": 0.9524,
+      "human_escalation_rate": 0.0476,
+      "unresolved_rate": 0.0,
+      "financial_volume": "98722.17",
+      "financial_amount_correctly_reconciled": "98722.17",
+      "financial_amount_incorrectly_classified": "0.00",
+      "financial_amount_escalated": "3212.67",
+      "financial_amount_unresolved": "0.00",
+      "financial_error_impact": "0.00",
+      "p50_latency_ms": 0.7674,
+      "p95_latency_ms": 1.2269,
+      "throughput_records_per_sec": 860.54,
+      "llm_calls": 0,
+      "ai_invocation_rate": 0.0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0,
+      "estimated_cost_usd": "0.00",
+      "provider_failures": 0,
+      "fallback_count": 0,
+      "real_provider_calls": 0,
+      "successful_real_calls": 0,
+      "fallback_reasons": {},
+      "failure_types": {},
+      "confusion_matrix": {
+        "MISSING_SETTLEMENT": {
+          "MISSING_SETTLEMENT": 1,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "FEE_EXPLAINED": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 11,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "REFUND_ADJUSTED": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 1,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "UNRESOLVED": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "DUPLICATE": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 1,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "MATCHED": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "AMOUNT_MISMATCH": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 2,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "HUMAN_REVIEW": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 1,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "TIMING_MISMATCH": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 2,
+          "PARTIAL_MATCH": 0
+        },
+        "PARTIAL_MATCH": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 2
+        }
+      },
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 2.0,
+          "true_positive": 2.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DUPLICATE": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 11.0,
+          "true_positive": 11.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 2.0,
+          "true_positive": 2.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 2.0,
+          "true_positive": 2.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "failure_taxonomy": {}
+    },
+    "offline_ai": {
+      "dataset_id": "WORLD_FW_a81b5bc43515",
+      "controller_run_id": "RUN_1b67946cbf2d",
+      "evaluation_run_id": "EVAL_a155e13e9ee0",
+      "provider": "offline",
+      "model": "offline-investigation-planner-v2",
+      "mode": "OFFLINE_AI",
+      "mode_counts": {
+        "OFFLINE_AI": 9
+      },
+      "record_count": 21,
+      "exception_count": 9,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "true_positives": 21,
+      "true_negatives": 189,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "exception_false_positive_rate": 0.0,
+      "exception_false_negative_rate": 0.0,
+      "failures": 0,
+      "auto_resolution_rate": 0.9524,
+      "human_escalation_rate": 0.0476,
+      "unresolved_rate": 0.0,
+      "financial_volume": "98722.17",
+      "financial_amount_correctly_reconciled": "98722.17",
+      "financial_amount_incorrectly_classified": "0.00",
+      "financial_amount_escalated": "3212.67",
+      "financial_amount_unresolved": "0.00",
+      "financial_error_impact": "0.00",
+      "p50_latency_ms": 0.955,
+      "p95_latency_ms": 1.8111,
+      "throughput_records_per_sec": 902.95,
+      "llm_calls": 0,
+      "ai_invocation_rate": 0.4286,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "provider_failures": 0,
+      "fallback_count": 0,
+      "real_provider_calls": 0,
+      "successful_real_calls": 0,
+      "fallback_reasons": {},
+      "failure_types": {},
+      "confusion_matrix": {
+        "MISSING_SETTLEMENT": {
+          "MISSING_SETTLEMENT": 1,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "FEE_EXPLAINED": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 11,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "REFUND_ADJUSTED": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 1,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "UNRESOLVED": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "DUPLICATE": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 1,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "MATCHED": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "AMOUNT_MISMATCH": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 2,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "HUMAN_REVIEW": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 1,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "TIMING_MISMATCH": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 2,
+          "PARTIAL_MATCH": 0
+        },
+        "PARTIAL_MATCH": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 2
+        }
+      },
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 2.0,
+          "true_positive": 2.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DUPLICATE": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 11.0,
+          "true_positive": 11.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 2.0,
+          "true_positive": 2.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 2.0,
+          "true_positive": 2.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "failure_taxonomy": {}
+    },
+    "real_groq_ai": {
+      "dataset_id": "WORLD_FW_a81b5bc43515",
+      "controller_run_id": "RUN_6229e28bb8e8",
+      "evaluation_run_id": "EVAL_2b2f2a8e9933",
+      "provider": "offline",
+      "model": "offline-investigation-planner-v2",
+      "mode": "OFFLINE_AI",
+      "mode_counts": {
+        "OFFLINE_AI": 9
+      },
+      "record_count": 21,
+      "exception_count": 9,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "true_positives": 21,
+      "true_negatives": 189,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.0,
+      "exception_false_positive_rate": 0.0,
+      "exception_false_negative_rate": 0.0,
+      "failures": 0,
+      "auto_resolution_rate": 0.9524,
+      "human_escalation_rate": 0.0476,
+      "unresolved_rate": 0.0,
+      "financial_volume": "98722.17",
+      "financial_amount_correctly_reconciled": "98722.17",
+      "financial_amount_incorrectly_classified": "0.00",
+      "financial_amount_escalated": "3212.67",
+      "financial_amount_unresolved": "0.00",
+      "financial_error_impact": "0.00",
+      "p50_latency_ms": 1.0109,
+      "p95_latency_ms": 5.5849,
+      "throughput_records_per_sec": 8.23,
+      "llm_calls": 0,
+      "ai_invocation_rate": 0.4286,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "provider_failures": 1,
+      "fallback_count": 9,
+      "real_provider_calls": 0,
+      "successful_real_calls": 0,
+      "fallback_reasons": {
+        "provider_circuit_open:rate_limit": 8,
+        "rate_limit": 1
+      },
+      "failure_types": {
+        "provider_circuit_open:rate_limit": 8,
+        "rate_limit": 1
+      },
+      "confusion_matrix": {
+        "MISSING_SETTLEMENT": {
+          "MISSING_SETTLEMENT": 1,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "FEE_EXPLAINED": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 11,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "REFUND_ADJUSTED": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 1,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "UNRESOLVED": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "DUPLICATE": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 1,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "MATCHED": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "AMOUNT_MISMATCH": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 2,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "HUMAN_REVIEW": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 1,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 0
+        },
+        "TIMING_MISMATCH": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 2,
+          "PARTIAL_MATCH": 0
+        },
+        "PARTIAL_MATCH": {
+          "MISSING_SETTLEMENT": 0,
+          "FEE_EXPLAINED": 0,
+          "REFUND_ADJUSTED": 0,
+          "UNRESOLVED": 0,
+          "DUPLICATE": 0,
+          "MATCHED": 0,
+          "AMOUNT_MISMATCH": 0,
+          "HUMAN_REVIEW": 0,
+          "TIMING_MISMATCH": 0,
+          "PARTIAL_MATCH": 2
+        }
+      },
+      "class_metrics": {
+        "AMOUNT_MISMATCH": {
+          "support": 2.0,
+          "true_positive": 2.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "DUPLICATE": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FEE_EXPLAINED": {
+          "support": 11.0,
+          "true_positive": 11.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "HUMAN_REVIEW": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "MISSING_SETTLEMENT": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "PARTIAL_MATCH": {
+          "support": 2.0,
+          "true_positive": 2.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "REFUND_ADJUSTED": {
+          "support": 1.0,
+          "true_positive": 1.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "TIMING_MISMATCH": {
+          "support": 2.0,
+          "true_positive": 2.0,
+          "false_positive": 0.0,
+          "false_negative": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "failure_taxonomy": {}
+    }
+  },
+  "smoke_cases": [
+    {
+      "case_id": "CASE_PAY_c43515_00002",
+      "payment_id": "PAY_c43515_00002",
+      "provider": "offline",
+      "model": "offline-investigation-planner-v2",
+      "mode": "OFFLINE_AI",
+      "success": false,
+      "fallback_reason": "rate_limit",
+      "decision": "MISSING_SETTLEMENT",
+      "verification_passed": true,
+      "latency_ms": 619.5985,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "trace_success": false,
+      "trace_failure_type": "rate_limit"
+    },
+    {
+      "case_id": "CASE_PAY_c43515_00006",
+      "payment_id": "PAY_c43515_00006",
+      "provider": "offline",
+      "model": "offline-investigation-planner-v2",
+      "mode": "OFFLINE_AI",
+      "success": false,
+      "fallback_reason": "provider_circuit_open:rate_limit",
+      "decision": "HUMAN_REVIEW",
+      "verification_passed": true,
+      "latency_ms": 0.0,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "trace_success": false,
+      "trace_failure_type": "provider_circuit_open:rate_limit"
+    },
+    {
+      "case_id": "CASE_PAY_c43515_00004",
+      "payment_id": "PAY_c43515_00004",
+      "provider": "offline",
+      "model": "offline-investigation-planner-v2",
+      "mode": "OFFLINE_AI",
+      "success": false,
+      "fallback_reason": "provider_circuit_open:rate_limit",
+      "decision": "PARTIAL_MATCH",
+      "verification_passed": true,
+      "latency_ms": 0.0,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "trace_success": false,
+      "trace_failure_type": "provider_circuit_open:rate_limit"
+    },
+    {
+      "case_id": "CASE_PAY_c43515_00005",
+      "payment_id": "PAY_c43515_00005",
+      "provider": "offline",
+      "model": "offline-investigation-planner-v2",
+      "mode": "OFFLINE_AI",
+      "success": false,
+      "fallback_reason": "provider_circuit_open:rate_limit",
+      "decision": "TIMING_MISMATCH",
+      "verification_passed": true,
+      "latency_ms": 0.0,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "trace_success": false,
+      "trace_failure_type": "provider_circuit_open:rate_limit"
+    },
+    {
+      "case_id": "CASE_PAY_c43515_00001",
+      "payment_id": "PAY_c43515_00001",
+      "provider": "offline",
+      "model": "offline-investigation-planner-v2",
+      "mode": "OFFLINE_AI",
+      "success": false,
+      "fallback_reason": "provider_circuit_open:rate_limit",
+      "decision": "AMOUNT_MISMATCH",
+      "verification_passed": true,
+      "latency_ms": 0.0,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "trace_success": false,
+      "trace_failure_type": "provider_circuit_open:rate_limit"
+    },
+    {
+      "case_id": "CASE_PAY_c43515_DUP_00003",
+      "payment_id": "PAY_c43515_DUP_00003",
+      "provider": "offline",
+      "model": "offline-investigation-planner-v2",
+      "mode": "OFFLINE_AI",
+      "success": false,
+      "fallback_reason": "provider_circuit_open:rate_limit",
+      "decision": "DUPLICATE",
+      "verification_passed": true,
+      "latency_ms": 0.0,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "trace_success": false,
+      "trace_failure_type": "provider_circuit_open:rate_limit"
+    },
+    {
+      "case_id": "CASE_PAY_c43515_00011",
+      "payment_id": "PAY_c43515_00011",
+      "provider": "offline",
+      "model": "offline-investigation-planner-v2",
+      "mode": "OFFLINE_AI",
+      "success": false,
+      "fallback_reason": "provider_circuit_open:rate_limit",
+      "decision": "AMOUNT_MISMATCH",
+      "verification_passed": true,
+      "latency_ms": 0.0,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "trace_success": false,
+      "trace_failure_type": "provider_circuit_open:rate_limit"
+    },
+    {
+      "case_id": "CASE_PAY_c43515_00017",
+      "payment_id": "PAY_c43515_00017",
+      "provider": "offline",
+      "model": "offline-investigation-planner-v2",
+      "mode": "OFFLINE_AI",
+      "success": false,
+      "fallback_reason": "provider_circuit_open:rate_limit",
+      "decision": "TIMING_MISMATCH",
+      "verification_passed": true,
+      "latency_ms": 0.0,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "trace_success": false,
+      "trace_failure_type": "provider_circuit_open:rate_limit"
+    },
+    {
+      "case_id": "CASE_PAY_c43515_00019",
+      "payment_id": "PAY_c43515_00019",
+      "provider": "offline",
+      "model": "offline-investigation-planner-v2",
+      "mode": "OFFLINE_AI",
+      "success": false,
+      "fallback_reason": "provider_circuit_open:rate_limit",
+      "decision": "PARTIAL_MATCH",
+      "verification_passed": true,
+      "latency_ms": 0.0,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "estimated_cost_usd": "0.00",
+      "trace_success": false,
+      "trace_failure_type": "provider_circuit_open:rate_limit"
+    }
+  ],
+  "ai_lift": {
+    "real_groq_vs_deterministic": {
+      "accuracy_delta": 0.0,
+      "f1_delta": 0.0,
+      "financial_error_delta": "0.00",
+      "auto_resolution_delta": 0.0,
+      "human_review_delta": 0.0
+    },
+    "real_groq_vs_offline_ai": {
+      "accuracy_delta": 0.0,
+      "f1_delta": 0.0,
+      "financial_error_delta": "0.00",
+      "auto_resolution_delta": 0.0,
+      "human_review_delta": 0.0
+    }
+  },
+  "assurance": {
+    "report_id": "ASR_2b2f2a8e9933",
+    "model_version": "auditra-assurance-v1",
+    "dataset_id": "WORLD_FW_a81b5bc43515",
+    "controller_run_id": "RUN_6229e28bb8e8",
+    "evaluation_run_id": "EVAL_2b2f2a8e9933",
+    "score": 100.0,
+    "grade": "A",
+    "recommendation": "CONTROLLED_DEPLOYMENT",
+    "recommendation_detail": "Eligible for a limited deployment with monitoring, rollback, and exception review controls.",
+    "dimensions": {
+      "accuracy": 1.0,
+      "safe_autonomy": 1.0,
+      "correct_escalation": 1.0,
+      "anomaly_detection": 1.0,
+      "financial_impact_control": 1.0,
+      "evidence_coverage": 1.0
+    },
+    "weights": {
+      "accuracy": 0.35,
+      "safe_autonomy": 0.2,
+      "correct_escalation": 0.15,
+      "anomaly_detection": 0.15,
+      "financial_impact_control": 0.1,
+      "evidence_coverage": 0.05
+    },
+    "unsafe_auto_actions": 0,
+    "unsafe_auto_action_penalty": 0.0,
+    "unsafe_exposure": "0.00",
+    "measured_error_impact": "0.00",
+    "failure_fingerprint": {
+      "pattern": "NO_MEASURED_FAILURE",
+      "expected_status": null,
+      "frequency": 0,
+      "severity": "LOW",
+      "exposure": "0.00",
+      "root_cause": "No controller decisions differed from hidden ground truth.",
+      "target_anomalies": [
+        "CONFLICTING_EVIDENCE",
+        "REFUND_MISMATCH",
+        "TIMING_MISMATCH"
+      ]
+    },
+    "controls": [
+      {
+        "control": "Ground truth isolation",
+        "status": "PASSED",
+        "detail": "Truth was withheld until independent evaluation."
+      },
+      {
+        "control": "Evidence traceability",
+        "status": "PASSED",
+        "detail": "21/21 decisions carry evidence, invariants, and verification."
+      },
+      {
+        "control": "Unsafe autonomy",
+        "status": "PASSED",
+        "detail": "0 exception cases were auto-closed as normal."
+      },
+      {
+        "control": "Reproducibility",
+        "status": "PASSED",
+        "detail": "Dataset is reproducible from seed 202."
+      }
+    ]
+  },
+  "provenance": {
+    "artifact_source": "artifacts\\real_groq_smoke.json",
+    "dataset_id": "WORLD_FW_a81b5bc43515",
+    "controller_version": "auditra-0.4.0",
+    "provider": "groq",
+    "model": "offline-investigation-planner-v2",
+    "mode": "OFFLINE_AI",
+    "record_count": 21
+  },
+  "limitations": [
+    "Groq is used only for prompt interpretation and investigation planning.",
+    "Financial records, verification, evaluation, and assurance remain deterministic.",
+    "Token or cost fields are null when the provider does not return enough information."
+  ],
+  "secret_safety": {
+    "secrets_printed": false,
+    "secrets_written": false,
+    "frontend_receives_api_key": false
+  }
+}

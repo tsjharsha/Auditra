@@ -611,6 +611,7 @@ function createControlledSpec(settings: ControlledEvaluationSettings): Financial
     currencies: ["INR"],
     payment_methods: ["UPI", "CARD"],
     fee_rate: "0.0200",
+    gst_rate: "0.1800",
     fixed_fee: "0.00",
     settlement_delay_days: 2,
     refund_rate: "0.0800",

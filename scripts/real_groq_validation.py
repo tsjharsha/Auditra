@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sys
@@ -20,10 +21,11 @@ from auditra.models import ControllerRun, DatasetBundle, EvaluationRun
 from auditra.reconciliation import ReconciliationEngine
 from auditra.runtime import controller_execution_metadata, runtime_ai_status
 
-ARTIFACT_PATH = ROOT / "artifacts" / "real_groq.json"
+DEFAULT_ARTIFACT_PATH = ROOT / "artifacts" / "real_groq_smoke.json"
+ARTIFACT_PATH = DEFAULT_ARTIFACT_PATH
 PROMPT = (
     "Build an Indian e-commerce merchant with 80 orders, UPI and card payments, "
-    "2% platform fees, T+2 settlement, refunds, refund mismatches, partial settlements, "
+    "2% platform fees, 18% GST on platform fees, T+2 settlement, refunds, stressed anomaly coverage with refund mismatches, partial settlements, "
     "duplicates, timing issues and conflicting evidence."
 )
 
@@ -77,6 +79,7 @@ def _summarize(dataset: DatasetBundle, run: ControllerRun, evaluation: Evaluatio
         "mode": execution["execution_mode"],
         "mode_counts": execution["mode_counts"],
         "record_count": run.metrics.transactions_processed,
+        "exception_count": sum(1 for case in run.cases if str(case.status) not in {"MATCHED", "FEE_EXPLAINED", "REFUND_ADJUSTED"}),
         "accuracy": metrics.accuracy,
         "precision": metrics.precision,
         "recall": metrics.recall,
@@ -87,6 +90,8 @@ def _summarize(dataset: DatasetBundle, run: ControllerRun, evaluation: Evaluatio
         "false_negatives": confusion_totals["false_negatives"],
         "false_positive_rate": metrics.false_positive_rate,
         "false_negative_rate": metrics.false_negative_rate,
+        "exception_false_positive_rate": metrics.exception_false_positive_rate,
+        "exception_false_negative_rate": metrics.exception_false_negative_rate,
         "failures": len(evaluation.failures),
         "auto_resolution_rate": metrics.automatic_resolution_rate,
         "human_escalation_rate": metrics.escalation_rate,
@@ -108,6 +113,8 @@ def _summarize(dataset: DatasetBundle, run: ControllerRun, evaluation: Evaluatio
         "estimated_cost_usd": str(metrics.estimated_ai_cost_usd) if metrics.estimated_ai_cost_usd is not None else None,
         "provider_failures": execution["provider_failures"],
         "fallback_count": execution["fallback_count"],
+        "real_provider_calls": execution["real_provider_calls"],
+        "successful_real_calls": sum(1 for trace in traces if trace.get("success") and trace.get("execution_mode") == "REAL_GROQ_AI"),
         "fallback_reasons": dict(sorted(fallback_reasons.items())),
         "failure_types": dict(sorted(failure_types.items())),
         "confusion_matrix": metrics.confusion_matrix,
@@ -221,7 +228,7 @@ def _run_controller(dataset: DatasetBundle, *, label: str, provider: Optional[st
 
 def _blocked(reason: str) -> Dict[str, Any]:
     return {
-        "artifact": "real_groq",
+        "artifact": "real_groq_smoke",
         "status": "BLOCKED_MISSING_KEY",
         "reason": reason,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -235,6 +242,12 @@ def _blocked(reason: str) -> Dict[str, Any]:
 
 
 def main() -> int:
+    global ARTIFACT_PATH
+    parser = argparse.ArgumentParser(description="Run a bounded, honest Groq validation smoke test.")
+    parser.add_argument("--records", type=int, default=20, choices=range(10, 51), metavar="N", help="Synthetic records to process (10-50).")
+    parser.add_argument("--output", type=Path, default=DEFAULT_ARTIFACT_PATH, help="Artifact path; defaults to artifacts/real_groq_smoke.json.")
+    args = parser.parse_args()
+    ARTIFACT_PATH = args.output if args.output.is_absolute() else ROOT / args.output
     if not os.getenv("GROQ_API_KEY"):
         payload = _blocked("GROQ_API_KEY is not configured in the process or project .env")
         _write_artifact(payload)
@@ -248,7 +261,8 @@ def main() -> int:
 
     _set_provider("groq")
     service = FinancialWorldService()
-    world = service.build_from_prompt(PROMPT, seed=202)
+    smoke_prompt = PROMPT.replace("80 orders", f"{args.records} orders")
+    world = service.build_from_prompt(smoke_prompt, seed=202)
     if world.dataset is None:
         raise RuntimeError("world builder did not produce a dataset")
 
@@ -264,6 +278,8 @@ def main() -> int:
         "investigation_mode_counts": groq_modes,
         "actual_llm_calls": groq["summary"]["llm_calls"],
         "real_provider_calls": controller_execution_metadata(groq["run"])["real_provider_calls"],
+        "world_builder_llm_calls": int(world.understanding_steps[0].metadata.get("llm_calls") or 0) if world.understanding_steps else 0,
+        "total_real_llm_calls": (int(world.understanding_steps[0].metadata.get("llm_calls") or 0) if world.understanding_steps else 0) + controller_execution_metadata(groq["run"])["real_provider_calls"],
     }
 
     rate_limited = any(
@@ -287,21 +303,37 @@ def main() -> int:
         status = "FAILED_PROVIDER"
 
     payload = {
-        "artifact": "real_groq",
-        "artifact_version": 1,
+        "artifact": "real_groq_smoke",
+        "artifact_version": 2,
         "status": status,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "dataset": {
-            "prompt": PROMPT,
+            "prompt": smoke_prompt,
             "seed": 202,
             "world_id": world.world_id,
             "dataset_id": world.dataset_id,
             "dataset_version": world.world_version,
+            "requested_records": args.records,
             "record_count": world.dataset.requested_records,
+            "case_limit": int(os.getenv("AUDITRA_EXTERNAL_LLM_CASE_LIMIT", "10")),
         },
         "controller_version": "auditra-0.4.0",
         "runtime": runtime_ai_status(),
         "provider_truth": provider_truth,
+        "provider_evidence": {
+            "provider": groq["summary"]["provider"],
+            "model": groq["summary"]["model"],
+            "world_builder_llm_calls": int(world.understanding_steps[0].metadata.get("llm_calls") or 0) if world.understanding_steps else 0,
+        "total_real_llm_calls": (int(world.understanding_steps[0].metadata.get("llm_calls") or 0) if world.understanding_steps else 0) + controller_execution_metadata(groq["run"])["real_provider_calls"],
+            "investigation_real_llm_calls": groq["summary"]["real_provider_calls"],
+            "total_real_llm_calls": (int(world.understanding_steps[0].metadata.get("llm_calls") or 0) if world.understanding_steps else 0) + groq["summary"]["real_provider_calls"],
+            "world_builder_successful_real_calls": 1 if world.understanding_steps and world.understanding_steps[0].metadata.get("success") and world.understanding_steps[0].metadata.get("execution_mode") == "REAL_GROQ_AI" else 0,
+            "investigation_successful_real_calls": groq["summary"]["successful_real_calls"],
+            "successful_real_calls": (1 if world.understanding_steps and world.understanding_steps[0].metadata.get("success") and world.understanding_steps[0].metadata.get("execution_mode") == "REAL_GROQ_AI" else 0) + groq["summary"]["successful_real_calls"],
+            "fallback_calls": groq["summary"]["fallback_count"],
+            "fallback_reasons": groq["summary"]["fallback_reasons"],
+            "provider_failures": groq["summary"]["provider_failures"],
+        },
         "world_builder": {
             "provider": provider_truth["world_builder_provider"],
             "mode": provider_truth["world_builder_mode"],

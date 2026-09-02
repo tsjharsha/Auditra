@@ -377,12 +377,14 @@ class InvestigationTools:
             applies_at = fee_rule.applies_at(payment.captured_at)
             currency_matches = fee_rule.currency == payment.currency
             expected_fee = fee_rule.calculate_fee(payment.amount)
+            expected_gst = fee_rule.calculate_gst(expected_fee)
             return {
                 "applicable": applies_at and currency_matches,
                 "applies_at_capture": applies_at,
                 "currency_matches": currency_matches,
                 "fee_rule_id": fee_rule.fee_rule_id,
                 "expected_fee": str(expected_fee),
+                "expected_gst": str(expected_gst),
             }
 
         return self._record(

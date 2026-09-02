@@ -71,6 +71,7 @@ def build_schema_preview() -> SchemaPreview:
                     SchemaField(name="currency", type="string"),
                     SchemaField(name="percent_bps", type="integer"),
                     SchemaField(name="fixed_fee", type="decimal_money"),
+                    SchemaField(name="gst_bps", type="integer", description="GST applied to the platform fee"),
                     SchemaField(name="active_from", type="datetime_tz"),
                     SchemaField(name="active_to", type="datetime_tz", required=False),
                 ],

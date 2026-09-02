@@ -4,7 +4,7 @@
 
 Built for Razorpay AI Buildathon 2026 - Track 04: AI Finance Controller.
 
-Auditra closes a synthetic finance-ops batch across orders, payments, fees/GST, refunds, and settlements. It reports match rate, throughput, unresolved exceptions, and financial error impact, then verifies every controller decision against hidden ground truth.
+Auditra closes a synthetic finance-ops batch across orders, payments, fees/GST, refunds, and settlements. It reports match rate, auto-resolution, human review, unresolved exceptions, throughput, and financial error impact, then verifies every controller decision against hidden ground truth.
 
 > Do not trust the AI. Measure whether you should.
 
@@ -22,7 +22,7 @@ The controller never receives hidden labels. It closes the batch, bounded AI inv
 
 1. Choose one payment-operations scenario: settlement close, refund net settlement, fee/GST variance, or peak-day exceptions.
 2. Build a Razorpay-style batch with 50+ synthetic records and locked hidden truth.
-3. Run the controller and see match rate, needs-review count, at-risk amount, and throughput.
+3. Run the controller and see match rate, auto-resolution, human review, unresolved rate, throughput, and measured financial error impact.
 4. Open one priority exception to compare expected and actual settlement, evidence, and verification checks.
 5. Read a data-derived settlement brief, then export the audit JSON or exceptions CSV.
 6. Run assurance and a targeted red-team retest against the controller's weakest measured failure pattern.
@@ -132,7 +132,9 @@ Why zero external calls here: the default local demo uses Auditra's offline stru
 
 ### Real External LLM Evidence
 
-Source artifact: `artifacts/real_groq.json`
+Historical source artifact: `artifacts/real_groq.json`
+
+Latest reproducible smoke artifact: `artifacts/real_groq_smoke.json` when a real Groq run is available. The current checked-in smoke path is `FAILED_PROVIDER` after a provider rate limit; the historical artifact remains the verified real-call evidence.
 
 | Field | Value |
 | --- | --- |
@@ -165,12 +167,11 @@ FAILED_PROVIDER      - provider path did not produce valid real-provider evidenc
 Final screenshots are stored in `docs/screenshots/`:
 
 - [Home](docs/screenshots/01-home-demo-ready.png)
+- [World builder](docs/screenshots/02-world-builder.png)
 - [Controller](docs/screenshots/05-controller.png)
-- [Investigation](docs/screenshots/06-investigation.png)
-- [Evidence Graph](docs/screenshots/07-evidence-graph.png)
-- [Human Review](docs/screenshots/08-human-review.png)
-- [Evaluation](docs/screenshots/09-evaluation.png)
-- [Break the Controller](docs/screenshots/10-break-the-controller.png)
+- [Human review](docs/screenshots/08-human-review.png)
+
+Refresh the evidence set with `scripts/capture_phase_d_screenshots.ps1` while the frontend is running.
 
 ## Quick Start
 
@@ -264,7 +265,8 @@ Real Groq validation:
 $env:AI_PROVIDER="groq"
 $env:GROQ_API_KEY="..."
 $env:GROQ_MODEL="openai/gpt-oss-20b"
-py -3.13 scripts/real_groq_validation.py
+py -3.13 scripts/real_groq_validation.py --records 20
+# writes artifacts/real_groq_smoke.json; use --output to choose another path
 ```
 
 Auditra also includes implemented adapters for Gemini, OpenRouter, Hugging Face, and OpenAI behind the same provider interface. Anthropic and Ollama are documented as architecture-supported placeholders and are not claimed as working integrations.
@@ -288,11 +290,11 @@ Without `AUDITRA_DATABASE_URL`, Auditra uses in-memory storage for local demos.
 ## Limitations
 
 - Local generation is capped at 10,000 records; larger requests are rejected by input contract.
-- Live Groq evidence requires a real `GROQ_API_KEY`; without it the runner writes `BLOCKED_MISSING_KEY` instead of fabricated metrics.
+- Live Groq evidence requires a real `GROQ_API_KEY`; without it the runner writes `BLOCKED_MISSING_KEY` to the requested smoke path instead of fabricated metrics.
 - No credentialed Razorpay money-movement integration is included; the submission uses safe synthetic Razorpay-style records.
 - No full production authentication layer is implemented in this prototype.
 - PostgreSQL migration execution requires an external database.
-- Frontend production build may still warn about a large JS chunk because advanced graph/analytics pages are included.
+- The advanced analytics bundle remains larger than the focused home bundle; route-level lazy loading keeps the first screen small.
 
 ## Documentation
 
@@ -308,5 +310,7 @@ Without `AUDITRA_DATABASE_URL`, Auditra uses in-memory storage for local demos.
 - [30 Second Pitch](docs/30_second_pitch.md)
 - [One Minute Technical Version](docs/one_minute_technical_version.md)
 - [Installation Test](docs/installation_test.md)
+- [GitHub Submission Metadata](docs/github_submission_metadata.md)
+- [Final Submission Hardening Report](docs/final_submission_hardening_report.md)
 - [Final Quality Report](docs/final_quality_report.md)
 - [Final LLM Evidence](docs/final_llm_evidence.md)

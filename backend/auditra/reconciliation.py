@@ -177,6 +177,7 @@ class ReconciliationEngine:
             supporting.extend(f"EVD_SETTLEMENT_{item.settlement_id}" for item in settlements)
         else:
             timeline.append("No settlement record located")
+            reason_codes.append("MISSING_SETTLEMENT")
 
         if refunds:
             timeline.append(f"{len(refunds)} refund record(s) located")
@@ -202,13 +203,14 @@ class ReconciliationEngine:
         refund_total = money(sum((refund.amount for refund in refunds), Decimal("0.00")))
         actual_settlement = money(sum((settlement.amount for settlement in settlements), Decimal("0.00"))) if settlements else None
         expected_fee = fee_rule.calculate_fee(payment.amount) if fee_rule else None
+        expected_gst = fee_rule.calculate_gst(expected_fee) if fee_rule and expected_fee is not None else None
         expected_settlement = None
         difference = None
         temporal_result = {"valid": False, "reason": "not checked"}
         amount_result = {"within_tolerance": False}
 
         if expected_fee is not None:
-            expected_settlement = money(payment.amount - expected_fee - refund_total)
+            expected_settlement = money(payment.amount - expected_fee - (expected_gst or Decimal("0.00")) - refund_total)
         if actual_settlement is not None and expected_settlement is not None:
             difference = money(actual_settlement - expected_settlement)
             try:
@@ -495,6 +497,7 @@ class ReconciliationEngine:
             expected_settlement=expected_settlement,
             actual_settlement=actual_settlement,
             expected_fee=expected_fee,
+            expected_gst=expected_gst,
             refund_total=refund_total,
             difference=difference,
             reason_codes=sorted(set(reason_codes)),

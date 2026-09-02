@@ -1,5 +1,5 @@
 param(
-  [string]$BaseUrl = "http://127.0.0.1:5174",
+  [string]$BaseUrl = "http://127.0.0.1:5175",
   [string]$ScreenshotDir = "docs\screenshots",
   [string]$ChromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe",
   [int]$DebugPort = 9222
@@ -10,7 +10,7 @@ $ErrorActionPreference = "Stop"
 function Receive-CdpMessage {
   param([System.Net.WebSockets.ClientWebSocket]$Socket)
 
-  $buffer = New-Object byte[] 10485760
+  $buffer = New-Object byte[] 1048576
   $stream = [System.IO.MemoryStream]::new()
   do {
     $segment = [System.ArraySegment[byte]]::new($buffer)
@@ -73,6 +73,25 @@ function Wait-ForText {
   throw "Timed out waiting for visible text: $Text"
 }
 
+function Wait-ForEnabled {
+  param(
+    [System.Net.WebSockets.ClientWebSocket]$Socket,
+    [string]$Text,
+    [int]$TimeoutMs = 90000
+  )
+
+  $quoted = $Text | ConvertTo-Json -Compress
+  $started = Get-Date
+  while (((Get-Date) - $started).TotalMilliseconds -lt $TimeoutMs) {
+    $expression = "(() => { const el = [...document.querySelectorAll('button')].find((item) => (item.innerText || item.textContent || '').trim().includes($quoted)); return !!el && !el.disabled; })()"
+    $result = Invoke-CdpScript -Socket $Socket -Expression $expression
+    if ($result.result.value -eq $true) {
+      return
+    }
+    Start-Sleep -Milliseconds 500
+  }
+  throw "Timed out waiting for enabled button: $Text"
+}
 function Click-Text {
   param(
     [System.Net.WebSockets.ClientWebSocket]$Socket,
@@ -137,32 +156,22 @@ try {
   Send-Cdp -Socket $socket -Method "Runtime.enable" | Out-Null
   Send-Cdp -Socket $socket -Method "Emulation.setDeviceMetricsOverride" -Params @{ width = 1440; height = 1000; deviceScaleFactor = 1; mobile = $false } | Out-Null
   Send-Cdp -Socket $socket -Method "Page.navigate" -Params @{ url = "$BaseUrl/" } | Out-Null
-  Wait-ForText -Socket $socket -Text "Run 5-Minute Demo" -TimeoutMs 20000
+  Wait-ForText -Socket $socket -Text "Run audit" -TimeoutMs 20000
 
   Save-Screenshot -Socket $socket -FileName "01-home.png"
-  Click-Text -Socket $socket -Text "Run 5-Minute Demo"
-  Wait-ForText -Socket $socket -Text "CONTROLLER FAILED" -TimeoutMs 70000
-
-  Click-Text -Socket $socket -Text "Home"
-  Save-Screenshot -Socket $socket -FileName "01-home-demo-ready.png"
-  Click-Text -Socket $socket -Text "World Builder"
+  Click-Text -Socket $socket -Text "Build batch"
+  Wait-ForEnabled -Socket $socket -Text "Run audit" -TimeoutMs 90000
   Save-Screenshot -Socket $socket -FileName "02-world-builder.png"
-  Save-Screenshot -Socket $socket -FileName "03-schema.png"
-  Click-Text -Socket $socket -Text "World Explorer"
-  Save-Screenshot -Socket $socket -FileName "04-financial-world.png"
-  Click-Text -Socket $socket -Text "Reconciliation"
-  Save-Screenshot -Socket $socket -FileName "05-controller.png"
-  Click-Text -Socket $socket -Text "Investigations"
-  Save-Screenshot -Socket $socket -FileName "06-investigation.png"
-  Click-Text -Socket $socket -Text "Evidence Graph"
-  Save-Screenshot -Socket $socket -FileName "07-evidence-graph.png"
-  Click-Text -Socket $socket -Text "Human Review"
+  Click-Text -Socket $socket -Text "Run audit"
+  Wait-ForText -Socket $socket -Text "Here is what needs attention." -TimeoutMs 90000
+
+  Save-Screenshot -Socket $socket -FileName "01-home-demo-ready.png"
+  Click-Text -Socket $socket -Text "Review priority case"
+  Wait-ForText -Socket $socket -Text "Cases where Auditra needs you" -TimeoutMs 20000
   Save-Screenshot -Socket $socket -FileName "08-human-review.png"
-  Click-Text -Socket $socket -Text "Evaluation Lab"
-  Save-Screenshot -Socket $socket -FileName "09-evaluation.png"
-  Click-Text -Socket $socket -Text "Break Controller"
-  Wait-ForText -Socket $socket -Text "CONTROLLER FAILED" -TimeoutMs 70000
-  Save-Screenshot -Socket $socket -FileName "10-break-the-controller.png"
+  Click-Text -Socket $socket -Text "Audit"
+  Wait-ForText -Socket $socket -Text "Controller" -TimeoutMs 20000
+  Save-Screenshot -Socket $socket -FileName "05-controller.png"
 } finally {
   $socket.Dispose()
 }

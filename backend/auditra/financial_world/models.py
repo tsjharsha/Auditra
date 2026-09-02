@@ -49,6 +49,7 @@ class FinancialWorldSpec(AuditraModel):
     currencies: List[str] = Field(default_factory=lambda: ["INR"])
     payment_methods: List[str] = Field(default_factory=lambda: ["UPI", "CARD"])
     fee_rate: Decimal = Decimal("0.0200")
+    gst_rate: Decimal = Decimal("0.1800")
     fixed_fee: Decimal = Decimal("0.00")
     settlement_delay_days: int = Field(default=2, ge=0, le=30)
     refund_rate: Decimal = Decimal("0.0800")
@@ -85,7 +86,7 @@ class FinancialWorldSpec(AuditraModel):
             raise ValueError(f"unsupported payment methods: {', '.join(unsupported)}")
         return value
 
-    @field_validator("fee_rate", "refund_rate", "partial_settlement_rate")
+    @field_validator("fee_rate", "gst_rate", "refund_rate", "partial_settlement_rate")
     @classmethod
     def quantize_rate(cls, value: Decimal) -> Decimal:
         value = rate(value)

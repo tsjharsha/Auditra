@@ -117,6 +117,7 @@ class ScenarioGenerator:
 
             rule = rule_by_merchant[merchant.merchant_id]
             expected_fee = rule.calculate_fee(payment.amount)
+            expected_gst = rule.calculate_gst(expected_fee)
             refund_amount = Decimal("0.00")
             expected_status = self._normal_status_for(rule)
             reason = "payment, order, fee rule and settlement agree"
@@ -129,7 +130,7 @@ class ScenarioGenerator:
                 expected_status = ReconciliationStatus.REFUND_ADJUSTED
                 reason = "settlement correctly reflects refund and fee"
 
-            expected_settlement = money(payment.amount - expected_fee - refund_amount)
+            expected_settlement = money(payment.amount - expected_fee - expected_gst - refund_amount)
             actual_settlement = expected_settlement
             settlement_time = payment.captured_at + timedelta(days=merchant.settlement_cycle_days, hours=rng.randint(1, 8))
             create_settlement = True
@@ -157,12 +158,12 @@ class ScenarioGenerator:
                 financial_impact = abs(delta)
                 reason = "fee implied by settlement does not match fee rule"
             elif scenario_name == "refund_mismatch":
-                actual_settlement = money(payment.amount - expected_fee)
+                actual_settlement = money(payment.amount - expected_fee - expected_gst)
                 expected_status = ReconciliationStatus.AMOUNT_MISMATCH
                 financial_impact = abs(actual_settlement - expected_settlement)
                 reason = "refund exists but is not reflected in settlement"
             elif scenario_name == "conflicting_evidence":
-                actual_settlement = money(payment.amount - expected_fee)
+                actual_settlement = money(payment.amount - expected_fee - expected_gst)
                 expected_status = ReconciliationStatus.HUMAN_REVIEW
                 financial_impact = abs(actual_settlement - expected_settlement)
                 reason = "refund evidence conflicts with settlement amount, requiring human review"
@@ -244,6 +245,7 @@ class ScenarioGenerator:
                     fee_rule_id=f"FEE_RULE_{idx:02d}",
                     merchant_id=merchant_id,
                     percent_bps=bps,
+                    gst_bps=1800,
                     fixed_fee=fixed_fee,
                     active_from=active_from - timedelta(days=365),
                     original={"percent_bps": bps, "fixed_fee": str(fixed_fee)},

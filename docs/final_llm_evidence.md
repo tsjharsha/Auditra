@@ -36,7 +36,7 @@ USER PROMPT -> GROQ -> FinancialWorldSpec -> validation -> deterministic generat
 
 The model interprets the prompt into a schema-validated spec. It does not generate authoritative financial records.
 
-Measured evidence is written to `artifacts/real_groq.json` by:
+Measured evidence is written to `artifacts/real_groq_smoke.json` by:
 
 ```powershell
 py -3.13 scripts/real_groq_validation.py
@@ -84,7 +84,7 @@ Every published real-Groq metric must identify:
 - record count
 - artifact source
 
-`artifacts/real_groq.json` is the machine-readable source of truth.
+The latest requested run path is the machine-readable source of truth; historical `artifacts/real_groq.json` remains preserved.
 
 ## Failures And Limitations
 
@@ -100,6 +100,6 @@ The LLM never receives hidden anomaly labels, expected classifications, evaluati
 
 1. Configure `.env` with `AI_PROVIDER=groq`, `GROQ_API_KEY`, and `GROQ_MODEL`.
 2. Run `py -3.13 scripts/real_groq_validation.py`.
-3. Inspect `artifacts/real_groq.json`.
+3. Inspect `artifacts/real_groq_smoke.json`.
 4. Run backend tests and frontend build.
 5. Confirm `/health` reports provider status without exposing secrets.

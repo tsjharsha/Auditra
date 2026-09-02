@@ -1,6 +1,7 @@
 # Final Groq Evidence
 
-Source of truth: `artifacts/real_groq.json`
+Historical source: `artifacts/real_groq.json`
+Latest reproducible smoke path: `artifacts/real_groq_smoke.json`
 Generated at: `2026-08-31T07:21:06.132930+00:00`
 Artifact status: `PARTIAL_RATE_LIMITED`
 
@@ -147,6 +148,6 @@ Groq receives only visible controller/world-builder context. Hidden anomaly labe
 
 1. Configure `.env` with `AI_PROVIDER=groq`, `GROQ_API_KEY`, and `GROQ_MODEL`.
 2. Run `py -3.13 scripts/real_groq_validation.py`.
-3. Inspect `artifacts/real_groq.json`.
+3. Inspect `artifacts/real_groq_smoke.json`.
 4. Run `py -3.13 -m unittest discover -s tests -v`.
 5. Run `npm run build` inside `frontend/`.

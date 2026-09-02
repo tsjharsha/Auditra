@@ -51,9 +51,10 @@ class FinancialWorldGenerator:
             merchant_id=merchant.merchant_id,
             currency=spec.currencies[0],
             percent_bps=int(spec.fee_rate * Decimal("10000")),
+            gst_bps=int(spec.gst_rate * Decimal("10000")),
             fixed_fee=spec.fixed_fee,
             active_from=base_time - timedelta(days=365),
-            original={"world_id": world_id, "fee_rate": str(spec.fee_rate)},
+            original={"world_id": world_id, "fee_rate": str(spec.fee_rate), "gst_rate": str(spec.gst_rate)},
         )
 
         orders: List[Order] = []
@@ -85,6 +86,7 @@ class FinancialWorldGenerator:
             payment = self._payment(spec, world_id, idx, order, merchant, rng, currency)
             payments.append(payment)
             expected_fee = fee_rule.calculate_fee(payment.amount)
+            expected_gst = fee_rule.calculate_gst(expected_fee)
             refund_amount = Decimal("0.00")
             expected_status = ReconciliationStatus.FEE_EXPLAINED if expected_fee > 0 else ReconciliationStatus.MATCHED
             reason = "payment, fee rule and settlement agree"
@@ -96,7 +98,7 @@ class FinancialWorldGenerator:
                 expected_status = ReconciliationStatus.REFUND_ADJUSTED
                 reason = "settlement correctly reflects refund and fee"
 
-            expected_settlement = money(payment.amount - expected_fee - refund_amount)
+            expected_settlement = money(payment.amount - expected_fee - expected_gst - refund_amount)
             actual_settlement = expected_settlement
             settlement_time = payment.captured_at + timedelta(days=spec.settlement_delay_days, hours=rng.randint(1, 6))
             create_settlement = True
@@ -125,8 +127,8 @@ class FinancialWorldGenerator:
                 if refund_amount == 0:
                     refund_amount = self._refund_amount(payment.amount, rng)
                     refunds.append(self._refund(world_id, idx, payment, merchant, refund_amount))
-                    expected_settlement = money(payment.amount - expected_fee - refund_amount)
-                actual_settlement = money(payment.amount - expected_fee)
+                    expected_settlement = money(payment.amount - expected_fee - expected_gst - refund_amount)
+                actual_settlement = money(payment.amount - expected_fee - expected_gst)
                 expected_status = ReconciliationStatus.AMOUNT_MISMATCH
                 financial_impact = abs(actual_settlement - expected_settlement)
                 reason = "refund exists but settlement does not reflect it"
@@ -148,9 +150,9 @@ class FinancialWorldGenerator:
                 if refund_amount == 0:
                     refund_amount = self._refund_amount(payment.amount, rng)
                     refunds.append(self._refund(world_id, idx, payment, merchant, refund_amount))
-                    expected_settlement = money(payment.amount - expected_fee - refund_amount)
+                    expected_settlement = money(payment.amount - expected_fee - expected_gst - refund_amount)
                 self._make_refund_conflicting(refunds, payment, merchant)
-                actual_settlement = money(payment.amount - expected_fee)
+                actual_settlement = money(payment.amount - expected_fee - expected_gst)
                 expected_status = ReconciliationStatus.HUMAN_REVIEW
                 financial_impact = abs(actual_settlement - expected_settlement)
                 reason = "refund evidence conflicts with settlement amount"
@@ -272,7 +274,7 @@ class FinancialWorldGenerator:
             weights.append(value)
         plan = rng.choices(names, weights=[float(item) for item in weights], k=spec.record_count)
         mode = self._mode_value(spec)
-        if spec.record_count >= 50 and mode != AnomalyMode.NORMAL.value:
+        if spec.record_count >= 10 and mode != AnomalyMode.NORMAL.value:
             required = ["AMOUNT_MISMATCH", "MISSING_SETTLEMENT", "DUPLICATE_PAYMENT", "PARTIAL_SETTLEMENT", "TIMING_MISMATCH", "CONFLICTING_EVIDENCE"]
             if mode in (AnomalyMode.ADVERSARIAL.value, AnomalyMode.CHAOS.value):
                 required.extend(["REFUND_MISMATCH", "CURRENCY_MISMATCH", "ENTITY_LINK_FAILURE"])
@@ -320,7 +322,7 @@ class FinancialWorldGenerator:
             currencies=spec.currencies,
             payment_methods=spec.payment_methods,
             settlement=f"T+{spec.settlement_delay_days}",
-            fee=f"{(spec.fee_rate * Decimal('100')).quantize(Decimal('0.01'))}%",
+            fee=f"{(spec.fee_rate * Decimal('100')).quantize(Decimal('0.01'))}% + GST",
             anomalies=sum(anomaly_counts.values()),
             anomaly_mix=anomaly_counts,
         )

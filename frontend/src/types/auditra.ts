@@ -32,6 +32,7 @@ export interface FinancialWorldSpec {
   currencies: string[];
   payment_methods: string[];
   fee_rate: string;
+  gst_rate: string;
   fixed_fee: string;
   settlement_delay_days: number;
   refund_rate: string;
@@ -359,6 +360,7 @@ export interface ControllerDecision {
   expected_settlement?: string | null;
   actual_settlement?: string | null;
   expected_fee?: string | null;
+  expected_gst?: string | null;
   refund_total: string;
   difference?: string | null;
   reason_codes: string[];
