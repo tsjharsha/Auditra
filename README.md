@@ -88,6 +88,21 @@ The main Close workspace projects the four highest-priority current-run alerts f
 
 Every exception can be traced through linked payment-operation evidence, structured investigation output, invariant checks, verification results, tool traces, audit events, and independent post-run evaluation.
 
+## Complete Product Surface
+
+| Workflow | Delivered capability |
+| --- | --- |
+| Build | Four scenario templates create reproducible INR payment worlds with linked orders, payments, fees, GST, refunds, settlements, controlled anomalies, and evaluator-only hidden truth. |
+| Close | **Run Finance Close** reconciles the current batch and reports match rate, exposure, unresolved work, human-review demand, and throughput. |
+| Cash control | Backend-derived Cash Position separates expected settlement, recorded settlement, pending cash, and settlement variance. |
+| Triage | Controller Alerts prioritize the material exceptions blocking close and deep-link into the underlying reconciliation case. |
+| Investigation | Each case retains linked evidence, an evidence graph, deterministic invariants, verification results, bounded tool traces, and a typed AI investigation plan where ambiguity remains. |
+| Review and evidence | Finance reviewers can record human decisions and export exception, audit, evaluation, and settlement-brief evidence as CSV or JSON. |
+| Measured AI | Deterministic-only and AI-assisted outcomes are compared against hidden truth after the controller has decided. |
+| Assurance | Assurance scores observed performance and safety, fingerprints measured failures, then produces a focused adversarial retest. |
+| Deployment path | The local demo runs in memory with typed FastAPI contracts; an optional PostgreSQL schema is included for durable storage. |
+| Provider integrity | Offline, real-provider, fallback, failure, retry, token, latency, and cost signals remain explicit rather than being presented as one undifferentiated AI result. |
+
 ---
 
 ## Four Finance-Control Scenarios
@@ -244,6 +259,8 @@ A rate-limited run is disclosed as fallback/offline. It is not presented as a fu
 ### Dedicated Multi-Provider Real-LLM Validation
 
 The held-out 1,221-case benchmark remains a reproducible offline structured-investigator benchmark. It is separate from [`artifacts/real_llm_validation.json`](artifacts/real_llm_validation.json), a 20-30-record validation that attempts each AI investigation through **Groq -> Gemini -> OpenRouter -> Hugging Face**. This validation never uses the offline investigator as a fallback: a case succeeds only when a real provider returns a valid typed plan, and a case fails when all configured real providers fail. The artifact records per-case provider attempts, provider/model usage, failovers, failures, rate limits, and `offline_fallback_calls`.
+
+Latest recorded validation: **`PASS_FULL_REAL`**. It processed 22 controller cases, completed all 10 required AI investigations through real providers, recorded two real-provider failovers, and recorded **zero offline fallback calls**. See the versioned [`real LLM validation artifact`](artifacts/real_llm_validation.json) for the per-case evidence.
 
 ---
 
@@ -499,7 +516,7 @@ Those boundaries are deliberate: the submission demonstrates a measurable financ
 - [x] Independent evaluation, held-out benchmark, assurance, and targeted red-team retest
 - [x] Reproducible offline local demo and test/build commands
 - [ ] Record and link the final demo video
-- [ ] Set GitHub repository description and topics from [`docs/github_submission_metadata.md`](docs/github_submission_metadata.md)
+- [x] Set GitHub repository description and topics from [`docs/github_submission_metadata.md`](docs/github_submission_metadata.md)
 
 ---
 
