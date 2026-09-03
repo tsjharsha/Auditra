@@ -120,7 +120,7 @@ class LLMProviderConfig:
     def from_gemini_env(cls, prefix: str = "AUDITRA_LLM") -> "LLMProviderConfig":
         return cls(
             provider="gemini",
-            model=os.getenv(f"{prefix}_MODEL") or os.getenv("GEMINI_MODEL") or "gemini-2.5-flash",
+            model=os.getenv(f"{prefix}_MODEL") or os.getenv("GEMINI_MODEL") or "gemini-3.6-flash",
             temperature=float(os.getenv(f"{prefix}_TEMPERATURE", os.getenv("GEMINI_TEMPERATURE", "0"))),
             max_tokens=int(os.getenv(f"{prefix}_MAX_TOKENS", os.getenv("GEMINI_MAX_TOKENS", "1200"))),
             timeout_seconds=float(os.getenv(f"{prefix}_TIMEOUT", os.getenv("GEMINI_TIMEOUT", "20"))),

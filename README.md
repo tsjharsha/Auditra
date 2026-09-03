@@ -241,6 +241,10 @@ Auditra preserves provider failures rather than rewriting history:
 
 A rate-limited run is disclosed as fallback/offline. It is not presented as a fully successful external-LLM benchmark.
 
+### Dedicated Multi-Provider Real-LLM Validation
+
+The held-out 1,221-case benchmark remains a reproducible offline structured-investigator benchmark. It is separate from [`artifacts/real_llm_validation.json`](artifacts/real_llm_validation.json), a 20-30-record validation that attempts each AI investigation through **Groq -> Gemini -> OpenRouter -> Hugging Face**. This validation never uses the offline investigator as a fallback: a case succeeds only when a real provider returns a valid typed plan, and a case fails when all configured real providers fail. The artifact records per-case provider attempts, provider/model usage, failovers, failures, rate limits, and `offline_fallback_calls`.
+
 ---
 
 ## Assurance And Adversarial Retesting
@@ -378,7 +382,17 @@ python scripts/phase_c_benchmark.py --counts 100 500 1000 5000 10000 50000 --mod
 python scripts/phase_c_demo_reliability.py --runs 10 --seed 42 --records 500
 ```
 
-### Optional Live Groq Validation
+### Dedicated Multi-Provider Validation
+
+Configure any of the four existing real-provider keys in [`.env.example`](.env.example), then run:
+
+```powershell
+py -3.13 scripts/real_llm_validation.py --records 24
+```
+
+This writes `artifacts/real_llm_validation.json`. It is intentionally separate from the 1,221-case benchmark and returns `PASS_FULL_REAL` only when every attempted investigation completed through a real provider with `offline_fallback_calls = 0`.
+
+### Historical Single-Provider Groq Smoke
 
 ```powershell
 $env:AI_PROVIDER="groq"

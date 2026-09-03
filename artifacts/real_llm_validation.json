@@ -1,0 +1,503 @@
+{
+  "artifact": "real_llm_multi_provider_validation",
+  "artifact_version": 1,
+  "validation_status": "PASS_FULL_REAL",
+  "generated_at": "2026-09-03T17:22:13.714745+00:00",
+  "validation_definition": {
+    "controller_cases": "All reconciled payment cases in the deterministic validation world.",
+    "investigation_cases": "Cases for which the existing controller requested an AI investigation.",
+    "successful_cases": "Investigation cases completed by a real external provider.",
+    "failed_cases": "Investigation cases where all four real providers failed; no offline plan was used.",
+    "offline_fallback_calls": "Must remain zero for this validation mode."
+  },
+  "dataset": {
+    "prompt": "Build an Indian e-commerce merchant with 20 orders, UPI and card payments, 2% platform fees, 18% GST on platform fees, T+2 settlement, refunds, and stressed anomaly coverage with refund mismatches, partial settlements, duplicates, timing issues, and conflicting evidence.",
+    "seed": 202,
+    "world_id": "FW_9c9a6a819110",
+    "dataset_id": "WORLD_FW_9c9a6a819110",
+    "dataset_version": 1,
+    "requested_records": 20,
+    "controller_cases": 22,
+    "understanding_source": "deterministic_parser"
+  },
+  "provider_order": [
+    "groq",
+    "gemini",
+    "openrouter",
+    "huggingface"
+  ],
+  "providers": [
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "execution_mode": "REAL_GROQ_AI",
+      "configured": true,
+      "credential_env": "GROQ_API_KEY",
+      "timeout_seconds": 15.0,
+      "max_retries": 0
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.6-flash",
+      "execution_mode": "REAL_GEMINI_AI",
+      "configured": true,
+      "credential_env": "GEMINI_API_KEY",
+      "timeout_seconds": 15.0,
+      "max_retries": 0
+    },
+    {
+      "provider": "openrouter",
+      "model": "qwen/qwen3.8-flash",
+      "execution_mode": "REAL_OPENROUTER_AI",
+      "configured": true,
+      "credential_env": "OPENROUTER_API_KEY",
+      "timeout_seconds": 15.0,
+      "max_retries": 0
+    },
+    {
+      "provider": "huggingface",
+      "model": "openai/gpt-oss-120b:fastest",
+      "execution_mode": "REAL_HUGGINGFACE_AI",
+      "configured": true,
+      "credential_env": "HF_TOKEN/HF_API_KEY",
+      "timeout_seconds": 15.0,
+      "max_retries": 1
+    }
+  ],
+  "total_cases": 22,
+  "investigation_cases": 10,
+  "successful_cases": 10,
+  "failed_cases": 0,
+  "not_required_cases": 12,
+  "real_llm_calls": 10,
+  "offline_fallback_calls": 0,
+  "provider_failures": 6,
+  "rate_limit_events": 4,
+  "provider_failovers": 2,
+  "provider_usage": {
+    "groq": 8,
+    "huggingface": 2
+  },
+  "model_usage": {
+    "gpt-oss-120b": 2,
+    "openai/gpt-oss-20b": 8
+  },
+  "case_results": [
+    {
+      "case_id": "CASE_PAY_819110_00001",
+      "payment_id": "PAY_819110_00001",
+      "result": "REAL_SUCCESS",
+      "provider_attempts": [
+        {
+          "execution_mode": "REAL_GROQ_AI",
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:20:51.087632+00:00",
+          "latency_ms": 2794.4371,
+          "attempts": 1,
+          "llm_calls": 1,
+          "input_tokens": 909,
+          "output_tokens": 581,
+          "total_tokens": 1490,
+          "cost_usd": "0.000242",
+          "success": true,
+          "failure_type": null,
+          "response_id": "chatcmpl-811fd1d3-c1ed-45bb-96fa-f09d3b5ce62d"
+        }
+      ],
+      "successful_provider": "groq",
+      "successful_model": "openai/gpt-oss-20b",
+      "failure_reasons": [],
+      "controller_status": "AMOUNT_MISMATCH",
+      "verification_passed": true,
+      "ai_unavailable": false
+    },
+    {
+      "case_id": "CASE_PAY_819110_00002",
+      "payment_id": "PAY_819110_00002",
+      "result": "REAL_SUCCESS",
+      "provider_attempts": [
+        {
+          "execution_mode": "REAL_GROQ_AI",
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:20:53.901834+00:00",
+          "latency_ms": 2928.4789,
+          "attempts": 1,
+          "llm_calls": 1,
+          "input_tokens": 863,
+          "output_tokens": 875,
+          "total_tokens": 1738,
+          "cost_usd": "0.000327",
+          "success": true,
+          "failure_type": null,
+          "response_id": "chatcmpl-66e2f893-4ffe-4c93-8616-e7bc51ff856b"
+        }
+      ],
+      "successful_provider": "groq",
+      "successful_model": "openai/gpt-oss-20b",
+      "failure_reasons": [],
+      "controller_status": "MISSING_SETTLEMENT",
+      "verification_passed": true,
+      "ai_unavailable": false
+    },
+    {
+      "case_id": "CASE_PAY_819110_DUP_00003",
+      "payment_id": "PAY_819110_DUP_00003",
+      "result": "REAL_SUCCESS",
+      "provider_attempts": [
+        {
+          "execution_mode": "REAL_GROQ_AI",
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:20:56.842132+00:00",
+          "latency_ms": 2838.2661,
+          "attempts": 1,
+          "llm_calls": 1,
+          "input_tokens": 882,
+          "output_tokens": 608,
+          "total_tokens": 1490,
+          "cost_usd": "0.000249",
+          "success": true,
+          "failure_type": null,
+          "response_id": "chatcmpl-7d24073a-6a39-44a1-95d5-d90e3f8a4379"
+        }
+      ],
+      "successful_provider": "groq",
+      "successful_model": "openai/gpt-oss-20b",
+      "failure_reasons": [],
+      "controller_status": "DUPLICATE",
+      "verification_passed": true,
+      "ai_unavailable": false
+    },
+    {
+      "case_id": "CASE_PAY_819110_00005",
+      "payment_id": "PAY_819110_00005",
+      "result": "REAL_SUCCESS",
+      "provider_attempts": [
+        {
+          "execution_mode": "REAL_GROQ_AI",
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:20:59.695482+00:00",
+          "latency_ms": 3455.6192,
+          "attempts": 1,
+          "llm_calls": 1,
+          "input_tokens": 871,
+          "output_tokens": 632,
+          "total_tokens": 1503,
+          "cost_usd": "0.000255",
+          "success": true,
+          "failure_type": null,
+          "response_id": "chatcmpl-c7ba542e-55b3-4fcb-a96b-f9bbdcf90106"
+        }
+      ],
+      "successful_provider": "groq",
+      "successful_model": "openai/gpt-oss-20b",
+      "failure_reasons": [],
+      "controller_status": "TIMING_MISMATCH",
+      "verification_passed": true,
+      "ai_unavailable": false
+    },
+    {
+      "case_id": "CASE_PAY_819110_00004",
+      "payment_id": "PAY_819110_00004",
+      "result": "REAL_SUCCESS",
+      "provider_attempts": [
+        {
+          "execution_mode": "REAL_GROQ_AI",
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:21:03.165428+00:00",
+          "latency_ms": 2142.9908,
+          "attempts": 1,
+          "llm_calls": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "success": false,
+          "failure_type": "rate_limit"
+        },
+        {
+          "execution_mode": "REAL_GEMINI_AI",
+          "provider": "gemini",
+          "model": "gemini-3.6-flash",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:21:05.316554+00:00",
+          "latency_ms": 17209.8793,
+          "attempts": 1,
+          "llm_calls": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "success": false,
+          "failure_type": "timeout"
+        },
+        {
+          "execution_mode": "REAL_OPENROUTER_AI",
+          "provider": "openrouter",
+          "model": "qwen/qwen3.8-flash",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:21:22.533400+00:00",
+          "latency_ms": 7621.0295,
+          "attempts": 1,
+          "llm_calls": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "success": false,
+          "failure_type": "rate_limit"
+        },
+        {
+          "execution_mode": "REAL_HUGGINGFACE_AI",
+          "provider": "huggingface",
+          "model": "gpt-oss-120b",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:21:30.182015+00:00",
+          "latency_ms": 3585.8725,
+          "attempts": 1,
+          "llm_calls": 1,
+          "input_tokens": 919,
+          "output_tokens": 1289,
+          "total_tokens": 2208,
+          "cost_usd": null,
+          "success": true,
+          "failure_type": null,
+          "response_id": "chatcmpl-044482b9-ea29-45e2-9ae0-ebf7690383ff"
+        }
+      ],
+      "successful_provider": "huggingface",
+      "successful_model": "gpt-oss-120b",
+      "failure_reasons": [
+        "rate_limit",
+        "timeout"
+      ],
+      "controller_status": "PARTIAL_MATCH",
+      "verification_passed": true,
+      "ai_unavailable": false
+    },
+    {
+      "case_id": "CASE_PAY_819110_00006",
+      "payment_id": "PAY_819110_00006",
+      "result": "REAL_SUCCESS",
+      "provider_attempts": [
+        {
+          "execution_mode": "REAL_GROQ_AI",
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:21:33.787209+00:00",
+          "latency_ms": 3333.5242,
+          "attempts": 1,
+          "llm_calls": 1,
+          "input_tokens": 945,
+          "output_tokens": 1057,
+          "total_tokens": 2002,
+          "cost_usd": "0.000388",
+          "success": true,
+          "failure_type": null,
+          "response_id": "chatcmpl-c9daa7df-97ba-44a8-8112-4418fe77032a"
+        }
+      ],
+      "successful_provider": "groq",
+      "successful_model": "openai/gpt-oss-20b",
+      "failure_reasons": [],
+      "controller_status": "HUMAN_REVIEW",
+      "verification_passed": true,
+      "ai_unavailable": false
+    },
+    {
+      "case_id": "CASE_PAY_819110_DUP_00007",
+      "payment_id": "PAY_819110_DUP_00007",
+      "result": "REAL_SUCCESS",
+      "provider_attempts": [
+        {
+          "execution_mode": "REAL_GROQ_AI",
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:21:37.137490+00:00",
+          "latency_ms": 2918.3588,
+          "attempts": 1,
+          "llm_calls": 1,
+          "input_tokens": 882,
+          "output_tokens": 596,
+          "total_tokens": 1478,
+          "cost_usd": "0.000245",
+          "success": true,
+          "failure_type": null,
+          "response_id": "chatcmpl-1a21acf8-5fc2-42af-a50b-5c26d759c150"
+        }
+      ],
+      "successful_provider": "groq",
+      "successful_model": "openai/gpt-oss-20b",
+      "failure_reasons": [],
+      "controller_status": "DUPLICATE",
+      "verification_passed": true,
+      "ai_unavailable": false
+    },
+    {
+      "case_id": "CASE_PAY_819110_00016",
+      "payment_id": "PAY_819110_00016",
+      "result": "REAL_SUCCESS",
+      "provider_attempts": [
+        {
+          "execution_mode": "REAL_GROQ_AI",
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:21:40.072652+00:00",
+          "latency_ms": 2989.7664,
+          "attempts": 1,
+          "llm_calls": 1,
+          "input_tokens": 863,
+          "output_tokens": 722,
+          "total_tokens": 1585,
+          "cost_usd": "0.000281",
+          "success": true,
+          "failure_type": null,
+          "response_id": "chatcmpl-5add020b-20bd-4933-b8ce-262a49395f2f"
+        }
+      ],
+      "successful_provider": "groq",
+      "successful_model": "openai/gpt-oss-20b",
+      "failure_reasons": [],
+      "controller_status": "MISSING_SETTLEMENT",
+      "verification_passed": true,
+      "ai_unavailable": false
+    },
+    {
+      "case_id": "CASE_PAY_819110_00009",
+      "payment_id": "PAY_819110_00009",
+      "result": "REAL_SUCCESS",
+      "provider_attempts": [
+        {
+          "execution_mode": "REAL_GROQ_AI",
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:21:43.097760+00:00",
+          "latency_ms": 3669.7261,
+          "attempts": 1,
+          "llm_calls": 1,
+          "input_tokens": 871,
+          "output_tokens": 1181,
+          "total_tokens": 2052,
+          "cost_usd": "0.000420",
+          "success": true,
+          "failure_type": null,
+          "response_id": "chatcmpl-5e2b2062-e83f-424e-96ae-a9de1f10a67f"
+        }
+      ],
+      "successful_provider": "groq",
+      "successful_model": "openai/gpt-oss-20b",
+      "failure_reasons": [],
+      "controller_status": "TIMING_MISMATCH",
+      "verification_passed": true,
+      "ai_unavailable": false
+    },
+    {
+      "case_id": "CASE_PAY_819110_00020",
+      "payment_id": "PAY_819110_00020",
+      "result": "REAL_SUCCESS",
+      "provider_attempts": [
+        {
+          "execution_mode": "REAL_GROQ_AI",
+          "provider": "groq",
+          "model": "openai/gpt-oss-20b",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:21:46.813579+00:00",
+          "latency_ms": 1568.5743,
+          "attempts": 1,
+          "llm_calls": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "success": false,
+          "failure_type": "rate_limit"
+        },
+        {
+          "execution_mode": "REAL_GEMINI_AI",
+          "provider": "gemini",
+          "model": "gemini-3.6-flash",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:21:48.388152+00:00",
+          "latency_ms": 16502.5544,
+          "attempts": 1,
+          "llm_calls": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "success": false,
+          "failure_type": "timeout"
+        },
+        {
+          "execution_mode": "REAL_OPENROUTER_AI",
+          "provider": "openrouter",
+          "model": "qwen/qwen3.8-flash",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:22:04.894929+00:00",
+          "latency_ms": 5915.4296,
+          "attempts": 1,
+          "llm_calls": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "success": false,
+          "failure_type": "rate_limit"
+        },
+        {
+          "execution_mode": "REAL_HUGGINGFACE_AI",
+          "provider": "huggingface",
+          "model": "gpt-oss-120b",
+          "prompt_version": "investigation-plan-v2",
+          "timestamp": "2026-09-03T17:22:10.814990+00:00",
+          "latency_ms": 2863.934,
+          "attempts": 1,
+          "llm_calls": 1,
+          "input_tokens": 919,
+          "output_tokens": 1349,
+          "total_tokens": 2268,
+          "cost_usd": null,
+          "success": true,
+          "failure_type": null,
+          "response_id": "chatcmpl-e1d4ddd1-e297-4d65-b771-7d60acd8e22d"
+        }
+      ],
+      "successful_provider": "huggingface",
+      "successful_model": "gpt-oss-120b",
+      "failure_reasons": [
+        "rate_limit",
+        "timeout"
+      ],
+      "controller_status": "PARTIAL_MATCH",
+      "verification_passed": true,
+      "ai_unavailable": false
+    }
+  ],
+  "evaluation": {
+    "evaluation_run_id": "EVAL_a3d802047740",
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "financial_error_impact": "0.00"
+  },
+  "normal_application_behavior": "Unchanged. This runner injects validation-only real-provider failover; normal runtime fallback remains intact.",
+  "secret_safety": {
+    "secrets_printed": false,
+    "secrets_written": false,
+    "frontend_receives_api_key": false
+  }
+}
