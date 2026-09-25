@@ -162,7 +162,12 @@ Cryptographic Variance Detected:
         return get_patch_code_fallback(node)
 
 def verify_node(node: dict, path: str) -> dict:
+    total = 0
+    passed = 0
+    failures = []
+    
     for kwargs in node["inputs"]:
+        total += 1
         success, target_out = SandboxRunner.execute(path, node["class"], node["method"], kwargs)
         
         oracle_out = node["oracle"](**kwargs)
@@ -170,13 +175,14 @@ def verify_node(node: dict, path: str) -> dict:
             oracle_out = {"result": oracle_out}
             
         if not success:
-            return {
+            failures.append({
                 "scenario": kwargs,
                 "error": target_out.get("error", "Execution Failed"),
                 "target_hash": "ERROR",
                 "oracle_hash": "N/A",
                 "variances": {"Exception": {"expected": "Success", "actual": target_out.get("error")}}
-            }
+            })
+            continue
             
         variances = {}
         for k in oracle_out.keys():
@@ -186,26 +192,34 @@ def verify_node(node: dict, path: str) -> dict:
         if variances:
             thash = hashlib.sha256(json.dumps(target_out, sort_keys=True).encode("utf-8")).hexdigest()[:16]
             ohash = hashlib.sha256(json.dumps(oracle_out, sort_keys=True).encode("utf-8")).hexdigest()[:16]
-            return {
+            failures.append({
                 "scenario": kwargs,
                 "variances": variances,
                 "target_hash": thash,
                 "oracle_hash": ohash
-            }
-    return None # Passed
+            })
+        else:
+            passed += 1
+
+    if failures:
+        first = failures[0]
+        first["metrics"] = {"total": total, "passed": passed, "failed": len(failures), "oracle_agreement": f"{(passed/total)*100:.1f}%"}
+        return first
+        
+    return None
+
+VERIFICATION_NODES = [
+    {"id": "tax_router", "class": "TaxRouter", "method": "get_tax_rate", "inputs": [{"state_code": "CA"}, {"state_code": "NY"}, {"state_code": "TX"}, {"state_code": "unknown"}, {"state_code": ""}, {"state_code": "ca"}, {"state_code": " 123 "}] * 5, "oracle": _Oracles.expected_tax_router},
+    {"id": "billing_engine", "class": "BillingEngine", "method": "calculate", "inputs": [{"amount_str": "0"}, {"amount_str": "0.01"}, {"amount_str": "99.99"}, {"amount_str": "100.00"}, {"amount_str": "999.99"}, {"amount_str": "1000000000.00"}, {"amount_str": "100.12345"}] * 5, "oracle": _Oracles.expected_billing},
+    {"id": "ledger_sync", "class": "LedgerSync", "method": "process_refund", "inputs": [{"amount_str": "500.00"}, {"amount_str": "0.00"}, {"amount_str": "-100.00"}, {"amount_str": "9999999.99"}] * 9, "oracle": _Oracles.expected_ledger},
+    {"id": "fraud_detector", "class": "FraudDetector", "method": "is_fraudulent", "inputs": [{"amount_str": "9999.00"}, {"amount_str": "10000.00"}, {"amount_str": "10000.01"}, {"amount_str": "1e9"}, {"amount_str": "invalid"}, {"amount_str": "-50.00"}] * 6, "oracle": _Oracles.expected_fraud}
+]
 
 def _aegis_generator():
     yield _sse("aegis_start", {"message": f"AEGIS PROTOCOL ACTIVATED. MODE: {'LIVE (Groq)' if groq_client else 'DETERMINISTIC DEMO'}"})
     time.sleep(1.0)
     
-    nodes = [
-        {"id": "tax_router", "class": "TaxRouter", "method": "get_tax_rate", "inputs": [{"state_code": "CA"}, {"state_code": "TX"}] * 10, "oracle": _Oracles.expected_tax_router},
-        {"id": "billing_engine", "class": "BillingEngine", "method": "calculate", "inputs": [{"amount_str": "100.505"}, {"amount_str": "199.995"}] * 10, "oracle": _Oracles.expected_billing},
-        {"id": "ledger_sync", "class": "LedgerSync", "method": "process_refund", "inputs": [{"amount_str": "-1000.00"}, {"amount_str": "500.00"}] * 10, "oracle": _Oracles.expected_ledger},
-        {"id": "fraud_detector", "class": "FraudDetector", "method": "is_fraudulent", "inputs": [{"amount_str": "1e9"}, {"amount_str": "9999.00"}] * 10, "oracle": _Oracles.expected_fraud}
-    ]
-    
-    for node in nodes:
+    for node in VERIFICATION_NODES:
         yield _sse("node_state", {"node": node["id"], "state": "ATTACKING"})
         time.sleep(0.5)
         
@@ -253,7 +267,7 @@ def _aegis_generator():
             post_patch_failure = verify_node(node, target_path)
             
             if post_patch_failure:
-                yield _sse("node_state", {"node": node["id"], "state": "VERIFICATION_FAILED", "variance": post_patch_failure})
+                yield _sse("node_state", {"node": node["id"], "state": "VERIFICATION_FAILED", "variance": post_patch_failure, "metrics": post_patch_failure.get("metrics")})
                 time.sleep(1.5)
                 yield _sse("node_state", {"node": node["id"], "state": "ROLLING_BACK"})
                 # Rollback

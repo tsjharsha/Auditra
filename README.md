@@ -1,93 +1,72 @@
-# Auditra: The Zero-Trust Verification Fabric
+# Auditra
+### Zero-Trust Verification Fabric for AI-Generated Software
 
-> **AI can write the code. Auditra proves whether it deserves to run.**
-
-Welcome to **Auditra (The Aegis Protocol)**, built for the **IBM Bob 2.0 / Gateway AI Buildathon**.
-
-## 🚨 The Problem
-The biggest unsolved problem in enterprise software (Banks, Fintechs, Fortune 500s) is trust. If an AI writes payment routing logic and inadvertently hallucinates a floating-point rounding error, a bank could lose millions of dollars. No enterprise trusts an LLM to write core financial ledgers blindly.
-
-## ⚔️ The Solution
 **AI proposes. Auditra verifies.**
 
-Auditra is an **Adversarial Verification Sandbox** designed to prove that AI-generated code is mathematically flawless before it touches a production system. It acts as an autonomous immune system for AI-generated code.
+AI coding tools increase development velocity, but generated code still requires validation, regression testing, and review. **Auditra creates an automated verification gate between generated code and deployment.**
 
-## 🏗️ Architecture & Verification Lifecycle
-Auditra guarantees that code is never blindly accepted from an LLM. The state transitions are explicitly controlled:
+Don't trust generated code. Test it adversarially. Verify it independently. Accept it or roll it back.
 
-```text
-ATTACK (Adversarial Fuzzing)
-  ↓
-DETECT (Cryptographic Hash Mismatch against Oracle)
-  ↓
-ANALYZE
-  ↓
-GENERATE PATCH (Untrusted LLM Output)
-  ↓
-VALIDATE PATCH (AST Syntax + Security Checks)
-  ↓
-APPLY IN ISOLATED SANDBOX
-  ↓
-RUN ADVERSARIAL TESTS AGAIN
-  ↓
-COMPARE AGAINST INDEPENDENT ORACLE
-  ↓
-PASS?
- ├── YES → SECURE
- └── NO  → PATCH FAILED → ROLLBACK TO KNOWN STATE
-```
-**Core Invariant:** `PATCH_APPLIED != SECURE`. Code is only marked `SECURE` after a full post-patch adversarial re-verification proves it mathematically satisfies the independent Oracle.
+---
 
-## 🦠 Four Demonstration Nodes
-The demo simulates an enterprise banking cluster with 4 critical microservices. Each node is injected with a different class of AI hallucination:
-1. **Tax Router:** Basic logic hallucination (hardcoded flat tax rate instead of state-based parsing).
-2. **Billing Engine:** Floating-point precision drift (Penny-shaving "Office Space" bug).
-3. **Ledger Sync:** Unauthorized negative-refund exploits (Missing bounds checks).
-4. **Fraud Detector:** Scientific-notation string parsing bypasses (`1e9` injection).
+## 1. What is Auditra?
+Auditra is an adversarial verification engine that acts as a production gate for AI-generated code. Instead of trusting an LLM's patch proposal, Auditra explicitly sandboxes the code, runs deep regression and boundary tests, compares the output against a deterministic Oracle, and either automatically merges the patch or rejects and rolls it back.
 
-## 🔒 Threat Model & Security Boundaries
-*   **LLM (Untrusted):** Can hallucinate, generate dangerous imports (`os`, `subprocess`), or syntax errors.
-*   **Generated Code (Untrusted):** Executed only inside the restricted `SandboxRunner`.
-*   **Oracle (Trusted):** The independent, deterministic source of truth.
-*   **AST Validator (Trust Boundary):** Strips/rejects arbitrary code execution attempts before they reach the sandbox.
-*   **Rollback Engine:** Ensures the target application is never left in an unknown or corrupted state if a patch fails.
+## 2. Why does it exist?
+The current AI-assisted development workflow looks like this:
+`AI -> Developer Review -> Tests -> Debugging -> Regression -> Merge`
 
-## 🧠 IBM Bob 2.0 & LLM Integration
-IBM Bob 2.0 was used as the primary development environment and AI coding workflow to *build* the Auditra platform. 
+Auditra compresses this into:
+`AI -> Auditra adversarial verification -> AI repair -> Automated reverification -> Production Gate`
 
-For the live verification engine itself, Auditra operates in one of two modes:
-*   **Deterministic Demo Mode (Default):** Runs lightning-fast, pre-calculated patches. Used for flawless stage presentations without relying on conference Wi-Fi.
-*   **Live AI Mode (Groq LLaMA-3):** Uses an external LLM to simulate the untrusted AI patching process. 
+## 3. What makes it different?
+Most "AI Code Review" tools are purely probabilistic—they use an AI to review an AI. Auditra enforces an explicit **Trust Boundary**. The AI reasoning is isolated from the deterministic verification. **The AI can recommend, but the Oracle decides.**
 
-## 🚀 Running the Aegis Grid
+## 4. How does it verify code?
+Auditra generates test inputs across four categories:
+* **Normal cases**
+* **Boundary cases**
+* **Adversarial cases**
+* **Regression cases**
 
-### 1. Backend Setup (FastAPI)
+It runs these inputs through both the AI-patched code (in a strict Sandbox) and a hidden, known-good Oracle. If the outputs diverge, the code is compromised.
+
+## 5. What happens when AI is wrong?
+The patch is immediately rejected. A live diff is generated, the failure reason is exposed to the developer (e.g., "Oracle expected X, observed Y"), and a file-level **ROLLBACK** is performed to restore the secure state. The system never ships unsafe code.
+
+## 6. What does IBM Bob have to do with it?
+Auditra was built entirely using **IBM Bob 2.0** as the primary AI-assisted development environment. IBM Bob iterated on the architecture, wrote the AST Validator, built the React frontend, and implemented the Sandbox. 
+
+This creates a powerful meta-story: **The project built with AI is itself protected by an AI verification system.** See [Built with Bob](docs/bob-usage.md) for details.
+
+## 7. How do I run it?
+
+**CI/CD Verification Gate (CLI)**
 ```bash
-# Windows
-.\.venv\Scripts\Activate.ps1
-
-# Install requirements
-pip install -r requirements.txt groq python-dotenv pytest
-
-# Run the Uvicorn server (HOT RELOAD IS REQUIRED for the demo)
-python -m uvicorn backend.auditra.api:app --host 127.0.0.1 --port 8002 --reload
+python -m backend.auditra verify --json
 ```
+*Exit code 0: Safe to deploy.*
+*Exit code >0: Block merge/deployment.*
 
-### 2. Frontend Setup (React/Vite)
+**Interactive War Room (Frontend Demo)**
 ```bash
+# Terminal 1
+python -m uvicorn backend.auditra.api:app --port 8002
+
+# Terminal 2
 cd frontend
-npm install
 npm run dev
 ```
-Open `http://127.0.0.1:5174` in your browser.
+Open `http://localhost:5173`. Click **Reset Environment**, then **Launch Verification Grid**.
 
-## 🎬 How to Perform the Live Demo
-1. Click **Reset Environment** (Injects the 4 critical vulnerabilities from `target_templates` to the active disk).
-2. Click **Launch Verification Grid**.
-3. Watch the system autonomously cycle through the 4 nodes. It will detect the drift, validate the AST, execute in the sandbox, re-verify post-patch, and mathematically seal the node to Green.
+## 8. What is actually demonstrated?
+The demo runs against four deliberately vulnerable financial microservices (where behavioral errors have direct monetary consequences). 
+1. **Tax Router**: Detects hardcoded rates.
+2. **Billing Engine**: Evaluates unsafe float arithmetic.
+3. **Ledger Sync**: Validates negative refund bounds.
+4. **Fraud Detector**: Intentionally demonstrates a **ROLLBACK** when the AI proposes an incorrect threshold.
 
-## 🧪 Tests
-To verify the security invariants (e.g. rejecting dangerous imports, `eval()` usage, and proving `PATCH_APPLIED != SECURE`), run:
-```bash
-pytest tests/
-```
+## 9. Limitations
+* Auditra currently verifies behavior against explicit deterministic scenarios and does not mathematically prove arbitrary program correctness.
+* The current sandbox is designed for controlled demonstration workloads and is not a replacement for a hardened production container/VM boundary.
+* Verification quality is bounded by oracle quality and scenario coverage.

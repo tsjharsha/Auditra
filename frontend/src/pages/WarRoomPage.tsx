@@ -141,7 +141,7 @@ export function WarRoomPage() {
           addLog("success", `[${nodeName}] POST-PATCH VERIFICATION PASSED. Tests: ${d.metrics?.passed}/${d.metrics?.passed} | Oracle: ${d.metrics?.oracle_agreement}. Node is SECURE.`);
           break;
         case "VERIFICATION_FAILED":
-          addLog("error", `[${nodeName}] POST-PATCH VERIFICATION FAILED. The AI repair did not satisfy the Oracle.`);
+          addLog("error", `[${nodeName}] POST-PATCH VERIFICATION FAILED. Tests: ${d.metrics?.passed || 0}/${d.metrics?.total || 0} passed. The AI repair did not satisfy the Oracle.`);
           break;
         case "PATCH_FAILED":
           addLog("error", `[${nodeName}] SECURITY EXCEPTION: LLM generated invalid or dangerous AST: ${d.error}`);
@@ -254,6 +254,11 @@ export function WarRoomPage() {
           <div className="warroom-pane-header">
             <Terminal className="h-4 w-4" />
             <span>Verification Engine STDOUT</span>
+            {phase === "verified" && (
+              <span style={{ marginLeft: "auto", color: "#4ade80", fontWeight: "bold" }}>
+                PRODUCTION GATE: READY
+              </span>
+            )}
           </div>
           <div className="warroom-console-logs" ref={logRef}>
             {logs.map(entry => (
