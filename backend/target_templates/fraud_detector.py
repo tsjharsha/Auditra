@@ -1,5 +1,6 @@
 from decimal import Decimal, InvalidOperation
 
+
 class FraudDetector:
     """Intentionally Vulnerable Code for Demo"""
     def is_fraudulent(self, amount_str: str) -> dict:

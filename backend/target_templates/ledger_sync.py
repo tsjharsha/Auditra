@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+
 class LedgerSync:
     """Intentionally Vulnerable Code for Demo"""
     def process_refund(self, amount_str: str) -> dict:
