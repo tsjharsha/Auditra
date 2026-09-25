@@ -582,6 +582,7 @@ export type PageId =
   | "review"
   | "insights"
   | "settings"
+  | "warroom"
   | "world-builder"
   | "world-explorer"
   | "reconciliation"
@@ -592,4 +593,4 @@ export type PageId =
   | "controller-runs"
   | "audit-trail";
 
-export type PrimaryPageId = "home" | "worlds" | "audits" | "review" | "insights" | "settings";
+export type PrimaryPageId = "home" | "warroom" | "worlds" | "audits" | "review" | "insights" | "settings";

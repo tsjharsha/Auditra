@@ -238,8 +238,8 @@ class CSVAdapter(FinancialSourceAdapter):
         )
 
 
-class RazorpayTestAdapter(JSONAdapter):
-    name = "razorpay_test"
+class GatewayTestAdapter(JSONAdapter):
+    name = "gateway_test"
 
     def ingest(self, payload: Mapping[str, Any], seed: int = 42) -> AdapterIngestionResult:
         canonical = {

@@ -18,13 +18,13 @@ This plan is now the implementation record for the final productization pass.
 - Evidence graph with investigation, decision, evidence, and source record nodes.
 - Human review actions recorded through the store and optional PostgreSQL.
 - Independent evaluation and AI-vs-baseline comparison.
-- CSV, JSON, and Razorpay test-data adapters.
+- CSV, JSON, and Gateway test-data adapters.
 - Polished dependency-free frontend flow.
 - PostgreSQL migration and optional persistence repository.
 
 ## Intentionally Deferred
 
-- Live Razorpay API calls. The adapter is test-data only and performs no money movement.
+- Live Gateway API calls. The adapter is test-data only and performs no money movement.
 - Mandatory external LLM use. Real providers are opt-in because local demos must not require secrets.
 - Full React/Vite migration. The current frontend is dependency-free so the existing localhost demo remains stable.
 - Authentication and role-based access.

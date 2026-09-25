@@ -1,4 +1,4 @@
-import { Activity, BarChart3, Boxes, ClipboardCheck, House, Settings, ShieldCheck } from "lucide-react";
+import { Activity, BarChart3, Boxes, ClipboardCheck, House, Settings, ShieldCheck, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuditra } from "../hooks/useAuditra";
 import { normalizePageId } from "../lib/navigation";
@@ -7,6 +7,7 @@ import type { PrimaryPageId } from "../types/auditra";
 
 const navigation: Array<{ id: PrimaryPageId; label: string; icon: ReactNode }> = [
   { id: "home", label: "Close", icon: <House className="h-4 w-4" /> },
+  { id: "warroom", label: "War Room", icon: <Zap className="h-4 w-4" /> },
   { id: "worlds", label: "Batch", icon: <Boxes className="h-4 w-4" /> },
   { id: "audits", label: "Audit", icon: <ShieldCheck className="h-4 w-4" /> },
   { id: "review", label: "Review", icon: <ClipboardCheck className="h-4 w-4" /> },
@@ -25,7 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex min-h-[60px] w-full max-w-[1440px] items-center gap-3 px-4 sm:px-6 lg:px-8">
           <button type="button" aria-label="Open Auditra close workspace" className="flex shrink-0 items-center gap-2.5 text-left" onClick={() => setActivePage("home")}>
             <span className="grid h-8 w-8 place-items-center rounded-md bg-[#c7ff54] text-[#1a2110]"><ShieldCheck className="h-4 w-4" /></span>
-            <span className="hidden sm:block"><span className="block text-sm font-semibold text-white">AUDITRA</span><span className="block text-[10px] uppercase tracking-[0.08em] text-[#77746e]">Finance control</span></span>
+            <span className="hidden sm:block"><span className="block text-sm font-semibold text-white">AUDITRA</span><span className="block text-[10px] uppercase tracking-[0.08em] text-[#77746e]">Verification fabric</span></span>
           </button>
           <nav className="ml-1 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto lg:ml-6" aria-label="Primary navigation">
             {navigation.map((item) => {

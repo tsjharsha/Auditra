@@ -65,7 +65,7 @@ Point out the assurance score, unsafe auto-actions, failure fingerprint, and ret
 
 Return to Close and click Audit report or Exception CSV.
 
-Say: "Auditra closes one finance-ops loop over more than 50 records and exports the evidence. It does not ask Razorpay to trust an AI controller. It measures whether the controller should be trusted."
+Say: "Auditra closes one finance-ops loop over more than 50 records and exports the evidence. It does not ask Gateway to trust an AI controller. It measures whether the controller should be trusted."
 
 ## Judge Questions
 

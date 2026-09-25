@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, Mapping, Tuple
 
 from ..models import DatasetBundle
-from .adapters import CSVAdapter, JSONAdapter, RazorpayTestAdapter
+from .adapters import CSVAdapter, JSONAdapter, GatewayTestAdapter
 from .generator import FinancialWorldGenerator
 from .models import AdapterIngestionResult, FinancialWorldBuildResult, FinancialWorldSpec
 from .schema import build_relationship_model, build_schema_preview
@@ -19,7 +19,7 @@ class FinancialWorldService:
         self.adapters = {
             "csv": CSVAdapter(),
             "json": JSONAdapter(),
-            "razorpay_test": RazorpayTestAdapter(),
+            "gateway_test": GatewayTestAdapter(),
         }
 
     def understand(self, prompt: str, seed: int = 42) -> Tuple[FinancialWorldSpec, list]:

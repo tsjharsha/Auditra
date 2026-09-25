@@ -96,7 +96,7 @@ Settlement and Reconciliation Challenge
 
 Why this should be default:
 
-- It directly matches Razorpay-style finance operations.
+- It directly matches Gateway-style finance operations.
 - It uses Auditra's strongest existing backend.
 - It produces understandable entities: orders, payments, refunds, fees, settlements.
 - It creates visible exceptions that judges can understand quickly.

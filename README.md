@@ -1,12 +1,12 @@
 # AUDITRA
 
-## AI Finance Controller for Razorpay-style Payment Operations
+## AI Finance Controller for Gateway-style Payment Operations
 
 > **Run a finance close. Know what cash should settle. Investigate what does not. Measure whether the controller earned trust.**
 
-Built for **Razorpay AI Buildathon 2026, Track 04: AI Finance Controller**.
+Built for **Gateway AI Buildathon 2026, Track 04: AI Finance Controller**.
 
-Auditra is a finance-control workspace for a Razorpay-style payment operation. It builds a reproducible synthetic payment batch, reconciles orders, payments, fees, GST, refunds, and settlements, then gives a finance reviewer the answer that matters first:
+Auditra is a finance-control workspace for a Gateway-style payment operation. It builds a reproducible synthetic payment batch, reconciles orders, payments, fees, GST, refunds, and settlements, then gives a finance reviewer the answer that matters first:
 
 ```text
 What cash should have settled? What was recorded? What is still pending? What needs attention before close?
@@ -39,7 +39,7 @@ The primary demo is **Payment settlement close** with 500 synthetic source recor
 | Track requirement | How Auditra answers it |
 | --- | --- |
 | Run a finance-operations loop | Closes linked orders, payments, fee/GST, refunds, and settlements. |
-| Use synthetic data | Generates reproducible Razorpay-style worlds from fixed scenario specs and seeds. |
+| Use synthetic data | Generates reproducible Gateway-style worlds from fixed scenario specs and seeds. |
 | Report reconciliation quality | Shows match rate, auto-resolution, human review, throughput, and independent accuracy/F1. |
 | Surface exceptions | Raises current-run alerts, ranks a priority case, retains an exception queue, and supports human review. |
 | Show real AI value | Compares deterministic-only and AI-assisted controller runs against held-out hidden truth. |
@@ -492,7 +492,7 @@ The migration includes separate structures for canonical records, investigations
 
 Auditra is a buildathon-grade, finance-control prototype. Its scope is intentionally focused:
 
-- It uses safe, synthetic Razorpay-style records; it does not execute live payments or connect to credentialed Razorpay money movement.
+- It uses safe, synthetic Gateway-style records; it does not execute live payments or connect to credentialed Gateway money movement.
 - Local generation is capped at 10,000 records by input contract.
 - The local demo uses in-memory storage unless PostgreSQL is configured.
 - PostgreSQL migration execution requires an external database.

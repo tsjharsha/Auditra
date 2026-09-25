@@ -9,6 +9,7 @@ const AuditsPage = lazy(() => import("./pages/AuditsPage").then((module) => ({ d
 const ReviewPage = lazy(() => import("./pages/ReviewPage").then((module) => ({ default: module.ReviewPage })));
 const InsightsPage = lazy(() => import("./pages/InsightsPage").then((module) => ({ default: module.InsightsPage })));
 const SettingsPage = lazy(() => import("./pages/SettingsPage").then((module) => ({ default: module.SettingsPage })));
+const WarRoomPage = lazy(() => import("./pages/WarRoomPage").then((module) => ({ default: module.WarRoomPage })));
 
 export function App() {
   const { activePage } = useAuditra();
@@ -18,6 +19,7 @@ export function App() {
     <AppShell>
       <Suspense fallback={<div className="rounded-lg border border-white/10 bg-[#201f21] p-8 text-sm text-[#9a9792]">Opening workspace...</div>}>
         {page === "home" ? <HomePage /> : null}
+        {page === "warroom" ? <WarRoomPage /> : null}
         {page === "worlds" ? <WorldsPage /> : null}
         {page === "audits" ? <AuditsPage /> : null}
         {page === "review" ? <ReviewPage /> : null}

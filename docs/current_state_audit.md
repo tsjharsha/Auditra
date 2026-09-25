@@ -49,7 +49,7 @@ python scripts/benchmark.py --counts 100 500 1000 --mode MIXED --seed 42
 - Confidence is a scalar score, not a factorized evidence/risk calculation.
 - Risk scoring and review prioritization are not first-class fields.
 - Evaluation does not yet compare deterministic-only and AI-assisted controller modes in one command.
-- Upload ingestion, Razorpay adapters, PostgreSQL persistence, and production auth are planned but not implemented.
+- Upload ingestion, Gateway adapters, PostgreSQL persistence, and production auth are planned but not implemented.
 
 ## Guardrails To Preserve
 

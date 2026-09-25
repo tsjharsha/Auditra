@@ -170,7 +170,7 @@ Important indexes:
 
 ## Security Considerations
 
-- Never commit live Razorpay, LLM, database, or payout credentials.
+- Never commit live Gateway, LLM, database, or payout credentials.
 - Use test-mode provider adapters only.
 - Keep API keys in environment variables.
 - Validate uploads before ingestion.

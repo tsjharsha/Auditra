@@ -128,3 +128,162 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .alert-warning { color: #d9cf9b; }
 .alert-resolved { color: #70f0bf; }
 @media (max-width: 480px) { .alert-row { grid-template-columns: auto minmax(0, 1fr); } .alert-row > :last-child { grid-column: 2; text-align: left; } }
+
+/* ═══════════════════════════════════════════════════════════
+   WAR ROOM — Zero-Trust Verification Fabric
+   ═══════════════════════════════════════════════════════════ */
+
+.warroom-container { display: flex; flex-direction: column; gap: 0; min-height: calc(100vh - 120px); }
+
+/* ─── Status Bar ─── */
+.warroom-status-bar {
+  display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(20,20,30,0.95) 0%, rgba(15,15,25,0.98) 100%);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+  backdrop-filter: blur(12px);
+}
+.warroom-status-left { display: flex; align-items: center; gap: 0.6rem; min-width: 200px; }
+.warroom-phase {
+  font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  transition: color 300ms ease;
+}
+.warroom-iter { font-size: 0.65rem; color: #777; font-weight: 700; letter-spacing: 0.08em; }
+.warroom-status-center { flex: 1; display: flex; align-items: center; gap: 0.7rem; }
+.warroom-progress-track {
+  flex: 1; height: 6px; border-radius: 99px; background: rgba(255,255,255,0.06); overflow: hidden;
+}
+.warroom-progress-fill {
+  height: 100%; border-radius: 99px; transition: width 200ms ease-out;
+  box-shadow: 0 0 12px currentColor;
+}
+.warroom-progress-label { font-size: 0.7rem; color: #888; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 5rem; text-align: right; }
+.warroom-status-right { display: flex; align-items: center; gap: 0.5rem; }
+.warroom-scenario-select {
+  height: 32px; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px;
+  background: rgba(255,255,255,0.04); color: #ccc; font-size: 0.75rem; font-weight: 600;
+  padding: 0 0.6rem; cursor: pointer;
+}
+.warroom-scenario-select option { background: #1a1a2e; color: #eee; }
+.warroom-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem; height: 32px; padding: 0 0.85rem;
+  border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 150ms ease;
+  border: none;
+}
+.warroom-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.warroom-btn-reset { background: rgba(255,255,255,0.06); color: #aaa; border: 1px solid rgba(255,255,255,0.1); }
+.warroom-btn-reset:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #fff; }
+.warroom-btn-launch {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #fff;
+  box-shadow: 0 0 20px rgba(99,102,241,0.3);
+}
+.warroom-btn-launch:hover:not(:disabled) { box-shadow: 0 0 30px rgba(99,102,241,0.5); transform: translateY(-1px); }
+
+/* ─── Split Panels ─── */
+.warroom-split { display: grid; grid-template-columns: 1fr 1fr; gap: 0; flex: 1; margin-top: 0.75rem; min-height: 420px; }
+@media (max-width: 900px) { .warroom-split { grid-template-columns: 1fr; } }
+
+.warroom-panel {
+  display: flex; flex-direction: column;
+  border: 1px solid rgba(255,255,255,0.07); overflow: hidden;
+  background: rgba(12,12,20,0.85);
+}
+.warroom-code-panel { border-radius: 10px 0 0 10px; border-right: 0; }
+.warroom-terminal-panel { border-radius: 0 10px 10px 0; }
+@media (max-width: 900px) { .warroom-code-panel { border-radius: 10px 10px 0 0; border-right: 1px solid rgba(255,255,255,0.07); border-bottom: 0; } .warroom-terminal-panel { border-radius: 0 0 10px 10px; } }
+
+.warroom-panel-header {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1rem;
+  background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.07);
+  font-size: 0.8rem; font-weight: 700; color: #ddd;
+}
+.warroom-panel-tag {
+  margin-left: auto; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.1em;
+  color: #555; text-transform: uppercase;
+}
+
+/* ─── Code Panel ─── */
+.warroom-code-body { flex: 1; overflow: auto; padding: 0; }
+.warroom-code-pre { margin: 0; padding: 0.5rem 0; font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 0.78rem; line-height: 1.7; }
+.warroom-code-line { display: flex; min-height: 1.7em; transition: background 600ms ease; }
+.warroom-code-line-changed {
+  background: rgba(74, 222, 128, 0.12) !important;
+  animation: code-flash 1.2s ease-out;
+}
+@keyframes code-flash {
+  0% { background: rgba(74, 222, 128, 0.35); }
+  100% { background: rgba(74, 222, 128, 0.12); }
+}
+.warroom-line-number {
+  display: inline-block; width: 3.5rem; text-align: right; padding-right: 1rem;
+  color: #444; font-size: 0.72rem; user-select: none; flex-shrink: 0;
+}
+.warroom-line-content { color: #c5c8d6; white-space: pre; }
+
+/* ─── Terminal Panel ─── */
+.warroom-terminal-body { flex: 1; overflow-y: auto; padding: 0.75rem 1rem; scroll-behavior: smooth; }
+.warroom-terminal-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1rem; height: 100%; color: #555; text-align: center; font-size: 0.85rem; padding: 2rem;
+}
+.warroom-terminal-empty p { max-width: 280px; line-height: 1.6; }
+.warroom-log {
+  display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.3rem 0;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.72rem; line-height: 1.5;
+  animation: log-slide 200ms ease-out;
+}
+@keyframes log-slide {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.warroom-log-time { color: #555; min-width: 5rem; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.warroom-log-info .warroom-log-msg { color: #94a3b8; }
+.warroom-log-error { color: #f87171; }
+.warroom-log-error .warroom-log-msg { color: #fca5a5; }
+.warroom-log-success { color: #4ade80; }
+.warroom-log-success .warroom-log-msg { color: #86efac; }
+.warroom-log-warning { color: #fbbf24; }
+.warroom-log-warning .warroom-log-msg { color: #fde68a; }
+.warroom-log-ai { color: #a78bfa; }
+.warroom-log-ai .warroom-log-msg { color: #c4b5fd; }
+.warroom-log-msg { word-break: break-word; }
+
+/* ─── Bottom Panel ─── */
+.warroom-bottom { margin-top: 0.75rem; }
+
+.warroom-variance-card {
+  padding: 1rem 1.25rem; border-radius: 10px;
+  background: linear-gradient(135deg, rgba(248,113,113,0.08) 0%, rgba(30,15,15,0.9) 100%);
+  border: 1px solid rgba(248,113,113,0.2);
+  animation: enter 260ms ease-out;
+}
+.warroom-variance-header { display: flex; align-items: center; gap: 0.6rem; font-size: 0.75rem; font-weight: 800; color: #f87171; letter-spacing: 0.08em; }
+.warroom-variance-txid { margin-left: auto; color: #888; font-weight: 600; font-family: monospace; }
+.warroom-variance-grid { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 0.85rem; }
+.warroom-variance-item { min-width: 140px; }
+.warroom-variance-key { font-size: 0.65rem; font-weight: 800; color: #888; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.3rem; }
+.warroom-variance-expected { font-size: 0.8rem; color: #4ade80; }
+.warroom-variance-actual { font-size: 0.8rem; color: #f87171; }
+
+.warroom-certificate {
+  display: flex; align-items: center; gap: 1.5rem; padding: 1.5rem 2rem; border-radius: 10px;
+  background: linear-gradient(135deg, rgba(74,222,128,0.06) 0%, rgba(10,30,15,0.9) 100%);
+  border: 1px solid rgba(74,222,128,0.25);
+  animation: cert-glow 2s ease-in-out infinite alternate;
+}
+@keyframes cert-glow {
+  0% { box-shadow: 0 0 20px rgba(74,222,128,0.08); }
+  100% { box-shadow: 0 0 40px rgba(74,222,128,0.15); }
+}
+.warroom-cert-icon { color: #4ade80; flex-shrink: 0; }
+.warroom-cert-title { font-size: 0.75rem; font-weight: 800; color: #4ade80; letter-spacing: 0.1em; text-transform: uppercase; }
+.warroom-cert-detail { margin-top: 0.4rem; font-size: 0.88rem; color: #b0b0b0; line-height: 1.5; }
+.warroom-cert-detail strong { color: #fff; }
+.warroom-cert-seal { margin-top: 0.5rem; font-size: 0.7rem; font-weight: 700; color: #555; font-family: monospace; letter-spacing: 0.05em; }
+
+.warroom-intro {
+  display: flex; align-items: center; gap: 1.5rem; padding: 2rem; border-radius: 10px;
+  background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1);
+}
+.warroom-intro-icon { color: #6366f1; flex-shrink: 0; }
+.warroom-intro-title { font-size: 1rem; font-weight: 700; color: #eee; }
+.warroom-intro-detail { margin-top: 0.35rem; font-size: 0.85rem; color: #888; line-height: 1.6; max-width: 600px; }

@@ -2,8 +2,8 @@
 
 Use these values on the public Auditra repository before submission.
 
-- Repository description: Auditra: an AI Finance Controller for Razorpay-style payment reconciliation
-- Topics: razorpay, fintech, reconciliation, payments, ai-controller, finance-operations, fastapi, react, buildathon
+- Repository description: Auditra: an AI Finance Controller for Gateway-style payment reconciliation
+- Topics: gateway, fintech, reconciliation, payments, ai-controller, finance-operations, fastapi, react, buildathon
 - Default branch: main
 - Public entry point: README.md
 - Demo script: docs/final_demo_script.md

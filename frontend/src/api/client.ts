@@ -62,7 +62,7 @@ export const auditraApi = {
       method: "POST",
       body: JSON.stringify(spec),
     }),
-  ingest: (adapter: "json" | "csv" | "razorpay_test", payload: Record<string, unknown>, seed = 42) =>
+  ingest: (adapter: "json" | "csv" | "gateway_test", payload: Record<string, unknown>, seed = 42) =>
     request<import("../types/auditra").IngestionResult>(`/ingest/${encodeURIComponent(adapter)}`, {
       method: "POST",
       body: JSON.stringify({ payload, seed }),

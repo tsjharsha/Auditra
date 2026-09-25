@@ -16,6 +16,7 @@ from .finance_control import cash_position, controller_alerts
 from .models import ReviewRequest, ScenarioMode, ScenarioRequest
 from .runtime import controller_execution_metadata, public_controller_run, runtime_ai_status
 from .storage import AuditraStore
+from .verification_api import router as verification_router
 
 
 class ControllerRunRequest(BaseModel):
@@ -69,7 +70,7 @@ store = AuditraStore()
 app = FastAPI(
     title="Auditra API",
     version="0.4.0",
-    description="AI Finance Controller for Razorpay-style payment reconciliation, with independent assurance.",
+    description="AI Finance Controller for Gateway-style payment reconciliation, with independent assurance.",
 )
 
 app.add_middleware(
@@ -86,6 +87,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(verification_router)
 
 
 def _public_dataset(dataset) -> Dict[str, Any]:
@@ -275,9 +278,9 @@ def get_submission_report(evaluation_run_id: str) -> Dict[str, Any]:
         ]
         return {
             "product": "Auditra",
-            "positioning": "AI Finance Controller for Razorpay-style payment reconciliation",
+            "positioning": "AI Finance Controller for Gateway-style payment reconciliation",
             "track_fit": {
-                "track": "Razorpay AI Buildathon Track 04 - AI Finance Controller",
+                "track": "Gateway AI Buildathon Track 04 - AI Finance Controller",
                 "closed_loop": "orders -> payments -> fees/GST -> refunds -> settlements -> exceptions",
                 "record_count": run.metrics.transactions_processed,
                 "reports_match_rate": True,

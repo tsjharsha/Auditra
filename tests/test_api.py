@@ -76,7 +76,7 @@ class ApiTests(unittest.TestCase):
         report_response = client.get(f"/reports/{evaluation_run_id}")
         self.assertEqual(report_response.status_code, 200)
         report = report_response.json()
-        self.assertEqual(report["track_fit"]["track"], "Razorpay AI Buildathon Track 04 - AI Finance Controller")
+        self.assertEqual(report["track_fit"]["track"], "Gateway AI Buildathon Track 04 - AI Finance Controller")
         self.assertIn("controller_run", report)
         self.assertIn("assurance", report)
         self.assertIn("exception_false_negative_rate", report["evaluation"]["metrics"])

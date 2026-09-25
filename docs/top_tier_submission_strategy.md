@@ -2,9 +2,9 @@
 
 Date: 2026-09-01
 
-Purpose: combine the ChatGPT, Claude, and Copilot audits into one operating plan for making Auditra a top-tier Razorpay AI Buildathon Track 04 submission.
+Purpose: combine the ChatGPT, Claude, and Copilot audits into one operating plan for making Auditra a top-tier Gateway AI Buildathon Track 04 submission.
 
-Official Track 04 reference checked on 2026-09-01: https://razorpay.com/buildathon/
+Official Track 04 reference checked on 2026-09-01: https://gateway.com/buildathon/
 
 ## 1. Executive Thesis
 
@@ -12,7 +12,7 @@ Auditra should be submitted and presented as:
 
 ```text
 AUDITRA
-AI Finance Controller for Razorpay-style payment reconciliation.
+AI Finance Controller for Gateway-style payment reconciliation.
 Reconcile the batch. Investigate exceptions. Verify every decision.
 ```
 
@@ -22,7 +22,7 @@ The winning story is not "we built a dashboard" and not "we built a trust lab." 
 Auditra closes one finance-ops loop over a synthetic payment batch, reports match rate and unresolved exceptions, then proves its own decisions against hidden ground truth and adversarial retests.
 ```
 
-This directly matches Razorpay Track 04's public bar: close one finance-ops loop over 50+ synthetic records, report match rate, report unresolved exceptions, and show throughput plus measured accuracy plus an honest exception list.
+This directly matches Gateway Track 04's public bar: close one finance-ops loop over 50+ synthetic records, report match rate, report unresolved exceptions, and show throughput plus measured accuracy plus an honest exception list.
 
 The product should feel simple on the surface and serious underneath:
 
@@ -40,7 +40,7 @@ All three audits converge on the same core truth:
 
 1. Auditra is strongly aligned with Track 04.
 2. The underlying engineering is above typical buildathon quality.
-3. The product framing must become simpler and more Razorpay-shaped.
+3. The product framing must become simpler and more Gateway-shaped.
 4. AI usage and fallback behavior must be impossible to misread.
 5. The demo must show a working finance close, not just architecture.
 6. The strongest differentiator is measurement: hidden ground truth, held-out benchmark, failure reporting, and adversarial retesting.
@@ -55,7 +55,7 @@ Main signal:
 
 - Auditra fits Track 04 extremely well.
 - Reposition it as an AI Finance Controller, not primarily a scenario lab.
-- Add a visible Razorpay Payment Operations mode.
+- Add a visible Gateway Payment Operations mode.
 - Make AI investigation visible in the demo.
 - Fix or explain metrics that can look inconsistent.
 - Do not headline the 100% Groq result because it includes heavy fallback.
@@ -72,7 +72,7 @@ Main signal:
 
 - Auditra over-delivers on the "one cherry-picked match proves nothing" bar because it has held-out evaluation and adversarial retesting.
 - The biggest rejection risk is the phrase "AI-assisted" beside `0 LLM calls`.
-- The second biggest risk is not touching enough Razorpay-specific vocabulary.
+- The second biggest risk is not touching enough Gateway-specific vocabulary.
 - The third risk is no authentication layer.
 - Medium risks: thin Groq evidence, no README GIF, Galarix docs in README, Windows-only quickstart, and bundle-size warning.
 
@@ -80,7 +80,7 @@ What to keep from this audit:
 
 - Foreground held-out benchmark and adversarial retest.
 - Make the first README section Track 04-shaped.
-- Add at least one Razorpay-vocabulary scenario.
+- Add at least one Gateway-vocabulary scenario.
 - Add a README demo GIF.
 - Add non-Windows quickstart commands.
 - Treat "0 LLM calls" as a framing problem, not something to hide.
@@ -127,7 +127,7 @@ What not to keep:
 - README still opens with "scenario lab" rather than "AI Finance Controller."
 - Real Groq artifact is marked `PASS` even though the latest run had one real investigation call and 39 fallback/offline investigations.
 - The top metrics table can look like "AI-assisted" means external AI, even though local default is offline deterministic investigation.
-- Razorpay-specific vocabulary is still lighter than it should be.
+- Gateway-specific vocabulary is still lighter than it should be.
 - Backend ingestion exists, but frontend upload/sample-ingestion is not exposed.
 - No report export button or downloadable exception report exists in the UI.
 - No README demo GIF.
@@ -142,7 +142,7 @@ Auditra should stay narrow:
 
 ```text
 Primary product:
-Razorpay-style payment settlement reconciliation controller.
+Gateway-style payment settlement reconciliation controller.
 
 Not primary product:
 Generic finance dashboard, cash forecaster, tax classifier, or broad accounting suite.
@@ -175,9 +175,9 @@ Replace the README opening with a Track 04-first statement:
 ```text
 # AUDITRA
 
-### AI Finance Controller for Razorpay-style payment reconciliation.
+### AI Finance Controller for Gateway-style payment reconciliation.
 
-Built for Razorpay AI Buildathon 2026 - Track 04: AI Finance Controller.
+Built for Gateway AI Buildathon 2026 - Track 04: AI Finance Controller.
 
 Auditra closes a synthetic finance-ops batch across orders, payments, fees, refunds, and settlements. It reports match rate, throughput, unresolved exceptions, and financial error impact, then verifies every controller decision against hidden ground truth.
 ```
@@ -229,14 +229,14 @@ Groq built the world and completed 1 real investigation. Rate limits then trigge
 
 This is defensible. Calling it a clean real-Groq run is not.
 
-### P0.4 Add One Razorpay-Flavored Scenario
+### P0.4 Add One Gateway-Flavored Scenario
 
 Implement one strong scenario, not four weak ones.
 
 Recommended:
 
 ```text
-Payment + refund + Razorpay fee/GST reconciliation
+Payment + refund + Gateway fee/GST reconciliation
 ```
 
 Why this one:
@@ -253,7 +253,7 @@ Why this one:
 Alternative if time:
 
 ```text
-Split settlement / Razorpay Route
+Split settlement / Gateway Route
 ```
 
 This is more distinctive but requires more modeling work because linked-account/vendor allocation is not currently first-class.
@@ -263,7 +263,7 @@ This is more distinctive but requires more modeling work because linked-account/
 The first screen should make the loop obvious:
 
 ```text
-Razorpay Payment Operations
+Gateway Payment Operations
 500 orders
 506 payments
 Settlement records
@@ -383,7 +383,7 @@ This removes Vite's chunk warning and improves local judge experience.
 Keep the existing detailed diagram, but add one simpler submission diagram:
 
 ```text
-Synthetic Razorpay-style records
+Synthetic Gateway-style records
         |
         v
 Deterministic finance controller
@@ -409,7 +409,7 @@ Avoid these unless everything above is done:
 - Full cash forecasting.
 - Full tax-line matcher.
 - Full settlement Q&A agent.
-- Production Razorpay credential integration.
+- Production Gateway credential integration.
 - Kubernetes/deployment infrastructure.
 - Full enterprise auth.
 - Complex PDF designer.
@@ -425,7 +425,7 @@ Show:
 
 ```text
 AUDITRA
-AI Finance Controller for Razorpay-style payment reconciliation
+AI Finance Controller for Gateway-style payment reconciliation
 ```
 
 Say:
@@ -438,7 +438,7 @@ Auditra closes one finance-ops loop across payments, refunds, fees, and settleme
 
 Show:
 
-- Razorpay Payment Operations preset.
+- Gateway Payment Operations preset.
 - 500+ records.
 - Hidden anomalies locked.
 
@@ -518,7 +518,7 @@ Controlled deployment / Human-supervised / Remediation required
 Say:
 
 ```text
-Auditra does not ask Razorpay to trust an AI finance controller. It measures whether you should.
+Auditra does not ask Gateway to trust an AI finance controller. It measures whether you should.
 ```
 
 ## 10. Panel Defense Answers
@@ -527,9 +527,9 @@ Auditra does not ask Razorpay to trust an AI finance controller. It measures whe
 
 Yes. It closes one finance-ops loop: payment settlement reconciliation across orders, payments, fees, refunds, and settlements. It reports match rate, unresolved exceptions, throughput, measured accuracy, and financial error impact on synthetic batches above 50 records.
 
-### Why not use live Razorpay APIs?
+### Why not use live Gateway APIs?
 
-The track asks for synthetic data. Auditra uses Razorpay-style records and a test-data adapter boundary so the demo is deterministic, safe, and does not require money movement or credentials. Production Razorpay integration is a next-step adapter, not part of the prototype's authority.
+The track asks for synthetic data. Auditra uses Gateway-style records and a test-data adapter boundary so the demo is deterministic, safe, and does not require money movement or credentials. Production Gateway integration is a next-step adapter, not part of the prototype's authority.
 
 ### Is the LLM doing the money math?
 
@@ -552,13 +552,13 @@ The provider hit a rate limit. Auditra records that and labels fallback as fallb
 Auditra becomes a top-tier submission when all P0 items are true:
 
 - README headline says AI Finance Controller and Track 04 clearly.
-- First UI screen shows Razorpay-style payment operations.
+- First UI screen shows Gateway-style payment operations.
 - Demo can run from clean clone in under 10 minutes.
 - Match rate, throughput, unresolved exceptions, and financial error are visible without hunting.
 - One exception drilldown is beautiful and easy to understand.
 - AI/offline/real-provider labels are impossible to confuse.
 - Real Groq evidence is honestly labeled as full, fallback, partial, or blocked.
-- One Razorpay-flavored scenario is implemented and visible.
+- One Gateway-flavored scenario is implemented and visible.
 - Export/download exists for audit or exceptions.
 - README has GIF/screenshots.
 - Non-Windows quickstart exists.
@@ -572,7 +572,7 @@ Every change should answer one of these questions:
 1. Does it make Track 04 fit more obvious?
 2. Does it make the demo smoother in five minutes?
 3. Does it make AI usage more honest and defensible?
-4. Does it make the product feel more Razorpay-shaped?
+4. Does it make the product feel more Gateway-shaped?
 5. Does it preserve the deep differentiator: hidden truth, evidence, failure reporting, adversarial retest, assurance?
 
 If a change does not answer one of those, do not do it before submission.

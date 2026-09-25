@@ -39,7 +39,7 @@ Date: 2026-08-25
 | Demo | 8.5/10 | 10/10 reliability run, one-click UI demo, frozen seed/world/dataset |
 | Documentation | 9.0/10 | Architecture, security, data model, benchmarks, failures, demo script, pitch, installation path |
 | Testing | 8.5/10 | 45 targeted backend/API tests across available interpreters plus benchmark scripts |
-| Razorpay alignment | 8.0/10 | Settlement/reconciliation/finance-ops focus and Razorpay test adapter boundary; no claim that Razorpay needs the tool |
+| Gateway alignment | 8.0/10 | Settlement/reconciliation/finance-ops focus and Gateway test adapter boundary; no claim that Gateway needs the tool |
 
 ## Frozen Demo Metrics
 
@@ -86,4 +86,4 @@ Date: 2026-08-25
 | Clean repository | GO |
 | Five-minute demo reproducible | GO |
 
-Final decision: GO for the local reproducible Razorpay submission package. Do not claim a full no-fallback Groq execution unless `artifacts/real_groq.json` shows `PASS_FULL_REAL` with `REAL_GROQ_AI`, `llm_calls > 0`, and zero fallback. If the artifact shows `PARTIAL_RATE_LIMITED`, describe it as real-provider evidence with honest fallback disclosure.
+Final decision: GO for the local reproducible Gateway submission package. Do not claim a full no-fallback Groq execution unless `artifacts/real_groq.json` shows `PASS_FULL_REAL` with `REAL_GROQ_AI`, `llm_calls > 0`, and zero fallback. If the artifact shows `PARTIAL_RATE_LIMITED`, describe it as real-provider evidence with honest fallback disclosure.

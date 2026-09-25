@@ -16,7 +16,7 @@ REVIEW_VALUES = {item.value for item in TERMINAL_REVIEW_STATUSES}
 CHALLENGES: List[Dict[str, Any]] = [
     {
         "challenge_id": "settlement-reconciliation", "name": "Settlement & Reconciliation",
-        "description": "Close a Razorpay-style payment batch across captured payments, fee/GST deductions, refunds, and T+2 settlements.",
+        "description": "Close a Gateway-style payment batch across captured payments, fee/GST deductions, refunds, and T+2 settlements.",
         "risk": "Incorrect settlement closure can hide merchant exposure and reconciliation breaks.",
         "operational_scenario": "Payment settlement close", "recommended": True, "record_count": 500, "anomaly_mode": "STRESSED", "accent": "cyan",
     },

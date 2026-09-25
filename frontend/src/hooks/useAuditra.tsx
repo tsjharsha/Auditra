@@ -93,6 +93,7 @@ interface AuditraContextValue {
 const AuditraContext = createContext<AuditraContextValue | null>(null);
 const PAGE_IDS: PageId[] = [
   "home",
+  "warroom",
   "worlds",
   "audits",
   "review",
