@@ -1,31 +1,16 @@
-from decimal import Decimal, ROUND_HALF_UP
-
+from decimal import Decimal, ROUND_HALF_EVEN
 class BillingEngine:
-    """
-    Simulated IBM Bob 2.0 Generated Code
-    This microservice calculates fees, GST, and settlement for a given payment.
-    """
+    """IBM Bob 2.0 Patched Code"""
     def __init__(self):
-        self.domestic_rate = Decimal("0.02")      # 2% fee
-        self.international_rate = Decimal("0.03") # 3% fee
-        self.gst_rate = Decimal("0.18")           # 18% GST on fees
-
-    def calculate_settlement(self, amount_str: str, is_international: bool) -> dict:
-        amount = Decimal(amount_str)
-        
-        if is_international:
-            # BUG: Missing GST deduction for international payments
-            fee = (amount * self.international_rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-            gst = Decimal("0.00") # Hallucinated or missed logic
-            settlement = amount - fee - gst
-        else:
-            fee = (amount * self.domestic_rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-            gst = (fee * self.gst_rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-            settlement = amount - fee - gst
-            
+        self.rate = Decimal("0.03")
+        self.gst = Decimal("0.18")
+    def calculate(self, amount_str: str) -> dict:
+        amt = Decimal(amount_str)
+        fee = (amt * self.rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_EVEN)
+        tax = (fee * self.gst).quantize(Decimal("0.01"), rounding=ROUND_HALF_EVEN)
         return {
-            "amount": str(amount),
+            "amount": str(amt.quantize(Decimal("0.01"))),
             "fee": str(fee),
-            "gst": str(gst),
-            "settlement": str(settlement)
+            "gst": str(tax),
+            "settlement": str(amt - fee - tax)
         }
