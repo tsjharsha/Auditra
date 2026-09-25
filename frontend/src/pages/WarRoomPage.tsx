@@ -64,10 +64,13 @@ export function WarRoomPage() {
   }, [logs]);
 
   const updateNode = (id: string, status: NodeStatus, extra: any = {}) => {
-    setNodes(prev => ({
-      ...prev,
-      [id]: { ...prev[id], status, ...extra }
-    }));
+    setNodes(prev => {
+      if (!prev[id]) return prev;
+      return {
+        ...prev,
+        [id]: { ...prev[id], status, ...extra }
+      };
+    });
   };
 
   const resetGrid = async () => {
