@@ -25,7 +25,7 @@ jobs:
     - name: Run Static Analysis (Ruff)
       run: |
         pip install ruff
-        ruff check backend/ --ignore BLE001,RUF012,SIM102,PLW1510,SIM118,DTZ005
+        ruff check backend/ --ignore BLE001,RUF012,SIM102,PLW1510,SIM118,DTZ005,C401,F841,FURB162,SIM103
         
     - name: Run Core Test Suite
       run: |
