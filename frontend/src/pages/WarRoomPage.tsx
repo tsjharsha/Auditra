@@ -35,7 +35,7 @@ interface LogEntry {
 }
 
 export function WarRoomPage() {
-  const [phase, setPhase] = useState<"idle" | "running" | "verified">("idle");
+  const [phase, setPhase] = useState<"idle" | "running" | "verified" | "failed">("idle");
   const [mode, setMode] = useState<string>("STANDBY");
   const [nodes, setNodes] = useState<Record<string, NodeState>>({
     tax_router: { id: "tax_router", name: "Tax Router", status: "IDLE", icon: Server },
@@ -176,8 +176,16 @@ export function WarRoomPage() {
     });
 
     es.addEventListener("aegis_secure", (e) => {
+      const d = JSON.parse(e.data);
       setPhase("verified");
-      addLog("success", "=== VERIFICATION LIFECYCLE COMPLETE ===");
+      addLog("success", `=== ${d.message} ===`);
+      es.close();
+    });
+
+    es.addEventListener("aegis_failed", (e) => {
+      const d = JSON.parse(e.data);
+      setPhase("failed");
+      addLog("error", `=== ${d.message} ===`);
       es.close();
     });
 
@@ -280,8 +288,13 @@ export function WarRoomPage() {
             <Terminal className="h-4 w-4" />
             <span>Verification Engine STDOUT</span>
             {phase === "verified" && (
-              <span style={{ marginLeft: "auto", color: "#4ade80", fontWeight: "bold" }}>
-                PRODUCTION GATE: READY
+              <span style={{ marginLeft: "auto", color: "#4ade80", fontWeight: "bold", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                <CheckCircle className="h-4 w-4" /> PRODUCTION GATE: READY
+              </span>
+            )}
+            {phase === "failed" && (
+              <span style={{ marginLeft: "auto", color: "#ef4444", fontWeight: "bold", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                <ShieldAlert className="h-4 w-4" /> PRODUCTION GATE: BLOCKED
               </span>
             )}
           </div>

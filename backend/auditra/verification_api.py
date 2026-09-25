@@ -242,6 +242,7 @@ def _aegis_generator():
     Path(mutated_path).unlink(missing_ok=True)
     # --- END MUTATION TESTING ---
     
+    all_secured = True
     for node in VERIFICATION_NODES:
         yield _sse("node_state", {"node": node["id"], "state": "ATTACKING"})
         time.sleep(0.5)
@@ -280,6 +281,7 @@ def _aegis_generator():
                 ASTValidator.validate(patched_code)
             except Exception as e:
                 yield _sse("node_state", {"node": node["id"], "state": "PATCH_FAILED", "error": str(e)})
+                all_secured = False
                 time.sleep(1.5)
                 yield _sse("node_state", {"node": node["id"], "state": "ROLLING_BACK"})
                 continue
@@ -297,6 +299,7 @@ def _aegis_generator():
                 metrics = post_patch_failure.get("metrics", {})
                 rejection_reason = f"The generated patch executed successfully, but its behavior did not match the independent oracle for {metrics.get('failed', 0)}/{metrics.get('total', 0)} adversarial scenarios. The patch was therefore rejected."
                 yield _sse("node_state", {"node": node["id"], "state": "VERIFICATION_FAILED", "variance": post_patch_failure, "metrics": metrics, "rejection_reason": rejection_reason})
+                all_secured = False
                 time.sleep(1.5)
                 yield _sse("node_state", {"node": node["id"], "state": "ROLLING_BACK"})
                 # Rollback
@@ -311,7 +314,10 @@ def _aegis_generator():
             
         time.sleep(1.0)
         
-    yield _sse("aegis_secure", {"message": "VERIFICATION LIFECYCLE COMPLETE"})
+    if all_secured:
+        yield _sse("aegis_secure", {"message": "VERIFICATION LIFECYCLE COMPLETE: ALL NODES SECURED"})
+    else:
+        yield _sse("aegis_failed", {"message": "VERIFICATION LIFECYCLE COMPLETE: ONE OR MORE NODES FAILED OR ROLLED BACK"})
 
 @router.get("/stream")
 def verification_stream():
