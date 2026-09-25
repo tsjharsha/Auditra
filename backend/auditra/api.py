@@ -29,4 +29,8 @@ app.include_router(verification_router)
 
 @app.get("/health")
 def health():
-    return {"status": "healthy", "product": "Auditra: Aegis Protocol"}
+    return {
+        "status": "ok",
+        "mode": "demo" if not os.environ.get("GROQ_API_KEY") else "live",
+        "verification_engine": "ready"
+    }

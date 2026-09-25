@@ -6,6 +6,8 @@ import logging
 import hashlib
 import shutil
 import difflib
+import uuid
+from datetime import datetime
 from decimal import Decimal, ROUND_HALF_EVEN
 from pathlib import Path
 from typing import AsyncGenerator, Dict, Any, List
@@ -216,8 +218,30 @@ VERIFICATION_NODES = [
 ]
 
 def _aegis_generator():
-    yield _sse("aegis_start", {"message": f"AEGIS PROTOCOL ACTIVATED. MODE: {'LIVE (Groq)' if groq_client else 'DETERMINISTIC DEMO'}"})
+    audit_id = f"AUDIT-{datetime.now().strftime('%Y-%m%d')}-{str(uuid.uuid4())[:6].upper()}"
+    yield _sse("aegis_start", {"message": f"AEGIS PROTOCOL ACTIVATED. MODE: {'LIVE (Groq)' if groq_client else 'DETERMINISTIC DEMO'}", "audit_id": audit_id})
     time.sleep(1.0)
+    
+    # --- MUTATION TESTING PHASE ---
+    yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATING", "message": "Injecting deliberate defect into FraudDetector (10000 -> 5000) to verify Oracle sensitivity..."})
+    time.sleep(1.0)
+    fraud_target = TARGETS["fraud_detector"]
+    with open(fraud_target, "r", encoding="utf-8") as f:
+        fraud_code = f.read()
+    mutated_code = fraud_code.replace("10000", "5000")
+    mutated_path = fraud_target + ".mut"
+    with open(mutated_path, "w", encoding="utf-8") as f:
+        f.write(mutated_code)
+    
+    fraud_node = next(n for n in VERIFICATION_NODES if n["id"] == "fraud_detector")
+    mutation_failure = verify_node(fraud_node, mutated_path)
+    if mutation_failure:
+        yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_DETECTED", "message": "Oracle successfully caught the behavioral defect!"})
+    else:
+        yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_FAILED", "message": "Oracle failed to detect the defect!"})
+    time.sleep(1.0)
+    Path(mutated_path).unlink(missing_ok=True)
+    # --- END MUTATION TESTING ---
     
     for node in VERIFICATION_NODES:
         yield _sse("node_state", {"node": node["id"], "state": "ATTACKING"})
@@ -248,7 +272,11 @@ def _aegis_generator():
             ))
             diff_str = "".join(diff_lines)
             
-            yield _sse("node_state", {"node": node["id"], "state": "VALIDATING", "patch_code": patched_code, "patch_diff": diff_str})
+            lines_added = sum(1 for line in diff_lines if line.startswith('+') and not line.startswith('+++'))
+            lines_removed = sum(1 for line in diff_lines if line.startswith('-') and not line.startswith('---'))
+            patch_impact = {"added": lines_added, "removed": lines_removed}
+            
+            yield _sse("node_state", {"node": node["id"], "state": "VALIDATING", "patch_code": patched_code, "patch_diff": diff_str, "patch_impact": patch_impact})
             try:
                 ASTValidator.validate(patched_code)
             except Exception as e:
@@ -267,7 +295,9 @@ def _aegis_generator():
             post_patch_failure = verify_node(node, target_path)
             
             if post_patch_failure:
-                yield _sse("node_state", {"node": node["id"], "state": "VERIFICATION_FAILED", "variance": post_patch_failure, "metrics": post_patch_failure.get("metrics")})
+                metrics = post_patch_failure.get("metrics", {})
+                rejection_reason = f"The generated patch executed successfully, but its behavior did not match the independent oracle for {metrics.get('failed', 0)}/{metrics.get('total', 0)} adversarial scenarios. The patch was therefore rejected."
+                yield _sse("node_state", {"node": node["id"], "state": "VERIFICATION_FAILED", "variance": post_patch_failure, "metrics": metrics, "rejection_reason": rejection_reason})
                 time.sleep(1.5)
                 yield _sse("node_state", {"node": node["id"], "state": "ROLLING_BACK"})
                 # Rollback

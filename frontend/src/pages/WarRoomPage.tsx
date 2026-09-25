@@ -46,6 +46,7 @@ export function WarRoomPage() {
   
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [activeCode, setActiveCode] = useState<string>("WAITING FOR AST PATCH...");
+  const [auditId, setAuditId] = useState<string | null>(null);
   
   const logRef = useRef<HTMLDivElement>(null);
   const logIdRef = useRef(0);
@@ -102,6 +103,7 @@ export function WarRoomPage() {
 
     es.addEventListener("aegis_start", (e) => {
       const d = JSON.parse(e.data);
+      if (d.audit_id) setAuditId(d.audit_id);
       setMode(d.message.includes("LIVE") ? "LIVE AI (GROQ LLAMA-3)" : "DETERMINISTIC DEMO");
       addLog("info", d.message);
     });
@@ -113,6 +115,15 @@ export function WarRoomPage() {
       const nodeName = d.node.toUpperCase();
       
       switch (d.state) {
+        case "MUTATING":
+          addLog("warning", `[MUTATION_ENGINE] ${d.message}`);
+          break;
+        case "MUTATION_DETECTED":
+          addLog("success", `[MUTATION_ENGINE] ${d.message}`);
+          break;
+        case "MUTATION_FAILED":
+          addLog("error", `[MUTATION_ENGINE] ${d.message}`);
+          break;
         case "ATTACKING":
           addLog("info", `[${nodeName}] Running adversarial testing sandbox...`);
           break;
@@ -133,6 +144,9 @@ export function WarRoomPage() {
         case "VALIDATING":
           if (d.patch_code) setActiveCode(d.patch_code);
           addLog("warning", `[${nodeName}] Patch received. Running AST syntax and security validation...`);
+          if (d.patch_impact) {
+            addLog("info", `  -> Patch impact: +${d.patch_impact.added} lines / -${d.patch_impact.removed} lines`);
+          }
           break;
         case "REVERIFYING":
           addLog("info", `[${nodeName}] Patch safely applied to sandbox. Post-patch adversarial re-verification running (${d.metrics?.total_tests || 20} tests)...`);
@@ -141,7 +155,10 @@ export function WarRoomPage() {
           addLog("success", `[${nodeName}] POST-PATCH VERIFICATION PASSED. Tests: ${d.metrics?.passed}/${d.metrics?.passed} | Oracle: ${d.metrics?.oracle_agreement}. Node is SECURE.`);
           break;
         case "VERIFICATION_FAILED":
-          addLog("error", `[${nodeName}] POST-PATCH VERIFICATION FAILED. Tests: ${d.metrics?.passed || 0}/${d.metrics?.total || 0} passed. The AI repair did not satisfy the Oracle.`);
+          addLog("error", `[${nodeName}] POST-PATCH VERIFICATION FAILED. Tests: ${d.metrics?.passed || 0}/${d.metrics?.total || 0} passed.`);
+          if (d.rejection_reason) {
+            addLog("error", `  -> WHY REJECTED: ${d.rejection_reason}`);
+          }
           break;
         case "PATCH_FAILED":
           addLog("error", `[${nodeName}] SECURITY EXCEPTION: LLM generated invalid or dangerous AST: ${d.error}`);
@@ -185,6 +202,11 @@ export function WarRoomPage() {
           <span style={{ marginLeft: '1rem', padding: '0.25rem 0.75rem', background: 'rgba(255,255,255,0.1)', borderRadius: '999px', fontSize: '0.75rem' }}>
             MODE: {mode}
           </span>
+          {auditId && (
+            <span style={{ marginLeft: '0.5rem', padding: '0.25rem 0.75rem', background: 'rgba(168,85,247,0.2)', color: '#d8b4fe', borderRadius: '999px', fontSize: '0.75rem', fontFamily: 'monospace' }}>
+              ID: {auditId}
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button className="warroom-btn warroom-btn-reset" onClick={resetGrid} disabled={phase === "running"}>
