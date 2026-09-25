@@ -1,25 +1,25 @@
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict
+from typing import Any
 
 from .llm import (
     AI_UNAVAILABLE,
     DETERMINISTIC,
     OFFLINE_AI,
-    REAL_GEMINI_AI,
-    REAL_HUGGINGFACE_AI,
-    REAL_OPENROUTER_AI,
-    REAL_GROQ_AI,
-    REAL_OPENAI_AI,
     REAL_ANTHROPIC_AI,
+    REAL_GEMINI_AI,
+    REAL_GROQ_AI,
+    REAL_HUGGINGFACE_AI,
     REAL_OLLAMA_AI,
+    REAL_OPENAI_AI,
+    REAL_OPENROUTER_AI,
     llm_runtime_status,
 )
 from .models import ControllerRun
 
 
-def controller_execution_metadata(run: ControllerRun) -> Dict[str, Any]:
+def controller_execution_metadata(run: ControllerRun) -> dict[str, Any]:
     investigations = [
         case.ai_investigation
         for case in run.cases
@@ -66,13 +66,13 @@ def controller_execution_metadata(run: ControllerRun) -> Dict[str, Any]:
     }
 
 
-def public_controller_run(run: ControllerRun) -> Dict[str, Any]:
+def public_controller_run(run: ControllerRun) -> dict[str, Any]:
     payload = run.model_dump(mode="json")
     payload["execution"] = controller_execution_metadata(run)
     return payload
 
 
-def runtime_ai_status() -> Dict[str, Any]:
+def runtime_ai_status() -> dict[str, Any]:
     return {
         "world_understanding": llm_runtime_status("WORLD"),
         "investigation": llm_runtime_status("INVESTIGATION"),

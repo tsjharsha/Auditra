@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Dict, List
+from typing import Any
 
 from .models import AuditEvent
 
@@ -9,7 +9,7 @@ from .models import AuditEvent
 class AuditLog:
     def __init__(self, correlation_id: str):
         self.correlation_id = correlation_id
-        self.events: List[AuditEvent] = []
+        self.events: list[AuditEvent] = []
 
     def record(
         self,
@@ -18,8 +18,8 @@ class AuditLog:
         entity: str,
         entity_id: str,
         reason: str = "",
-        inputs_ref: Dict[str, Any] | None = None,
-        output_ref: Dict[str, Any] | None = None,
+        inputs_ref: dict[str, Any] | None = None,
+        output_ref: dict[str, Any] | None = None,
     ) -> AuditEvent:
         event = AuditEvent(
             event_id=f"AUD_{uuid.uuid4().hex[:12]}",

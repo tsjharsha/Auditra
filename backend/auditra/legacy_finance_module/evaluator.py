@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import uuid
 from decimal import Decimal
-from typing import Dict, List, Set
 
 from .models import (
     ControllerRun,
@@ -15,7 +14,6 @@ from .models import (
 )
 from .reconciliation import MATCH_STATUSES, TERMINAL_REVIEW_STATUSES
 
-
 MATCH_STATUS_VALUES = {item.value for item in MATCH_STATUSES}
 TERMINAL_REVIEW_VALUES = {item.value for item in TERMINAL_REVIEW_STATUSES}
 
@@ -26,13 +24,13 @@ class IndependentEvaluator:
     def evaluate(self, dataset: DatasetBundle, controller_run: ControllerRun) -> EvaluationRun:
         truth = dataset.ground_truth
         payment_by_id = {payment.payment_id: payment for payment in dataset.payments}
-        labels: Set[str] = set(status.value for status in ReconciliationStatus)
-        confusion: Dict[str, Dict[str, int]] = {label: {inner: 0 for inner in labels} for label in labels}
+        labels: set[str] = set(status.value for status in ReconciliationStatus)
+        confusion: dict[str, dict[str, int]] = {label: {inner: 0 for inner in labels} for label in labels}
 
         correct = 0
         total = 0
-        failures: List[FailureRecord] = []
-        failure_taxonomy: Dict[str, int] = {}
+        failures: list[FailureRecord] = []
+        failure_taxonomy: dict[str, int] = {}
         correct_amount = Decimal("0.00")
         incorrect_amount = Decimal("0.00")
         error_impact = Decimal("0.00")
@@ -132,7 +130,7 @@ class IndependentEvaluator:
             failures=failures,
         )
 
-    def _macro_scores(self, confusion: Dict[str, Dict[str, int]]) -> tuple[float, float, float]:
+    def _macro_scores(self, confusion: dict[str, dict[str, int]]) -> tuple[float, float, float]:
         active_labels = set()
         for expected, predictions in confusion.items():
             if sum(predictions.values()) > 0:
@@ -159,8 +157,8 @@ class IndependentEvaluator:
             return 0.0, 0.0, 0.0
         return sum(precisions) / len(precisions), sum(recalls) / len(recalls), sum(f1s) / len(f1s)
 
-    def _class_metrics(self, confusion: Dict[str, Dict[str, int]]) -> Dict[str, Dict[str, float]]:
-        metrics: Dict[str, Dict[str, float]] = {}
+    def _class_metrics(self, confusion: dict[str, dict[str, int]]) -> dict[str, dict[str, float]]:
+        metrics: dict[str, dict[str, float]] = {}
         active_labels = set()
         for expected, predictions in confusion.items():
             if sum(predictions.values()) > 0:
@@ -188,7 +186,7 @@ class IndependentEvaluator:
             }
         return metrics
 
-    def _root_cause(self, expected: str, predicted: str, reason_codes: List[str]) -> str:
+    def _root_cause(self, expected: str, predicted: str, reason_codes: list[str]) -> str:
         if predicted == ReconciliationStatus.HUMAN_REVIEW.value and expected != predicted:
             return "Controller escalated instead of resolving deterministically."
         if expected == ReconciliationStatus.HUMAN_REVIEW.value and predicted != expected:

@@ -1,22 +1,21 @@
-import os
-import json
-import time
-import importlib
-import logging
-import hashlib
-import shutil
 import difflib
+import hashlib
+import json
+import logging
+import os
+import shutil
+import time
 import uuid
 from datetime import datetime
-from decimal import Decimal, ROUND_HALF_EVEN
+from decimal import ROUND_HALF_EVEN, Decimal, InvalidOperation
 from pathlib import Path
-from typing import AsyncGenerator, Dict, Any, List
+from typing import Any
 
+from dotenv import load_dotenv
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
-from dotenv import load_dotenv
 
-from .sandbox import SandboxRunner, ASTValidator, SecurityViolation
+from .sandbox import ASTValidator, SandboxRunner
 
 load_dotenv()
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
@@ -75,7 +74,7 @@ class _Oracles:
     def expected_fraud(amount_str: str) -> dict:
         try:
             amt = Decimal(amount_str)
-        except:
+        except (ValueError, InvalidOperation):
             return {"fraudulent": True}
         return {"fraudulent": bool(amt > 10000)}
 

@@ -1,4 +1,6 @@
-from decimal import Decimal, ROUND_HALF_EVEN
+from decimal import ROUND_HALF_EVEN, Decimal
+
+
 class BillingEngine:
     """IBM Bob 2.0 Patched Code"""
     def __init__(self):

@@ -1,8 +1,8 @@
-import logging
 import hashlib
 import json
-from decimal import Decimal, ROUND_HALF_EVEN
-from typing import Dict, Any
+import logging
+from decimal import ROUND_HALF_EVEN, Decimal
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class DeterministicOracle:
         self.international_rate = Decimal("0.03") 
         self.gst_rate = Decimal("0.18")           
 
-    def calculate_expected_settlement(self, amount_str: str, is_international: bool) -> Dict[str, str]:
+    def calculate_expected_settlement(self, amount_str: str, is_international: bool) -> dict[str, str]:
         try:
             amount = Decimal(amount_str)
             rate = self.international_rate if is_international else self.domestic_rate
@@ -43,7 +43,7 @@ class DeterministicOracle:
             logger.error(f"Oracle failed to calculate expected settlement for amount {amount_str}: {e}")
             raise ValueError("Invalid monetary string provided to Oracle.")
 
-    def verify_target_output(self, target_output: Dict[str, Any], expected_output: Dict[str, str]) -> Dict[str, Any]:
+    def verify_target_output(self, target_output: dict[str, Any], expected_output: dict[str, str]) -> dict[str, Any]:
         variances = {}
         for key in ["amount", "fee", "gst", "settlement"]:
             if target_output.get(key) != expected_output.get(key):

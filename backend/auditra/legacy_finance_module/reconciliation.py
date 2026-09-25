@@ -4,7 +4,7 @@ import statistics
 import time
 import uuid
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from .agent_tools import DatasetIndex, InvestigationTools, ToolBudgetExceeded
 from .ai_investigator import AIInvestigationAgent
@@ -29,7 +29,6 @@ from .models import (
     now_utc,
 )
 
-
 MATCH_STATUSES = {
     ReconciliationStatus.MATCHED,
     ReconciliationStatus.FEE_EXPLAINED,
@@ -49,7 +48,7 @@ class ReconciliationEngine:
         self,
         amount_tolerance: Decimal = Decimal("1.00"),
         enable_ai: bool = True,
-        ai_provider: Optional[StructuredInvestigationProvider] = None,
+        ai_provider: StructuredInvestigationProvider | None = None,
     ):
         self.amount_tolerance = money(amount_tolerance)
         self.enable_ai = enable_ai
@@ -64,8 +63,8 @@ class ReconciliationEngine:
         normalize_start = time.perf_counter()
         index = DatasetIndex(dataset)
         normalization_ms = (time.perf_counter() - normalize_start) * 1000
-        cases: List[ReconciliationCase] = []
-        latencies: List[float] = []
+        cases: list[ReconciliationCase] = []
+        latencies: list[float] = []
 
         audit.record(
             actor="system",
@@ -116,9 +115,9 @@ class ReconciliationEngine:
         case_id = f"CASE_{payment.payment_id}"
         tools = InvestigationTools(index=index, run_id=run_id, case_id=case_id)
         timeline = ["Investigation started"]
-        reason_codes: List[str] = []
-        contradicting: List[str] = []
-        supporting: List[str] = []
+        reason_codes: list[str] = []
+        contradicting: list[str] = []
+        supporting: list[str] = []
         tool_failure_requires_review = False
 
         audit.record(
@@ -543,20 +542,20 @@ class ReconciliationEngine:
         self,
         payment: Payment,
         order_exists: bool,
-        fee_rule: Optional[FeeRule],
+        fee_rule: FeeRule | None,
         settlements_present: bool,
         refund_total: Decimal,
-        expected_settlement: Optional[Decimal],
-        actual_settlement: Optional[Decimal],
-        difference: Optional[Decimal],
+        expected_settlement: Decimal | None,
+        actual_settlement: Decimal | None,
+        difference: Decimal | None,
         amount_within_tolerance: bool,
         temporal_valid: bool,
         is_duplicate: bool,
         refunds_before_settlement: bool,
-        reason_codes: List[str],
-        contradicting: List[str],
-        timeline: List[str],
-    ) -> Tuple[ReconciliationStatus, Decimal]:
+        reason_codes: list[str],
+        contradicting: list[str],
+        timeline: list[str],
+    ) -> tuple[ReconciliationStatus, Decimal]:
         if is_duplicate:
             return ReconciliationStatus.DUPLICATE, payment.amount
         if not order_exists:
@@ -596,20 +595,20 @@ class ReconciliationEngine:
         self,
         status: ReconciliationStatus,
         payment: Payment,
-        fee_rule: Optional[FeeRule],
+        fee_rule: FeeRule | None,
         settlements_present: bool,
         refunds_present: bool,
         refund_total: Decimal,
         amount_within_tolerance: bool,
         temporal_valid: bool,
         is_duplicate: bool,
-        difference: Optional[Decimal],
-        expected_settlement: Optional[Decimal],
-        actual_settlement: Optional[Decimal],
+        difference: Decimal | None,
+        expected_settlement: Decimal | None,
+        actual_settlement: Decimal | None,
         refunds_before_settlement: bool,
     ) -> VerificationResult:
-        checks: List[Dict[str, Any]] = []
-        challenges: List[str] = []
+        checks: list[dict[str, Any]] = []
+        challenges: list[str] = []
 
         def add_check(name: str, passed: bool, detail: str) -> None:
             checks.append({"check": name, "passed": passed, "detail": detail})
@@ -702,7 +701,7 @@ class ReconciliationEngine:
         temporal_valid: bool,
         verification_passed: bool,
         failed_invariant_count: int,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         return {
             "order_link": 1.0 if order_exists else 0.0,
             "settlement_link": 1.0 if settlements_present else 0.0,
@@ -715,7 +714,7 @@ class ReconciliationEngine:
             "failed_invariant_penalty": float(failed_invariant_count),
         }
 
-    def _should_run_ai(self, status: ReconciliationStatus, confidence: float, invariants: List[InvariantResult]) -> bool:
+    def _should_run_ai(self, status: ReconciliationStatus, confidence: float, invariants: list[InvariantResult]) -> bool:
         status_text = status.value if isinstance(status, ReconciliationStatus) else str(status)
         if status_text not in MATCH_STATUS_VALUES:
             return True
@@ -723,7 +722,7 @@ class ReconciliationEngine:
             return True
         return any(str(item.status) == "FAILED" for item in invariants)
 
-    def _blocking_invariant_failures(self, status: ReconciliationStatus, invariants: List[InvariantResult]) -> List[InvariantResult]:
+    def _blocking_invariant_failures(self, status: ReconciliationStatus, invariants: list[InvariantResult]) -> list[InvariantResult]:
         blocking_rule_ids = {
             "CURRENCY_CONSISTENCY",
             "MERCHANT_CONSISTENCY",
@@ -737,7 +736,7 @@ class ReconciliationEngine:
             blocking.extend(item for item in failures if item.rule_id == "DUPLICATE_CONSISTENCY")
         return blocking
 
-    def _blend_ai_confidence(self, confidence: float, ai_factors: Dict[str, float], negative_factors: Dict[str, float]) -> float:
+    def _blend_ai_confidence(self, confidence: float, ai_factors: dict[str, float], negative_factors: dict[str, float]) -> float:
         selected = ai_factors.get("selected_hypothesis_confidence", 0.0)
         verification = ai_factors.get("deterministic_verification", 0.0)
         penalty = min(0.08, negative_factors.get("failed_invariants", 0.0) * 0.01)
@@ -749,21 +748,21 @@ class ReconciliationEngine:
         status: ReconciliationStatus,
         impact: Decimal,
         payment: Payment,
-        fee_rule: Optional[FeeRule],
+        fee_rule: FeeRule | None,
         settlements_present: bool,
         refunds_present: bool,
         refund_total: Decimal,
         amount_within_tolerance: bool,
         temporal_valid: bool,
         is_duplicate: bool,
-        difference: Optional[Decimal],
-        expected_settlement: Optional[Decimal],
-        actual_settlement: Optional[Decimal],
+        difference: Decimal | None,
+        expected_settlement: Decimal | None,
+        actual_settlement: Decimal | None,
         refunds_before_settlement: bool,
-        reason_codes: List[str],
-        invariants: List[InvariantResult],
+        reason_codes: list[str],
+        invariants: list[InvariantResult],
         ai_investigation,
-    ) -> Tuple[ReconciliationStatus, Decimal, VerificationResult, bool]:
+    ) -> tuple[ReconciliationStatus, Decimal, VerificationResult, bool]:
         current_verification = self._verify(
             status=status,
             payment=payment,
@@ -824,12 +823,12 @@ class ReconciliationEngine:
         status: ReconciliationStatus,
         impact: Decimal,
         confidence: float,
-        invariants: List[InvariantResult],
+        invariants: list[InvariantResult],
         settlements_present: bool,
         is_duplicate: bool,
         contradictions: int,
-    ) -> Tuple[float, List[str]]:
-        factors: List[str] = []
+    ) -> tuple[float, list[str]]:
+        factors: list[str] = []
         score = 0.0
         status_text = status.value if isinstance(status, ReconciliationStatus) else str(status)
         if status_text not in MATCH_STATUS_VALUES:
@@ -878,7 +877,7 @@ class ReconciliationEngine:
                 return merchant.settlement_cycle_days
         return 2
 
-    def _refunds_before_settlement(self, refunds: List[Any], settlements: List[Any]) -> bool:
+    def _refunds_before_settlement(self, refunds: list[Any], settlements: list[Any]) -> bool:
         if not refunds:
             return False
         if not settlements:
@@ -889,9 +888,9 @@ class ReconciliationEngine:
     def _build_metrics(
         self,
         dataset: DatasetBundle,
-        cases: List[ReconciliationCase],
+        cases: list[ReconciliationCase],
         duration_ms: float,
-        latencies: List[float],
+        latencies: list[float],
         normalization_ms: float,
     ) -> RunMetrics:
         total = len(cases)

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Dict, List, Tuple
 
 from .models import (
     DatasetBundle,
@@ -81,7 +80,7 @@ class ScenarioGenerator:
 
     def generate(self, request: ScenarioRequest) -> DatasetBundle:
         rng = random.Random(request.seed)
-        generated_at = datetime(2026, 1, 5, 9, 30, tzinfo=timezone.utc)
+        generated_at = datetime(2026, 1, 5, 9, 30, tzinfo=UTC)
         mode_value = request.mode.value if hasattr(request.mode, "value") else str(request.mode)
         dataset_id = f"DS_{mode_value}_{request.seed}_{request.record_count}"
 
@@ -89,11 +88,11 @@ class ScenarioGenerator:
         merchant_by_id = {merchant.merchant_id: merchant for merchant in merchants}
         rule_by_merchant = {rule.merchant_id: rule for rule in fee_rules}
 
-        orders: List[Order] = []
-        payments: List[Payment] = []
-        settlements: List[Settlement] = []
-        refunds: List[Refund] = []
-        ground_truth: Dict[str, GroundTruthCase] = {}
+        orders: list[Order] = []
+        payments: list[Payment] = []
+        settlements: list[Settlement] = []
+        refunds: list[Refund] = []
+        ground_truth: dict[str, GroundTruthCase] = {}
 
         scenario_plan = self._scenario_plan(request.mode, request.record_count, rng)
         previous_payment: Payment | None = None
@@ -209,7 +208,7 @@ class ScenarioGenerator:
             ground_truth=ground_truth,
         )
 
-    def _scenario_plan(self, mode: ScenarioMode, record_count: int, rng: random.Random) -> List[str]:
+    def _scenario_plan(self, mode: ScenarioMode, record_count: int, rng: random.Random) -> list[str]:
         weights = self.scenario_weights[mode]
         names = list(weights.keys())
         values = list(weights.values())
@@ -222,9 +221,9 @@ class ScenarioGenerator:
                 plan[offset + 1] = required_name
         return plan
 
-    def _build_merchants_and_rules(self, active_from: datetime) -> Tuple[List[Merchant], List[FeeRule]]:
-        merchants: List[Merchant] = []
-        rules: List[FeeRule] = []
+    def _build_merchants_and_rules(self, active_from: datetime) -> tuple[list[Merchant], list[FeeRule]]:
+        merchants: list[Merchant] = []
+        rules: list[FeeRule] = []
         for idx, (merchant_id, name, bps, fixed_fee, cycle_days) in enumerate(self.merchant_templates, start=1):
             merchants.append(
                 Merchant(

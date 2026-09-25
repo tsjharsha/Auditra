@@ -1,8 +1,6 @@
 import logging
 import time
-import os
-from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
 
 from .sandbox import VerificationSandbox
 
@@ -17,7 +15,7 @@ class IBMBobAgent:
         # We would initialize API keys here for IBM Watsonx/Bob 2.0
         pass
         
-    def generate_patch(self, source_code: str, failure_report: Dict[str, Any]) -> str:
+    def generate_patch(self, source_code: str, failure_report: dict[str, Any]) -> str:
         """
         Sends the failure fingerprint and source code to the LLM.
         Requests a full file rewrite to fix the bug.
@@ -72,7 +70,7 @@ class AutonomousVerificationLoop:
         with open(self.target_service_path, 'w', encoding='utf-8') as f:
             f.write(new_code)
             
-    def execute(self) -> Dict[str, Any]:
+    def execute(self) -> dict[str, Any]:
         """
         Runs the autonomous loop until 100% pass rate or max iterations hit.
         """

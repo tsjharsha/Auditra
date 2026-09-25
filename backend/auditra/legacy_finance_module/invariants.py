@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .models import (
     FeeRule,
@@ -24,14 +24,14 @@ class FinancialInvariantEngine:
     def evaluate(
         self,
         payment: Payment,
-        order: Optional[Order],
-        settlements: List[Settlement],
-        refunds: List[Refund],
-        fee_rule: Optional[FeeRule],
-        expected_settlement: Optional[Decimal],
-        actual_settlement: Optional[Decimal],
-        duplicate_info: Dict[str, Any],
-    ) -> List[InvariantResult]:
+        order: Order | None,
+        settlements: list[Settlement],
+        refunds: list[Refund],
+        fee_rule: FeeRule | None,
+        expected_settlement: Decimal | None,
+        actual_settlement: Decimal | None,
+        duplicate_info: dict[str, Any],
+    ) -> list[InvariantResult]:
         refund_total = money(sum((refund.amount for refund in refunds), Decimal("0.00")))
         return [
             self._payment_order_amount(payment, order),
@@ -51,10 +51,10 @@ class FinancialInvariantEngine:
         rule_id: str,
         status: InvariantStatus,
         reason: str,
-        evidence_ids: List[str],
-        expected: Optional[Decimal] = None,
-        actual: Optional[Decimal] = None,
-        difference: Optional[Decimal] = None,
+        evidence_ids: list[str],
+        expected: Decimal | None = None,
+        actual: Decimal | None = None,
+        difference: Decimal | None = None,
         severity: str = "info",
     ) -> InvariantResult:
         return InvariantResult(
@@ -68,7 +68,7 @@ class FinancialInvariantEngine:
             severity=severity,
         )
 
-    def _payment_order_amount(self, payment: Payment, order: Optional[Order]) -> InvariantResult:
+    def _payment_order_amount(self, payment: Payment, order: Order | None) -> InvariantResult:
         evidence_ids = [f"EVD_PAYMENT_{payment.payment_id}"]
         if order is None:
             return self._result(
@@ -95,10 +95,10 @@ class FinancialInvariantEngine:
     def _currency_consistency(
         self,
         payment: Payment,
-        order: Optional[Order],
-        settlements: List[Settlement],
-        refunds: List[Refund],
-        fee_rule: Optional[FeeRule],
+        order: Order | None,
+        settlements: list[Settlement],
+        refunds: list[Refund],
+        fee_rule: FeeRule | None,
     ) -> InvariantResult:
         currencies = {payment.currency}
         evidence_ids = [f"EVD_PAYMENT_{payment.payment_id}"]
@@ -126,10 +126,10 @@ class FinancialInvariantEngine:
     def _merchant_consistency(
         self,
         payment: Payment,
-        order: Optional[Order],
-        settlements: List[Settlement],
-        refunds: List[Refund],
-        fee_rule: Optional[FeeRule],
+        order: Order | None,
+        settlements: list[Settlement],
+        refunds: list[Refund],
+        fee_rule: FeeRule | None,
     ) -> InvariantResult:
         merchant_ids = {payment.merchant_id}
         evidence_ids = [f"EVD_PAYMENT_{payment.payment_id}"]
@@ -157,10 +157,10 @@ class FinancialInvariantEngine:
     def _settlement_net_amount(
         self,
         payment: Payment,
-        settlements: List[Settlement],
-        fee_rule: Optional[FeeRule],
-        expected_settlement: Optional[Decimal],
-        actual_settlement: Optional[Decimal],
+        settlements: list[Settlement],
+        fee_rule: FeeRule | None,
+        expected_settlement: Decimal | None,
+        actual_settlement: Decimal | None,
     ) -> InvariantResult:
         evidence_ids = [f"EVD_PAYMENT_{payment.payment_id}"]
         evidence_ids.extend(f"EVD_SETTLEMENT_{settlement.settlement_id}" for settlement in settlements)
@@ -187,7 +187,7 @@ class FinancialInvariantEngine:
             severity="high" if not passed else "info",
         )
 
-    def _refund_limit(self, payment: Payment, refunds: List[Refund], refund_total: Decimal) -> InvariantResult:
+    def _refund_limit(self, payment: Payment, refunds: list[Refund], refund_total: Decimal) -> InvariantResult:
         evidence_ids = [f"EVD_PAYMENT_{payment.payment_id}"]
         evidence_ids.extend(f"EVD_REFUND_{refund.refund_id}" for refund in refunds)
         if not refunds:
@@ -209,7 +209,7 @@ class FinancialInvariantEngine:
             severity="critical" if not passed else "info",
         )
 
-    def _payment_before_settlement(self, payment: Payment, settlements: List[Settlement]) -> InvariantResult:
+    def _payment_before_settlement(self, payment: Payment, settlements: list[Settlement]) -> InvariantResult:
         evidence_ids = [f"EVD_PAYMENT_{payment.payment_id}"]
         evidence_ids.extend(f"EVD_SETTLEMENT_{settlement.settlement_id}" for settlement in settlements)
         if not settlements:
@@ -229,7 +229,7 @@ class FinancialInvariantEngine:
             severity="high" if not passed else "info",
         )
 
-    def _refund_after_payment(self, payment: Payment, refunds: List[Refund]) -> InvariantResult:
+    def _refund_after_payment(self, payment: Payment, refunds: list[Refund]) -> InvariantResult:
         evidence_ids = [f"EVD_PAYMENT_{payment.payment_id}"]
         evidence_ids.extend(f"EVD_REFUND_{refund.refund_id}" for refund in refunds)
         if not refunds:
@@ -243,7 +243,7 @@ class FinancialInvariantEngine:
             severity="high" if not passed else "info",
         )
 
-    def _duplicate_consistency(self, payment: Payment, duplicate_info: Dict[str, Any]) -> InvariantResult:
+    def _duplicate_consistency(self, payment: Payment, duplicate_info: dict[str, Any]) -> InvariantResult:
         duplicate_ids = duplicate_info.get("duplicate_payment_ids", [])
         evidence_ids = [f"EVD_PAYMENT_{payment.payment_id}"]
         evidence_ids.extend(f"EVD_PAYMENT_{payment_id}" for payment_id in duplicate_ids)
@@ -259,9 +259,9 @@ class FinancialInvariantEngine:
     def _relationship_completeness(
         self,
         payment: Payment,
-        order: Optional[Order],
-        settlements: List[Settlement],
-        fee_rule: Optional[FeeRule],
+        order: Order | None,
+        settlements: list[Settlement],
+        fee_rule: FeeRule | None,
     ) -> InvariantResult:
         missing = []
         if order is None:
@@ -284,7 +284,7 @@ class FinancialInvariantEngine:
             severity="review" if missing else "info",
         )
 
-    def _fee_rule_applicability(self, payment: Payment, fee_rule: Optional[FeeRule]) -> InvariantResult:
+    def _fee_rule_applicability(self, payment: Payment, fee_rule: FeeRule | None) -> InvariantResult:
         evidence_ids = [f"EVD_PAYMENT_{payment.payment_id}"]
         if fee_rule is None:
             return self._result(

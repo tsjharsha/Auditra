@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Dict, List
 
 from ..models import DatasetBundle, money
 from .models import WorldValidationCheck, WorldValidationReport
@@ -102,7 +101,7 @@ class WorldValidator:
 
     def _refund_constraints(self, dataset: DatasetBundle) -> WorldValidationCheck:
         payment_amount = {payment.payment_id: payment.amount for payment in dataset.payments}
-        totals: Dict[str, Decimal] = {}
+        totals: dict[str, Decimal] = {}
         for refund in dataset.refunds:
             totals[refund.payment_id] = money(totals.get(refund.payment_id, Decimal("0.00")) + refund.amount)
         excessive = [payment_id for payment_id, total in totals.items() if total > payment_amount.get(payment_id, Decimal("0.00"))]

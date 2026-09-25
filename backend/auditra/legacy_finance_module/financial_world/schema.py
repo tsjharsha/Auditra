@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from .models import EntitySchema, RelationshipEdge, RelationshipModel, SchemaField, SchemaPreview
+from .models import (
+    EntitySchema,
+    RelationshipEdge,
+    RelationshipModel,
+    SchemaField,
+    SchemaPreview,
+)
 
 
 def build_schema_preview() -> SchemaPreview:

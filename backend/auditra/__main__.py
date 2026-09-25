@@ -1,16 +1,13 @@
-import sys
-import json
 import argparse
+import json
+import sys
 from pathlib import Path
 
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from backend.auditra.verification_api import (
-    verify_node,
-    VERIFICATION_NODES,
-    TARGETS
-)
+from backend.auditra.verification_api import TARGETS, VERIFICATION_NODES, verify_node
+
 
 def run_verify(json_output=False):
     results = {}

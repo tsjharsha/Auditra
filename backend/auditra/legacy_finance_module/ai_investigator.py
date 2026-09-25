@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import os
 import time
 import uuid
-import os
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .agent_tools import InvestigationTools, ToolBudgetExceeded
 from .ai_provider import StructuredInvestigationProvider, runtime_investigation_provider
@@ -13,8 +13,8 @@ from .models import (
     AIInvestigationResult,
     FeeRule,
     HypothesisStatus,
-    InvestigationHypothesis,
     InvariantResult,
+    InvestigationHypothesis,
     Payment,
     ReconciliationStatus,
     money,
@@ -58,7 +58,7 @@ class AIInvestigationAgent:
     }
     max_model_tool_plan_steps = 24
 
-    def __init__(self, provider: Optional[StructuredInvestigationProvider] = None):
+    def __init__(self, provider: StructuredInvestigationProvider | None = None):
         self.provider = provider or runtime_investigation_provider()
 
     def investigate(
@@ -66,12 +66,12 @@ class AIInvestigationAgent:
         payment: Payment,
         tools: InvestigationTools,
         status: ReconciliationStatus | str,
-        reason_codes: List[str],
-        evidence_ids: List[str],
-        supporting_evidence: List[str],
-        contradicting_evidence: List[str],
-        invariants: List[InvariantResult],
-        fee_rule: Optional[FeeRule],
+        reason_codes: list[str],
+        evidence_ids: list[str],
+        supporting_evidence: list[str],
+        contradicting_evidence: list[str],
+        invariants: list[InvariantResult],
+        fee_rule: FeeRule | None,
         settlements_present: bool,
         refunds_present: bool,
         amount_within_tolerance: bool,
@@ -119,7 +119,7 @@ class AIInvestigationAgent:
         if not labels:
             labels = ["matched_low_risk"]
         tool_plan = self._group_tool_plan(proposal.get("tool_plan", []))
-        hypotheses: List[InvestigationHypothesis] = []
+        hypotheses: list[InvestigationHypothesis] = []
         for label in labels:
             hypotheses.append(
                 self._investigate_label(
@@ -291,8 +291,8 @@ class AIInvestigationAgent:
                 detail = detail.replace(secret, "[redacted]")
         return detail
 
-    def _group_tool_plan(self, tool_plan: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
-        grouped: Dict[str, List[Dict[str, Any]]] = {}
+    def _group_tool_plan(self, tool_plan: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+        grouped: dict[str, list[dict[str, Any]]] = {}
         accepted = 0
         for raw_step in tool_plan:
             if accepted >= self.max_model_tool_plan_steps:
@@ -313,23 +313,23 @@ class AIInvestigationAgent:
         label: str,
         payment: Payment,
         tools: InvestigationTools,
-        evidence_ids: List[str],
-        supporting_evidence: List[str],
-        contradicting_evidence: List[str],
-        invariants: List[InvariantResult],
-        fee_rule: Optional[FeeRule],
+        evidence_ids: list[str],
+        supporting_evidence: list[str],
+        contradicting_evidence: list[str],
+        invariants: list[InvariantResult],
+        fee_rule: FeeRule | None,
         settlements_present: bool,
         refunds_present: bool,
         amount_within_tolerance: bool,
         temporal_valid: bool,
         is_duplicate: bool,
-        reason_codes: List[str],
-        tool_plan: List[Dict[str, Any]],
+        reason_codes: list[str],
+        tool_plan: list[dict[str, Any]],
     ) -> InvestigationHypothesis:
         before_calls = len(tools.calls)
         label_evidence = self._evidence_for_label(label, evidence_ids, invariants)
         hypothesis_id = f"HYP_{uuid.uuid4().hex[:10]}"
-        checks: List[Dict[str, Any]] = []
+        checks: list[dict[str, Any]] = []
         try:
             created = tools.create_hypothesis(label, label_evidence)
             hypothesis_id = created["hypothesis_id"]
@@ -377,10 +377,10 @@ class AIInvestigationAgent:
         label: str,
         payment: Payment,
         tools: InvestigationTools,
-        fee_rule: Optional[FeeRule],
-        tool_plan: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
-        notes: Dict[str, Any] = {}
+        fee_rule: FeeRule | None,
+        tool_plan: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        notes: dict[str, Any] = {}
         steps = tool_plan or self._fallback_tool_plan(label)
         for step in steps:
             tool_name = str(step.get("tool_name", ""))
@@ -390,8 +390,8 @@ class AIInvestigationAgent:
             self._store_note(notes, tool_name, result)
         return notes
 
-    def _fallback_tool_plan(self, label: str) -> List[Dict[str, Any]]:
-        by_label: Dict[str, List[str]] = {
+    def _fallback_tool_plan(self, label: str) -> list[dict[str, Any]]:
+        by_label: dict[str, list[str]] = {
             "duplicate_or_replayed_payment": ["find_merchant", "check_duplicate", "find_related_transactions"],
             "missing_or_delayed_settlement": ["find_merchant", "find_settlement", "get_graph_neighborhood"],
             "fee_discrepancy": ["find_merchant", "check_fee_applicability"],
@@ -405,10 +405,10 @@ class AIInvestigationAgent:
     def _execute_tool_plan_step(
         self,
         tool_name: str,
-        arguments: Dict[str, Any],
+        arguments: dict[str, Any],
         payment: Payment,
         tools: InvestigationTools,
-        fee_rule: Optional[FeeRule],
+        fee_rule: FeeRule | None,
     ) -> Any:
         if tool_name == "find_payment":
             return tools.find_payment(payment.payment_id)
@@ -450,7 +450,7 @@ class AIInvestigationAgent:
             return tools.get_evidence(entity_type, entity_id)
         raise ValueError(f"tool is not available to the model: {tool_name}")
 
-    def _store_note(self, notes: Dict[str, Any], tool_name: str, result: Any) -> None:
+    def _store_note(self, notes: dict[str, Any], tool_name: str, result: Any) -> None:
         if tool_name == "check_duplicate":
             key = "duplicate"
         elif tool_name == "find_refunds":
@@ -479,10 +479,10 @@ class AIInvestigationAgent:
         amount_within_tolerance: bool,
         temporal_valid: bool,
         is_duplicate: bool,
-        reason_codes: List[str],
-        invariants: List[InvariantResult],
-        tool_notes: Dict[str, Any],
-    ) -> List[Dict[str, Any]]:
+        reason_codes: list[str],
+        invariants: list[InvariantResult],
+        tool_notes: dict[str, Any],
+    ) -> list[dict[str, Any]]:
         failed_rules = {item.rule_id for item in invariants if str(item.status) == "FAILED"}
         if label == "duplicate_or_replayed_payment":
             duplicate = tool_notes.get("duplicate", {})
@@ -524,7 +524,7 @@ class AIInvestigationAgent:
             ]
         return [{"check": "low_risk_match", "passed": not failed_rules and amount_within_tolerance, "detail": "No failed invariant found"}]
 
-    def _hypothesis_status(self, checks: List[Dict[str, Any]]) -> HypothesisStatus:
+    def _hypothesis_status(self, checks: list[dict[str, Any]]) -> HypothesisStatus:
         if not checks:
             return HypothesisStatus.INCONCLUSIVE
         passed = sum(1 for item in checks if bool(item.get("passed")))
@@ -534,7 +534,7 @@ class AIInvestigationAgent:
             return HypothesisStatus.REJECTED
         return HypothesisStatus.INCONCLUSIVE
 
-    def _hypothesis_confidence(self, status: HypothesisStatus, checks: List[Dict[str, Any]], verified: Dict[str, Any]) -> float:
+    def _hypothesis_confidence(self, status: HypothesisStatus, checks: list[dict[str, Any]], verified: dict[str, Any]) -> float:
         passed = sum(1 for item in checks if bool(item.get("passed")))
         ratio = passed / max(len(checks), 1)
         base = 0.25 + (0.55 * ratio)
@@ -544,7 +544,7 @@ class AIInvestigationAgent:
             base = min(base, 0.35)
         return round(max(0.0, min(0.98, base)), 4)
 
-    def _evidence_for_label(self, label: str, evidence_ids: List[str], invariants: List[InvariantResult]) -> List[str]:
+    def _evidence_for_label(self, label: str, evidence_ids: list[str], invariants: list[InvariantResult]) -> list[str]:
         relevant_rules = {
             "duplicate_or_replayed_payment": {"DUPLICATE_CONSISTENCY"},
             "missing_or_delayed_settlement": {"RELATIONSHIP_COMPLETENESS", "SETTLEMENT_NET_AMOUNT"},
@@ -563,7 +563,7 @@ class AIInvestigationAgent:
     def _hypothesis_rationale(self, label: str, status: HypothesisStatus) -> str:
         return f"{label} is {status.value.lower()} by logged tools and invariant checks."
 
-    def _rationale(self, status_text: str, selected: Optional[InvestigationHypothesis]) -> str:
+    def _rationale(self, status_text: str, selected: InvestigationHypothesis | None) -> str:
         if selected is None:
             return "No hypothesis was selected."
         return (

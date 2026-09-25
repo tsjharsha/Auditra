@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping, Tuple
+from collections.abc import Mapping
+from typing import Any
 
 from ..models import DatasetBundle
-from .adapters import CSVAdapter, JSONAdapter, GatewayTestAdapter
+from .adapters import CSVAdapter, GatewayTestAdapter, JSONAdapter
 from .generator import FinancialWorldGenerator
-from .models import AdapterIngestionResult, FinancialWorldBuildResult, FinancialWorldSpec
+from .models import (
+    AdapterIngestionResult,
+    FinancialWorldBuildResult,
+    FinancialWorldSpec,
+)
 from .schema import build_relationship_model, build_schema_preview
 from .understanding import WorldUnderstandingService
 from .validation import WorldValidator
@@ -22,10 +27,10 @@ class FinancialWorldService:
             "gateway_test": GatewayTestAdapter(),
         }
 
-    def understand(self, prompt: str, seed: int = 42) -> Tuple[FinancialWorldSpec, list]:
+    def understand(self, prompt: str, seed: int = 42) -> tuple[FinancialWorldSpec, list]:
         return self.understanding.understand(prompt, seed=seed)
 
-    def preview(self, spec: FinancialWorldSpec) -> Dict[str, Any]:
+    def preview(self, spec: FinancialWorldSpec) -> dict[str, Any]:
         return {
             "spec": spec,
             "schema_preview": build_schema_preview(),
@@ -60,17 +65,17 @@ class FinancialWorldService:
             raise KeyError(f"adapter not found: {adapter}")
         return self.adapters[adapter].ingest(payload, seed=seed)
 
-    def public_build_result(self, result: FinancialWorldBuildResult) -> Dict[str, Any]:
+    def public_build_result(self, result: FinancialWorldBuildResult) -> dict[str, Any]:
         payload = result.model_dump(mode="json", exclude={"dataset"})
         payload["dataset"] = self.public_dataset(result.dataset) if result.dataset else None
         return payload
 
-    def public_ingestion_result(self, result: AdapterIngestionResult) -> Dict[str, Any]:
+    def public_ingestion_result(self, result: AdapterIngestionResult) -> dict[str, Any]:
         payload = result.model_dump(mode="json", exclude={"dataset"})
         payload["dataset"] = self.public_dataset(result.dataset) if result.dataset else None
         return payload
 
-    def public_dataset(self, dataset: DatasetBundle | None) -> Dict[str, Any] | None:
+    def public_dataset(self, dataset: DatasetBundle | None) -> dict[str, Any] | None:
         if dataset is None:
             return None
         return {

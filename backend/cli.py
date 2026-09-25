@@ -1,6 +1,6 @@
 import logging
-import sys
 import os
+import sys
 
 # Add backend to path so we can import auditra
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -32,7 +32,7 @@ def run_cli():
         print(f"VERIFICATION COMPLETE IN {result['iterations']} ITERATION(S)")
         print(f"CERTIFICATE ISSUED: {result['certificate']}")
     else:
-        print(f"VERIFICATION FAILED")
+        print("VERIFICATION FAILED")
         print(f"Message: {result['message']}")
     print("=====================================================")
 

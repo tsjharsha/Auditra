@@ -2,12 +2,22 @@ from __future__ import annotations
 
 import csv
 import hashlib
-from datetime import datetime, timedelta, timezone
+from collections.abc import Mapping
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from io import StringIO
-from typing import Any, Dict, List, Mapping
+from typing import Any
 
-from ..models import DatasetBundle, FeeRule, Merchant, Order, Payment, Refund, ScenarioMode, Settlement
+from ..models import (
+    DatasetBundle,
+    FeeRule,
+    Merchant,
+    Order,
+    Payment,
+    Refund,
+    ScenarioMode,
+    Settlement,
+)
 from .models import AdapterIngestionResult
 from .validation import WorldValidator
 
@@ -23,9 +33,9 @@ class CanonicalRecordBuilder:
     def __init__(self, source: str, seed: int = 42):
         self.source = source
         self.seed = seed
-        self.base_time = datetime(2026, 1, 5, 9, 30, tzinfo=timezone.utc)
+        self.base_time = datetime(2026, 1, 5, 9, 30, tzinfo=UTC)
 
-    def dataset(self, rows: Mapping[str, List[Dict[str, Any]]]) -> DatasetBundle:
+    def dataset(self, rows: Mapping[str, list[dict[str, Any]]]) -> DatasetBundle:
         merchants = [self.merchant(idx, row) for idx, row in enumerate(rows.get("merchants", []), start=1)]
         orders = [self.order(idx, row) for idx, row in enumerate(rows.get("orders", []), start=1)]
         payments = [self.payment(idx, row) for idx, row in enumerate(rows.get("payments", []), start=1)]
@@ -79,7 +89,7 @@ class CanonicalRecordBuilder:
             ground_truth={},
         )
 
-    def merchant(self, idx: int, row: Dict[str, Any]) -> Merchant:
+    def merchant(self, idx: int, row: dict[str, Any]) -> Merchant:
         return Merchant(
             source=self.source,
             source_record_id=str(row.get("source_record_id") or f"{self.source}_MERCHANT_{idx}"),
@@ -91,7 +101,7 @@ class CanonicalRecordBuilder:
             original=dict(row),
         )
 
-    def order(self, idx: int, row: Dict[str, Any]) -> Order:
+    def order(self, idx: int, row: dict[str, Any]) -> Order:
         return Order(
             source=self.source,
             source_record_id=str(row.get("source_record_id") or f"{self.source}_ORDER_{idx}"),
@@ -107,7 +117,7 @@ class CanonicalRecordBuilder:
             original=dict(row),
         )
 
-    def payment(self, idx: int, row: Dict[str, Any]) -> Payment:
+    def payment(self, idx: int, row: dict[str, Any]) -> Payment:
         return Payment(
             source=self.source,
             source_record_id=str(row.get("source_record_id") or f"{self.source}_PAYMENT_{idx}"),
@@ -124,7 +134,7 @@ class CanonicalRecordBuilder:
             original=dict(row),
         )
 
-    def settlement(self, idx: int, row: Dict[str, Any]) -> Settlement:
+    def settlement(self, idx: int, row: dict[str, Any]) -> Settlement:
         return Settlement(
             source=self.source,
             source_record_id=str(row.get("source_record_id") or f"{self.source}_SETTLEMENT_{idx}"),
@@ -139,7 +149,7 @@ class CanonicalRecordBuilder:
             original=dict(row),
         )
 
-    def refund(self, idx: int, row: Dict[str, Any]) -> Refund:
+    def refund(self, idx: int, row: dict[str, Any]) -> Refund:
         return Refund(
             source=self.source,
             source_record_id=str(row.get("source_record_id") or f"{self.source}_REFUND_{idx}"),
@@ -154,10 +164,10 @@ class CanonicalRecordBuilder:
             original=dict(row),
         )
 
-    def fee_rule(self, idx: int, row: Dict[str, Any]) -> FeeRule:
+    def fee_rule(self, idx: int, row: dict[str, Any]) -> FeeRule:
         percent_bps = row.get("percent_bps")
         if percent_bps is None and row.get("fee_rate") is not None:
-            percent_bps = int(Decimal(str(row["fee_rate"])) * Decimal("10000"))
+            percent_bps = int(Decimal(str(row["fee_rate"])) * Decimal(10000))
         return FeeRule(
             source=self.source,
             source_record_id=str(row.get("source_record_id") or f"{self.source}_FEE_{idx}"),
@@ -174,13 +184,13 @@ class CanonicalRecordBuilder:
 
     def _time(self, value: Any, idx: int) -> datetime:
         if isinstance(value, datetime):
-            return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+            return value if value.tzinfo else value.replace(tzinfo=UTC)
         if value:
             parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-            return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+            return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
         return self.base_time + timedelta(minutes=idx)
 
-    def _dataset_id(self, rows: Mapping[str, List[Dict[str, Any]]]) -> str:
+    def _dataset_id(self, rows: Mapping[str, list[dict[str, Any]]]) -> str:
         digest = hashlib.sha256(repr(sorted((key, len(value)) for key, value in rows.items())).encode("utf-8")).hexdigest()[:12]
         return f"INGEST_{self.source.upper()}_{digest}"
 
@@ -213,7 +223,7 @@ class CSVAdapter(FinancialSourceAdapter):
     name = "csv"
 
     def ingest(self, payload: Mapping[str, Any], seed: int = 42) -> AdapterIngestionResult:
-        rows: Dict[str, List[Dict[str, Any]]] = {}
+        rows: dict[str, list[dict[str, Any]]] = {}
         for entity, text in payload.items():
             if not isinstance(text, str) or not text.strip():
                 continue

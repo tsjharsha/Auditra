@@ -4,7 +4,6 @@ import hashlib
 import random
 from datetime import timedelta
 from decimal import Decimal
-from typing import Dict, List, Tuple
 
 from ..models import (
     DatasetBundle,
@@ -20,7 +19,6 @@ from ..models import (
 )
 from .models import AnomalyMode, FinancialWorldSpec, WorldSummary
 
-
 HEALTHY_STATUSES = {
     ReconciliationStatus.MATCHED.value,
     ReconciliationStatus.FEE_EXPLAINED.value,
@@ -29,7 +27,7 @@ HEALTHY_STATUSES = {
 
 
 class FinancialWorldGenerator:
-    def generate(self, spec: FinancialWorldSpec) -> Tuple[str, DatasetBundle, WorldSummary]:
+    def generate(self, spec: FinancialWorldSpec) -> tuple[str, DatasetBundle, WorldSummary]:
         rng = random.Random(self._seed(spec))
         world_id = self._world_id(spec)
         base_time = spec.start_at
@@ -50,20 +48,20 @@ class FinancialWorldGenerator:
             fee_rule_id=f"FEE_{world_id[-8:]}",
             merchant_id=merchant.merchant_id,
             currency=spec.currencies[0],
-            percent_bps=int(spec.fee_rate * Decimal("10000")),
-            gst_bps=int(spec.gst_rate * Decimal("10000")),
+            percent_bps=int(spec.fee_rate * Decimal(10000)),
+            gst_bps=int(spec.gst_rate * Decimal(10000)),
             fixed_fee=spec.fixed_fee,
             active_from=base_time - timedelta(days=365),
             original={"world_id": world_id, "fee_rate": str(spec.fee_rate), "gst_rate": str(spec.gst_rate)},
         )
 
-        orders: List[Order] = []
-        payments: List[Payment] = []
-        settlements: List[Settlement] = []
-        refunds: List[Refund] = []
-        ground_truth: Dict[str, GroundTruthCase] = {}
+        orders: list[Order] = []
+        payments: list[Payment] = []
+        settlements: list[Settlement] = []
+        refunds: list[Refund] = []
+        ground_truth: dict[str, GroundTruthCase] = {}
         anomaly_plan = self._anomaly_plan(spec, rng)
-        anomaly_counts: Dict[str, int] = {}
+        anomaly_counts: dict[str, int] = {}
 
         for idx, anomaly in enumerate(anomaly_plan, start=1):
             amount = self._amount(rng)
@@ -256,7 +254,7 @@ class FinancialWorldGenerator:
             original={"world_id": world_id},
         )
 
-    def _make_refund_conflicting(self, refunds: List[Refund], payment: Payment, merchant: Merchant) -> None:
+    def _make_refund_conflicting(self, refunds: list[Refund], payment: Payment, merchant: Merchant) -> None:
         conflict_merchant_id = f"{merchant.merchant_id}_CONFLICT"
         for idx in range(len(refunds) - 1, -1, -1):
             refund = refunds[idx]
@@ -266,7 +264,7 @@ class FinancialWorldGenerator:
                 )
                 return
 
-    def _anomaly_plan(self, spec: FinancialWorldSpec, rng: random.Random) -> List[str]:
+    def _anomaly_plan(self, spec: FinancialWorldSpec, rng: random.Random) -> list[str]:
         names = ["NORMAL"]
         weights = [max(Decimal("0.0000"), Decimal("1.0000") - sum(spec.anomaly_rates.values()))]
         for name, value in sorted(spec.anomaly_rates.items()):
@@ -283,7 +281,7 @@ class FinancialWorldGenerator:
                     plan[offset] = name
         return plan
 
-    def _summary(self, world_id: str, spec: FinancialWorldSpec, dataset: DatasetBundle, anomaly_counts: Dict[str, int]) -> WorldSummary:
+    def _summary(self, world_id: str, spec: FinancialWorldSpec, dataset: DatasetBundle, anomaly_counts: dict[str, int]) -> WorldSummary:
         payment_volume = money(sum((payment.amount for payment in dataset.payments), Decimal("0.00")))
         settlement_volume = money(sum((settlement.amount for settlement in dataset.settlements), Decimal("0.00")))
         human_review_amount = money(
@@ -322,7 +320,7 @@ class FinancialWorldGenerator:
             currencies=spec.currencies,
             payment_methods=spec.payment_methods,
             settlement=f"T+{spec.settlement_delay_days}",
-            fee=f"{(spec.fee_rate * Decimal('100')).quantize(Decimal('0.01'))}% + GST",
+            fee=f"{(spec.fee_rate * Decimal(100)).quantize(Decimal('0.01'))}% + GST",
             anomalies=sum(anomaly_counts.values()),
             anomaly_mix=anomaly_counts,
         )

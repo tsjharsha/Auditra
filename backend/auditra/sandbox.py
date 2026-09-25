@@ -1,10 +1,11 @@
 import ast
 import json
+import os
 import subprocess
 import tempfile
-import os
 from pathlib import Path
-from typing import Tuple, Dict, Any
+from typing import Any
+
 
 class SecurityViolation(Exception):
     pass
@@ -37,7 +38,7 @@ class ASTValidator:
 
 class SandboxRunner:
     @staticmethod
-    def execute(module_path: str, class_name: str, method_name: str, kwargs: dict, timeout: int = 2) -> Tuple[bool, Dict[str, Any]]:
+    def execute(module_path: str, class_name: str, method_name: str, kwargs: dict, timeout: int = 2) -> tuple[bool, dict[str, Any]]:
         mod_path = Path(module_path)
         runner_code = f"""
 import json
@@ -81,7 +82,7 @@ except Exception as e:
         except subprocess.TimeoutExpired:
             return False, {"error": f"Execution timed out after {timeout} seconds"}
         except Exception as e:
-            return False, {"error": f"Sandbox execution failed: {str(e)}"}
+            return False, {"error": f"Sandbox execution failed: {e!s}"}
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)

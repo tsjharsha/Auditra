@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import os
 import re
 from decimal import Decimal
-from typing import Dict, List, Optional, Tuple
 
 from pydantic import ValidationError
 
@@ -11,23 +9,32 @@ from ..llm import (
     DETERMINISTIC,
     OFFLINE_AI,
     REAL_GEMINI_AI,
-    REAL_HUGGINGFACE_AI,
-    REAL_OPENROUTER_AI,
     REAL_GROQ_AI,
+    REAL_HUGGINGFACE_AI,
     REAL_OPENAI_AI,
-    GeminiProvider as GeminiLLMProvider,
-    GroqProvider as GroqLLMProvider,
-    HuggingFaceProvider as HuggingFaceLLMProvider,
-    OpenRouterProvider as OpenRouterLLMProvider,
+    REAL_OPENROUTER_AI,
     LLMInvalidResponse,
     LLMProvider,
     LLMProviderConfig,
     LLMUnavailable,
-    OpenAIProvider as OpenAILLMProvider,
     resolve_llm_provider,
 )
+from ..llm import (
+    GeminiProvider as GeminiLLMProvider,
+)
+from ..llm import (
+    GroqProvider as GroqLLMProvider,
+)
+from ..llm import (
+    HuggingFaceProvider as HuggingFaceLLMProvider,
+)
+from ..llm import (
+    OpenAIProvider as OpenAILLMProvider,
+)
+from ..llm import (
+    OpenRouterProvider as OpenRouterLLMProvider,
+)
 from .models import AnomalyMode, FinancialWorldSpec, UnderstandingStep, rate
-
 
 DEFAULT_ANOMALIES = {
     AnomalyMode.NORMAL: {
@@ -77,7 +84,7 @@ class PromptUnderstandingError(ValueError):
 
 
 class DeterministicPromptParser:
-    def parse(self, prompt: str, seed: int = 42) -> Tuple[FinancialWorldSpec, List[UnderstandingStep]]:
+    def parse(self, prompt: str, seed: int = 42) -> tuple[FinancialWorldSpec, list[UnderstandingStep]]:
         text = prompt.strip()
         lowered = text.lower()
         mode = self._mode(lowered)
@@ -142,13 +149,13 @@ class DeterministicPromptParser:
             match = re.search(r"(?:fee|fees|commission).*?(\d+(?:\.\d+)?)\s*%", text)
         if not match:
             return Decimal("0.0200")
-        return rate(Decimal(match.group(1)) / Decimal("100"))
+        return rate(Decimal(match.group(1)) / Decimal(100))
 
     def _gst_rate(self, text: str) -> Decimal:
         match = re.search(r"(?:gst|tax).*?(\d+(?:\.\d+)?)\s*%", text)
         if not match:
             return Decimal("0.1800")
-        return rate(Decimal(match.group(1)) / Decimal("100"))
+        return rate(Decimal(match.group(1)) / Decimal(100))
 
     def _settlement_days(self, text: str) -> int:
         match = re.search(r"t\s*\+\s*(\d+)", text)
@@ -156,7 +163,7 @@ class DeterministicPromptParser:
             return min(30, int(match.group(1)))
         return 2
 
-    def _payment_methods(self, text: str) -> List[str]:
+    def _payment_methods(self, text: str) -> list[str]:
         methods = []
         if "upi" in text:
             methods.append("UPI")
@@ -168,7 +175,7 @@ class DeterministicPromptParser:
             methods.append("NETBANKING")
         return methods or ["UPI", "CARD"]
 
-    def _currencies(self, text: str) -> List[str]:
+    def _currencies(self, text: str) -> list[str]:
         currencies = []
         if "inr" in text or "indian" in text or "india" in text:
             currencies.append("INR")
@@ -196,22 +203,22 @@ class DeterministicPromptParser:
             return "Nila SaaS Demo"
         return "Demo Commerce India"
 
-    def _explicit_anomaly_rates(self, text: str) -> Dict[str, Decimal]:
+    def _explicit_anomaly_rates(self, text: str) -> dict[str, Decimal]:
         patterns = {
             "AMOUNT_MISMATCH": r"amount mismatch(?:es)?[:\s]+(\d+(?:\.\d+)?)\s*%",
             "MISSING_SETTLEMENT": r"missing settlement(?:s)?[:\s]+(\d+(?:\.\d+)?)\s*%",
             "DUPLICATE_PAYMENT": r"duplicate(?:s| payments)?[:\s]+(\d+(?:\.\d+)?)\s*%",
             "FEE_MISMATCH": r"fee anomal(?:y|ies|ies)[:\s]+(\d+(?:\.\d+)?)\s*%",
         }
-        rates: Dict[str, Decimal] = {}
+        rates: dict[str, Decimal] = {}
         for name, pattern in patterns.items():
             match = re.search(pattern, text)
             if match:
-                rates[name] = rate(Decimal(match.group(1)) / Decimal("100"))
+                rates[name] = rate(Decimal(match.group(1)) / Decimal(100))
         return rates
 
     def _percent(self, value: Decimal) -> str:
-        return f"{(value * Decimal('100')).quantize(Decimal('0.01'))}%"
+        return f"{(value * Decimal(100)).quantize(Decimal('0.01'))}%"
 
     def _mode_value(self, value: AnomalyMode | str) -> str:
         return value.value if isinstance(value, AnomalyMode) else str(value)
@@ -226,8 +233,8 @@ class LLMWorldSpecProvider:
         self.llm_provider = llm_provider
         self.model = self.llm_provider.config.model
 
-    def parse(self, prompt: str, seed: int = 42) -> Tuple[FinancialWorldSpec, List[UnderstandingStep]]:
-        last_error: Optional[Exception] = None
+    def parse(self, prompt: str, seed: int = 42) -> tuple[FinancialWorldSpec, list[UnderstandingStep]]:
+        last_error: Exception | None = None
         deterministic_spec, _ = DeterministicPromptParser().parse(prompt, seed=seed)
         for _ in range(2):
             try:
@@ -304,7 +311,7 @@ class LLMWorldSpecProvider:
 
 
 
-    def _normalize_spec_fields(self, parsed: Dict[str, object]) -> Dict[str, object]:
+    def _normalize_spec_fields(self, parsed: dict[str, object]) -> dict[str, object]:
         aliases = {
             "AMOUNT": "AMOUNT_MISMATCH",
             "AMOUNT_MISMATCHES": "AMOUNT_MISMATCH",
@@ -338,7 +345,7 @@ class OpenAIWorldSpecProvider(LLMWorldSpecProvider):
     provider_label = "openai"
     execution_mode = REAL_OPENAI_AI
 
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, llm_provider: LLMProvider | None = None, config: LLMProviderConfig | None = None):
         super().__init__(
             llm_provider
             or OpenAILLMProvider(config=config or LLMProviderConfig.from_env("AUDITRA_WORLD_LLM"))
@@ -349,7 +356,7 @@ class GroqWorldSpecProvider(LLMWorldSpecProvider):
     provider_label = "groq"
     execution_mode = REAL_GROQ_AI
 
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, llm_provider: LLMProvider | None = None, config: LLMProviderConfig | None = None):
         super().__init__(
             llm_provider
             or GroqLLMProvider(config=config or LLMProviderConfig.from_groq_env("AUDITRA_WORLD_LLM"))
@@ -360,7 +367,7 @@ class GeminiWorldSpecProvider(LLMWorldSpecProvider):
     provider_label = "gemini"
     execution_mode = REAL_GEMINI_AI
 
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, llm_provider: LLMProvider | None = None, config: LLMProviderConfig | None = None):
         super().__init__(
             llm_provider
             or GeminiLLMProvider(config=config or LLMProviderConfig.from_gemini_env("AUDITRA_WORLD_LLM"))
@@ -371,7 +378,7 @@ class OpenRouterWorldSpecProvider(LLMWorldSpecProvider):
     provider_label = "openrouter"
     execution_mode = REAL_OPENROUTER_AI
 
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, llm_provider: LLMProvider | None = None, config: LLMProviderConfig | None = None):
         super().__init__(
             llm_provider
             or OpenRouterLLMProvider(config=config or LLMProviderConfig.from_openrouter_env("AUDITRA_WORLD_LLM"))
@@ -382,7 +389,7 @@ class HuggingFaceWorldSpecProvider(LLMWorldSpecProvider):
     provider_label = "huggingface"
     execution_mode = REAL_HUGGINGFACE_AI
 
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, llm_provider: LLMProvider | None = None, config: LLMProviderConfig | None = None):
         super().__init__(
             llm_provider
             or HuggingFaceLLMProvider(config=config or LLMProviderConfig.from_huggingface_env("AUDITRA_WORLD_LLM"))
@@ -391,11 +398,11 @@ class HuggingFaceWorldSpecProvider(LLMWorldSpecProvider):
 class WorldUnderstandingService:
     def __init__(
         self,
-        openai: Optional[OpenAIWorldSpecProvider] = None,
-        groq: Optional[GroqWorldSpecProvider] = None,
-        gemini: Optional[GeminiWorldSpecProvider] = None,
-        openrouter: Optional[OpenRouterWorldSpecProvider] = None,
-        huggingface: Optional[HuggingFaceWorldSpecProvider] = None,
+        openai: OpenAIWorldSpecProvider | None = None,
+        groq: GroqWorldSpecProvider | None = None,
+        gemini: GeminiWorldSpecProvider | None = None,
+        openrouter: OpenRouterWorldSpecProvider | None = None,
+        huggingface: HuggingFaceWorldSpecProvider | None = None,
     ):
         self.parser = DeterministicPromptParser()
         self.openai = openai or OpenAIWorldSpecProvider()
@@ -404,7 +411,7 @@ class WorldUnderstandingService:
         self.openrouter = openrouter or OpenRouterWorldSpecProvider()
         self.huggingface = huggingface or HuggingFaceWorldSpecProvider()
 
-    def understand(self, prompt: str, seed: int = 42) -> Tuple[FinancialWorldSpec, List[UnderstandingStep]]:
+    def understand(self, prompt: str, seed: int = 42) -> tuple[FinancialWorldSpec, list[UnderstandingStep]]:
         provider = resolve_llm_provider("WORLD")
         providers = {
             "groq": self.groq,

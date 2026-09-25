@@ -5,16 +5,16 @@ import os
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any
 
 import httpx
 from pydantic import BaseModel, Field, ValidationError
 
 from .models import money
-
 
 DETERMINISTIC = "DETERMINISTIC"
 OFFLINE_AI = "OFFLINE_AI"
@@ -31,7 +31,7 @@ GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 HUGGINGFACE_API_URL = "https://router.huggingface.co/v1/chat/completions"
 GEMINI_API_URL_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-GROQ_MODEL_COSTS: Dict[str, tuple[Optional[Decimal], Optional[Decimal]]] = {
+GROQ_MODEL_COSTS: dict[str, tuple[Decimal | None, Decimal | None]] = {
     "openai/gpt-oss-20b": (Decimal("0.075"), Decimal("0.30")),
     "openai/gpt-oss-120b": (Decimal("0.15"), Decimal("0.60")),
 }
@@ -45,13 +45,13 @@ class LLMUnavailable(RuntimeError):
         failure_type: str = "provider_unavailable",
         attempts: int = 0,
         latency_ms: float = 0.0,
-        timestamp: Optional[str] = None,
+        timestamp: str | None = None,
     ):
         super().__init__(message)
         self.failure_type = failure_type
         self.attempts = attempts
         self.latency_ms = latency_ms
-        self.timestamp = timestamp or datetime.now(timezone.utc).isoformat()
+        self.timestamp = timestamp or datetime.now(UTC).isoformat()
 
 
 class LLMInvalidResponse(RuntimeError):
@@ -61,18 +61,18 @@ class LLMInvalidResponse(RuntimeError):
 class LLMStructuredResponse(BaseModel):
     provider: str
     model: str
-    output: Dict[str, Any]
+    output: dict[str, Any]
     llm_calls: int = 0
-    input_tokens: Optional[int] = None
-    output_tokens: Optional[int] = None
-    total_tokens: Optional[int] = None
-    estimated_cost_usd: Optional[Decimal] = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+    estimated_cost_usd: Decimal | None = None
     latency_ms: float = 0.0
     attempts: int = 1
-    response_id: Optional[str] = None
-    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    response_id: str | None = None
+    timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     success: bool = True
-    failure_type: Optional[str] = None
+    failure_type: str | None = None
 
 
 @dataclass(frozen=True)
@@ -83,11 +83,11 @@ class LLMProviderConfig:
     max_tokens: int = 1200
     timeout_seconds: float = 30.0
     max_retries: int = 1
-    input_cost_per_1m: Optional[Decimal] = Decimal("0.00")
-    output_cost_per_1m: Optional[Decimal] = Decimal("0.00")
+    input_cost_per_1m: Decimal | None = Decimal("0.00")
+    output_cost_per_1m: Decimal | None = Decimal("0.00")
 
     @classmethod
-    def from_env(cls, prefix: str = "AUDITRA_LLM") -> "LLMProviderConfig":
+    def from_env(cls, prefix: str = "AUDITRA_LLM") -> LLMProviderConfig:
         return cls(
             provider=os.getenv(f"{prefix}_PROVIDER", os.getenv("AI_PROVIDER", os.getenv("AUDITRA_LLM_PROVIDER", "offline"))),
             model=os.getenv(f"{prefix}_MODEL", os.getenv("AUDITRA_OPENAI_MODEL", "gpt-5-mini")),
@@ -100,7 +100,7 @@ class LLMProviderConfig:
         )
 
     @classmethod
-    def from_groq_env(cls, prefix: str = "AUDITRA_LLM") -> "LLMProviderConfig":
+    def from_groq_env(cls, prefix: str = "AUDITRA_LLM") -> LLMProviderConfig:
         model = os.getenv(f"{prefix}_MODEL") or os.getenv("GROQ_MODEL") or "openai/gpt-oss-20b"
         default_input_cost, default_output_cost = GROQ_MODEL_COSTS.get(model, (None, None))
         input_cost = os.getenv(f"{prefix}_INPUT_COST_PER_1M") or os.getenv("GROQ_INPUT_COST_PER_1M")
@@ -117,7 +117,7 @@ class LLMProviderConfig:
         )
 
     @classmethod
-    def from_gemini_env(cls, prefix: str = "AUDITRA_LLM") -> "LLMProviderConfig":
+    def from_gemini_env(cls, prefix: str = "AUDITRA_LLM") -> LLMProviderConfig:
         return cls(
             provider="gemini",
             model=os.getenv(f"{prefix}_MODEL") or os.getenv("GEMINI_MODEL") or "gemini-3.6-flash",
@@ -130,7 +130,7 @@ class LLMProviderConfig:
         )
 
     @classmethod
-    def from_openrouter_env(cls, prefix: str = "AUDITRA_LLM") -> "LLMProviderConfig":
+    def from_openrouter_env(cls, prefix: str = "AUDITRA_LLM") -> LLMProviderConfig:
         return cls(
             provider="openrouter",
             model=os.getenv(f"{prefix}_MODEL") or os.getenv("OPENROUTER_MODEL") or "qwen/qwen-2.5-72b-instruct:free",
@@ -143,7 +143,7 @@ class LLMProviderConfig:
         )
 
     @classmethod
-    def from_huggingface_env(cls, prefix: str = "AUDITRA_LLM") -> "LLMProviderConfig":
+    def from_huggingface_env(cls, prefix: str = "AUDITRA_LLM") -> LLMProviderConfig:
         return cls(
             provider="huggingface",
             model=os.getenv(f"{prefix}_MODEL") or os.getenv("HF_MODEL") or "openai/gpt-oss-120b:fastest",
@@ -156,7 +156,7 @@ class LLMProviderConfig:
         )
 
     @classmethod
-    def from_anthropic_env(cls, prefix: str = "AUDITRA_LLM") -> "LLMProviderConfig":
+    def from_anthropic_env(cls, prefix: str = "AUDITRA_LLM") -> LLMProviderConfig:
         return cls(
             provider="anthropic",
             model=os.getenv(f"{prefix}_MODEL") or os.getenv("ANTHROPIC_MODEL") or "claude-3-5-haiku-latest",
@@ -169,7 +169,7 @@ class LLMProviderConfig:
         )
 
     @classmethod
-    def from_ollama_env(cls, prefix: str = "AUDITRA_LLM") -> "LLMProviderConfig":
+    def from_ollama_env(cls, prefix: str = "AUDITRA_LLM") -> LLMProviderConfig:
         return cls(
             provider="ollama",
             model=os.getenv(f"{prefix}_MODEL") or os.getenv("OLLAMA_MODEL") or "llama3.1",
@@ -202,7 +202,7 @@ def resolve_llm_provider(scope: str) -> str:
     return "offline"
 
 
-def llm_runtime_status(scope: str) -> Dict[str, Any]:
+def llm_runtime_status(scope: str) -> dict[str, Any]:
     provider = resolve_llm_provider(scope)
     prefix = f"AUDITRA_{scope.strip().upper()}_LLM"
     if provider == "deterministic":
@@ -295,13 +295,13 @@ def llm_runtime_status(scope: str) -> Dict[str, Any]:
 class LLMProvider:
     provider_name = "base"
 
-    def __init__(self, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, config: LLMProviderConfig | None = None):
         self.config = config or LLMProviderConfig()
 
     def generate_structured(
         self,
         schema_name: str,
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         system_prompt: str,
         user_payload: Mapping[str, Any],
     ) -> LLMStructuredResponse:
@@ -311,14 +311,14 @@ class LLMProvider:
 class OfflineProvider(LLMProvider):
     provider_name = "offline"
 
-    def __init__(self, output: Optional[Dict[str, Any]] = None, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, output: dict[str, Any] | None = None, config: LLMProviderConfig | None = None):
         super().__init__(config or LLMProviderConfig(provider="offline", model="offline-structured"))
         self.output = output or {}
 
     def generate_structured(
         self,
         schema_name: str,
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         system_prompt: str,
         user_payload: Mapping[str, Any],
     ) -> LLMStructuredResponse:
@@ -338,10 +338,10 @@ class MockProvider(LLMProvider):
 
     def __init__(
         self,
-        responses: Optional[List[Dict[str, Any]]] = None,
+        responses: list[dict[str, Any]] | None = None,
         failures_before_success: int = 0,
         malformed_before_success: int = 0,
-        config: Optional[LLMProviderConfig] = None,
+        config: LLMProviderConfig | None = None,
     ):
         super().__init__(config or LLMProviderConfig(provider="mock", model="mock-model"))
         self.responses = responses or [{}]
@@ -352,7 +352,7 @@ class MockProvider(LLMProvider):
     def generate_structured(
         self,
         schema_name: str,
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         system_prompt: str,
         user_payload: Mapping[str, Any],
     ) -> LLMStructuredResponse:
@@ -390,8 +390,8 @@ class GroqProvider(LLMProvider):
 
     def __init__(
         self,
-        config: Optional[LLMProviderConfig] = None,
-        transport: Optional[httpx.BaseTransport] = None,
+        config: LLMProviderConfig | None = None,
+        transport: httpx.BaseTransport | None = None,
     ):
         super().__init__(config or LLMProviderConfig.from_groq_env())
         self.config = LLMProviderConfig(
@@ -409,12 +409,12 @@ class GroqProvider(LLMProvider):
     def generate_structured(
         self,
         schema_name: str,
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         system_prompt: str,
         user_payload: Mapping[str, Any],
     ) -> LLMStructuredResponse:
         api_key = os.getenv(self.api_key_env)
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         if not api_key:
             raise LLMUnavailable(
                 f"{self.api_key_env} is not configured",
@@ -424,7 +424,7 @@ class GroqProvider(LLMProvider):
 
         attempts = max(1, self.config.max_retries + 1)
         overall_started = time.perf_counter()
-        last_error: Optional[LLMUnavailable] = None
+        last_error: LLMUnavailable | None = None
         for attempt in range(1, attempts + 1):
             try:
                 payload = self._request(api_key, schema_name, schema, system_prompt, user_payload)
@@ -480,14 +480,14 @@ class GroqProvider(LLMProvider):
         self,
         api_key: str,
         schema_name: str,
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         system_prompt: str,
         user_payload: Mapping[str, Any],
         schema_mode: str = "json_schema",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         safe_schema_name = "".join(char for char in schema_name if char.isalnum() or char in "_-")[:64] or "AuditraOutput"
         effective_system_prompt = system_prompt
-        response_format: Dict[str, Any]
+        response_format: dict[str, Any]
         if schema_mode == "json_object":
             effective_system_prompt = (
                 f"{system_prompt} Return only one JSON object. Validate it against this JSON Schema: "
@@ -503,7 +503,7 @@ class GroqProvider(LLMProvider):
                     "schema": schema,
                 },
             }
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "model": self.config.model,
             "messages": [
                 {"role": "system", "content": effective_system_prompt},
@@ -546,7 +546,7 @@ class GroqProvider(LLMProvider):
             raise LLMUnavailable(f"{self.service_name} returned an invalid response envelope", failure_type="malformed_response")
         return payload
 
-    def _extract_output(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_output(self, payload: dict[str, Any]) -> dict[str, Any]:
         choices = payload.get("choices")
         if not isinstance(choices, list) or not choices:
             raise LLMInvalidResponse(f"missing {self.service_name} completion choice")
@@ -559,7 +559,7 @@ class GroqProvider(LLMProvider):
             raise LLMInvalidResponse(f"{self.service_name} structured content was not an object")
         return output
 
-    def _estimate_cost(self, input_tokens: Optional[int], output_tokens: Optional[int]) -> Optional[Decimal]:
+    def _estimate_cost(self, input_tokens: int | None, output_tokens: int | None) -> Decimal | None:
         if (
             input_tokens is None
             or output_tokens is None
@@ -567,11 +567,11 @@ class GroqProvider(LLMProvider):
             or self.config.output_cost_per_1m is None
         ):
             return None
-        input_cost = (Decimal(input_tokens) / Decimal("1000000")) * self.config.input_cost_per_1m
-        output_cost = (Decimal(output_tokens) / Decimal("1000000")) * self.config.output_cost_per_1m
+        input_cost = (Decimal(input_tokens) / Decimal(1000000)) * self.config.input_cost_per_1m
+        output_cost = (Decimal(output_tokens) / Decimal(1000000)) * self.config.output_cost_per_1m
         return (input_cost + output_cost).quantize(Decimal("0.000001"))
 
-    def _optional_int(self, value: Any) -> Optional[int]:
+    def _optional_int(self, value: Any) -> int | None:
         return int(value) if value is not None else None
 
     def _safe_failure_message(self, failure_type: str) -> str:
@@ -597,7 +597,7 @@ class OpenRouterProvider(GroqProvider):
     service_name = "OpenRouter"
     max_tokens_field = "max_tokens"
 
-    def __init__(self, config: Optional[LLMProviderConfig] = None, transport: Optional[httpx.BaseTransport] = None):
+    def __init__(self, config: LLMProviderConfig | None = None, transport: httpx.BaseTransport | None = None):
         super().__init__(config or LLMProviderConfig.from_openrouter_env(), transport=transport)
 
 
@@ -610,13 +610,13 @@ class HuggingFaceProvider(GroqProvider):
     service_name = "Hugging Face"
     max_tokens_field = "max_tokens"
 
-    def __init__(self, config: Optional[LLMProviderConfig] = None, transport: Optional[httpx.BaseTransport] = None):
+    def __init__(self, config: LLMProviderConfig | None = None, transport: httpx.BaseTransport | None = None):
         super().__init__(config or LLMProviderConfig.from_huggingface_env(), transport=transport)
 
     def generate_structured(
         self,
         schema_name: str,
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         system_prompt: str,
         user_payload: Mapping[str, Any],
     ) -> LLMStructuredResponse:
@@ -632,24 +632,24 @@ class GeminiProvider(LLMProvider):
     service_name = "Gemini"
     retryable_failures = {"timeout", "network", "rate_limit", "provider_error", "malformed_response"}
 
-    def __init__(self, config: Optional[LLMProviderConfig] = None, transport: Optional[httpx.BaseTransport] = None):
+    def __init__(self, config: LLMProviderConfig | None = None, transport: httpx.BaseTransport | None = None):
         super().__init__(config or LLMProviderConfig.from_gemini_env())
         self.transport = transport
 
     def generate_structured(
         self,
         schema_name: str,
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         system_prompt: str,
         user_payload: Mapping[str, Any],
     ) -> LLMStructuredResponse:
         api_key = os.getenv("GEMINI_API_KEY")
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         if not api_key:
             raise LLMUnavailable("GEMINI_API_KEY is not configured", failure_type="missing_api_key", timestamp=timestamp)
         attempts = max(1, self.config.max_retries + 1)
         overall_started = time.perf_counter()
-        last_error: Optional[LLMUnavailable] = None
+        last_error: LLMUnavailable | None = None
         for attempt in range(1, attempts + 1):
             try:
                 payload = self._request(api_key, schema_name, schema, system_prompt, user_payload)
@@ -698,7 +698,7 @@ class GeminiProvider(LLMProvider):
             timestamp=timestamp,
         ) from last_error
 
-    def _request(self, api_key: str, schema_name: str, schema: Dict[str, Any], system_prompt: str, user_payload: Mapping[str, Any]) -> Dict[str, Any]:
+    def _request(self, api_key: str, schema_name: str, schema: dict[str, Any], system_prompt: str, user_payload: Mapping[str, Any]) -> dict[str, Any]:
         url = GEMINI_API_URL_TEMPLATE.format(model=self.config.model)
         body = {
             "systemInstruction": {"parts": [{"text": system_prompt}]},
@@ -732,7 +732,7 @@ class GeminiProvider(LLMProvider):
             raise LLMUnavailable("Gemini returned an invalid response envelope", failure_type="malformed_response")
         return payload
 
-    def _extract_output(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_output(self, payload: dict[str, Any]) -> dict[str, Any]:
         candidates = payload.get("candidates")
         if not isinstance(candidates, list) or not candidates:
             raise LLMInvalidResponse("missing Gemini candidate")
@@ -745,7 +745,7 @@ class GeminiProvider(LLMProvider):
             raise LLMInvalidResponse("Gemini structured content was not an object")
         return output
 
-    def _optional_int(self, value: Any) -> Optional[int]:
+    def _optional_int(self, value: Any) -> int | None:
         return int(value) if value is not None else None
 
     def _safe_failure_message(self, failure_type: str) -> str:
@@ -764,7 +764,7 @@ class GeminiProvider(LLMProvider):
 class OpenAIProvider(LLMProvider):
     provider_name = "openai"
 
-    def __init__(self, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, config: LLMProviderConfig | None = None):
         super().__init__(config or LLMProviderConfig.from_env())
         self.config = LLMProviderConfig(
             provider="openai",
@@ -780,14 +780,14 @@ class OpenAIProvider(LLMProvider):
     def generate_structured(
         self,
         schema_name: str,
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         system_prompt: str,
         user_payload: Mapping[str, Any],
     ) -> LLMStructuredResponse:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise LLMUnavailable("OPENAI_API_KEY is not configured")
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
         attempts = max(1, self.config.max_retries + 1)
         for attempt in range(1, attempts + 1):
             started = time.perf_counter()
@@ -820,11 +820,11 @@ class OpenAIProvider(LLMProvider):
         self,
         api_key: str,
         schema_name: str,
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         system_prompt: str,
         user_payload: Mapping[str, Any],
-    ) -> Dict[str, Any]:
-        body: Dict[str, Any] = {
+    ) -> dict[str, Any]:
+        body: dict[str, Any] = {
             "model": self.config.model,
             "input": [
                 {"role": "system", "content": system_prompt},
@@ -851,7 +851,7 @@ class OpenAIProvider(LLMProvider):
         with urllib.request.urlopen(request, timeout=self.config.timeout_seconds) as response:
             return json.loads(response.read().decode("utf-8"))
 
-    def _extract_output(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_output(self, payload: dict[str, Any]) -> dict[str, Any]:
         if payload.get("status") not in (None, "completed"):
             raise LLMInvalidResponse(f"response status was {payload.get('status')}")
         if payload.get("output_text"):
@@ -864,8 +864,8 @@ class OpenAIProvider(LLMProvider):
         raise LLMInvalidResponse("missing structured output text")
 
     def _estimate_cost(self, input_tokens: int, output_tokens: int) -> Decimal:
-        input_cost = (Decimal(input_tokens) / Decimal("1000000")) * self.config.input_cost_per_1m
-        output_cost = (Decimal(output_tokens) / Decimal("1000000")) * self.config.output_cost_per_1m
+        input_cost = (Decimal(input_tokens) / Decimal(1000000)) * self.config.input_cost_per_1m
+        output_cost = (Decimal(output_tokens) / Decimal(1000000)) * self.config.output_cost_per_1m
         return money(input_cost + output_cost)
 
 

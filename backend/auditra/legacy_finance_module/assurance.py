@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Iterable
 from decimal import Decimal
-from typing import Any, Dict, Iterable, List
+from typing import Any
 
 from .financial_world import FinancialWorldSpec
 from .models import ControllerRun, DatasetBundle, EvaluationRun
 from .reconciliation import MATCH_STATUSES, TERMINAL_REVIEW_STATUSES
 
-
 ASSURANCE_MODEL_VERSION = "auditra-assurance-v1"
 MATCH_VALUES = {item.value for item in MATCH_STATUSES}
 REVIEW_VALUES = {item.value for item in TERMINAL_REVIEW_STATUSES}
 
-CHALLENGES: List[Dict[str, Any]] = [
+CHALLENGES: list[dict[str, Any]] = [
     {
         "challenge_id": "settlement-reconciliation", "name": "Settlement & Reconciliation",
         "description": "Close a Gateway-style payment batch across captured payments, fee/GST deductions, refunds, and T+2 settlements.",
@@ -41,7 +41,7 @@ CHALLENGES: List[Dict[str, Any]] = [
 ]
 
 
-def challenge_by_id(challenge_id: str) -> Dict[str, Any]:
+def challenge_by_id(challenge_id: str) -> dict[str, Any]:
     for challenge in CHALLENGES:
         if challenge["challenge_id"] == challenge_id:
             return challenge
@@ -81,7 +81,7 @@ def challenge_spec(challenge_id: str, record_count: int | None = None, seed: int
     )
 
 
-def assurance_report(dataset: DatasetBundle, run: ControllerRun, evaluation: EvaluationRun) -> Dict[str, Any]:
+def assurance_report(dataset: DatasetBundle, run: ControllerRun, evaluation: EvaluationRun) -> dict[str, Any]:
     truth = dataset.ground_truth
     cases = [case for case in run.cases if case.payment_id in truth]
     auto_cases = [case for case in cases if str(case.status) in MATCH_VALUES]
@@ -129,7 +129,7 @@ def assurance_report(dataset: DatasetBundle, run: ControllerRun, evaluation: Eva
     }
 
 
-def failure_fingerprint(failures: Iterable[Any]) -> Dict[str, Any]:
+def failure_fingerprint(failures: Iterable[Any]) -> dict[str, Any]:
     items = list(failures)
     if not items:
         return {
@@ -143,7 +143,7 @@ def failure_fingerprint(failures: Iterable[Any]) -> Dict[str, Any]:
     exposure = sum((Decimal(str(item.financial_impact)) for item in candidates), Decimal("0.00"))
     return {
         "pattern": pattern, "expected_status": expected, "frequency": frequency,
-        "severity": "CRITICAL" if exposure >= Decimal("10000") or pattern == "MISSED_EXCEPTION" else "HIGH",
+        "severity": "CRITICAL" if exposure >= Decimal(10000) or pattern == "MISSED_EXCEPTION" else "HIGH",
         "exposure": str(exposure.quantize(Decimal("0.01"))), "root_cause": candidates[0].root_cause,
         "target_anomalies": _target_anomalies(pattern, expected),
     }
@@ -164,7 +164,7 @@ def targeted_retest_spec(dataset: DatasetBundle, evaluation: EvaluationRun, reco
     )
 
 
-def _target_anomalies(pattern: str, expected: str) -> List[str]:
+def _target_anomalies(pattern: str, expected: str) -> list[str]:
     by_status = {
         "REFUND_ADJUSTED": ["REFUND_MISMATCH", "PARTIAL_SETTLEMENT", "CONFLICTING_EVIDENCE"],
         "FEE_EXPLAINED": ["FEE_MISMATCH", "AMOUNT_MISMATCH", "CURRENCY_MISMATCH"],

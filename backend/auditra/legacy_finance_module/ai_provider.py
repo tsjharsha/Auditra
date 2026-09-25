@@ -2,31 +2,40 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, replace
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from .llm import (
     OFFLINE_AI,
     REAL_GEMINI_AI,
-    REAL_HUGGINGFACE_AI,
-    REAL_OPENROUTER_AI,
     REAL_GROQ_AI,
+    REAL_HUGGINGFACE_AI,
     REAL_OPENAI_AI,
-    GeminiProvider as GeminiLLMProvider,
-    GroqProvider as GroqLLMProvider,
-    HuggingFaceProvider as HuggingFaceLLMProvider,
-    OpenRouterProvider as OpenRouterLLMProvider,
+    REAL_OPENROUTER_AI,
     LLMInvalidResponse,
     LLMProvider,
     LLMProviderConfig,
     LLMUnavailable,
     MockProvider,
     OfflineProvider,
-    OpenAIProvider as OpenAILLMProvider,
     resolve_llm_provider,
 )
-
+from .llm import (
+    GeminiProvider as GeminiLLMProvider,
+)
+from .llm import (
+    GroqProvider as GroqLLMProvider,
+)
+from .llm import (
+    HuggingFaceProvider as HuggingFaceLLMProvider,
+)
+from .llm import (
+    OpenAIProvider as OpenAILLMProvider,
+)
+from .llm import (
+    OpenRouterProvider as OpenRouterLLMProvider,
+)
 
 HypothesisLabel = Literal[
     "fee_discrepancy",
@@ -60,20 +69,20 @@ AllowedToolName = Literal[
 class ToolPlanStep(BaseModel):
     hypothesis_label: HypothesisLabel
     tool_name: AllowedToolName
-    arguments: Dict[str, Any] = Field(default_factory=dict)
+    arguments: dict[str, Any] = Field(default_factory=dict)
     reason: str = ""
 
 
 class InvestigationPlan(BaseModel):
-    candidate_labels: List[HypothesisLabel]
-    tool_plan: List[ToolPlanStep] = Field(default_factory=list)
-    self_challenge: List[str] = Field(default_factory=list)
-    verification_requirements: List[str] = Field(default_factory=list)
-    confidence_factors: Dict[str, float] = Field(default_factory=dict)
+    candidate_labels: list[HypothesisLabel]
+    tool_plan: list[ToolPlanStep] = Field(default_factory=list)
+    self_challenge: list[str] = Field(default_factory=list)
+    verification_requirements: list[str] = Field(default_factory=list)
+    confidence_factors: dict[str, float] = Field(default_factory=dict)
 
     @field_validator("candidate_labels")
     @classmethod
-    def require_candidates(cls, value: List[str]) -> List[str]:
+    def require_candidates(cls, value: list[str]) -> list[str]:
         if not value:
             raise ValueError("candidate_labels must not be empty")
         return list(dict.fromkeys(value))
@@ -82,10 +91,10 @@ class InvestigationPlan(BaseModel):
 @dataclass(frozen=True)
 class ProviderUsage:
     llm_calls: int = 0
-    input_tokens: Optional[int] = None
-    output_tokens: Optional[int] = None
-    total_tokens: Optional[int] = None
-    estimated_cost_usd: Optional[str] = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+    estimated_cost_usd: str | None = None
     latency_ms: float = 0.0
     attempts: int = 0
 
@@ -95,7 +104,7 @@ class StructuredInvestigationProvider:
     model_name = "auditra-hypothesis-agent-v1"
     prompt_version = "investigation-plan-v2"
 
-    def propose(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def propose(self, context: dict[str, Any]) -> dict[str, Any]:
         raise NotImplementedError
 
 
@@ -105,7 +114,7 @@ class OfflineStructuredProvider(StructuredInvestigationProvider):
     provider_name = "offline"
     model_name = "offline-investigation-planner-v2"
 
-    def propose(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def propose(self, context: dict[str, Any]) -> dict[str, Any]:
         labels = self._candidate_labels(context)
         plan = InvestigationPlan(
             candidate_labels=labels,
@@ -148,8 +157,8 @@ class OfflineStructuredProvider(StructuredInvestigationProvider):
             ],
         }
 
-    def _candidate_labels(self, context: Dict[str, Any]) -> List[HypothesisLabel]:
-        candidates: List[HypothesisLabel] = []
+    def _candidate_labels(self, context: dict[str, Any]) -> list[HypothesisLabel]:
+        candidates: list[HypothesisLabel] = []
         status = context.get("status")
         reason_codes = set(context.get("reason_codes", []))
         failed_invariants = set(context.get("failed_invariants", []))
@@ -168,8 +177,8 @@ class OfflineStructuredProvider(StructuredInvestigationProvider):
             candidates.append("matched_low_risk")
         return list(dict.fromkeys(candidates))
 
-    def _tool_plan(self, labels: List[HypothesisLabel]) -> List[ToolPlanStep]:
-        steps: List[ToolPlanStep] = []
+    def _tool_plan(self, labels: list[HypothesisLabel]) -> list[ToolPlanStep]:
+        steps: list[ToolPlanStep] = []
         for label in labels:
             steps.append(ToolPlanStep(hypothesis_label=label, tool_name="find_merchant", reason="Confirm merchant context"))
             if label == "duplicate_or_replayed_payment":
@@ -228,8 +237,8 @@ class LLMInvestigationProvider(StructuredInvestigationProvider):
         self.provider_name = llm_provider.provider_name
         self.model_name = self.llm_provider.config.model
 
-    def propose(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        last_error: Optional[Exception] = None
+    def propose(self, context: dict[str, Any]) -> dict[str, Any]:
+        last_error: Exception | None = None
         calls = 0
         input_tokens = 0
         output_tokens = 0
@@ -312,7 +321,7 @@ class LLMInvestigationProvider(StructuredInvestigationProvider):
 class OpenAIInvestigationProvider(LLMInvestigationProvider):
     execution_mode = REAL_OPENAI_AI
 
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, llm_provider: LLMProvider | None = None, config: LLMProviderConfig | None = None):
         super().__init__(
             llm_provider
             or OpenAILLMProvider(config=config or LLMProviderConfig.from_env("AUDITRA_INVESTIGATION_LLM"))
@@ -322,7 +331,7 @@ class OpenAIInvestigationProvider(LLMInvestigationProvider):
 class GroqInvestigationProvider(LLMInvestigationProvider):
     execution_mode = REAL_GROQ_AI
 
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, llm_provider: LLMProvider | None = None, config: LLMProviderConfig | None = None):
         super().__init__(
             llm_provider
             or GroqLLMProvider(config=config or LLMProviderConfig.from_groq_env("AUDITRA_INVESTIGATION_LLM"))
@@ -332,7 +341,7 @@ class GroqInvestigationProvider(LLMInvestigationProvider):
 class GeminiInvestigationProvider(LLMInvestigationProvider):
     execution_mode = REAL_GEMINI_AI
 
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, llm_provider: LLMProvider | None = None, config: LLMProviderConfig | None = None):
         super().__init__(
             llm_provider
             or GeminiLLMProvider(config=config or LLMProviderConfig.from_gemini_env("AUDITRA_INVESTIGATION_LLM"))
@@ -342,7 +351,7 @@ class GeminiInvestigationProvider(LLMInvestigationProvider):
 class OpenRouterInvestigationProvider(LLMInvestigationProvider):
     execution_mode = REAL_OPENROUTER_AI
 
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, llm_provider: LLMProvider | None = None, config: LLMProviderConfig | None = None):
         super().__init__(
             llm_provider
             or OpenRouterLLMProvider(config=config or LLMProviderConfig.from_openrouter_env("AUDITRA_INVESTIGATION_LLM"))
@@ -352,7 +361,7 @@ class OpenRouterInvestigationProvider(LLMInvestigationProvider):
 class HuggingFaceInvestigationProvider(LLMInvestigationProvider):
     execution_mode = REAL_HUGGINGFACE_AI
 
-    def __init__(self, llm_provider: Optional[LLMProvider] = None, config: Optional[LLMProviderConfig] = None):
+    def __init__(self, llm_provider: LLMProvider | None = None, config: LLMProviderConfig | None = None):
         super().__init__(
             llm_provider
             or HuggingFaceLLMProvider(config=config or LLMProviderConfig.from_huggingface_env("AUDITRA_INVESTIGATION_LLM"))
@@ -368,7 +377,7 @@ class UnsupportedConfiguredInvestigationProvider(StructuredInvestigationProvider
         self.provider_name = provider_name
         self.model_name = model_name
 
-    def propose(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def propose(self, context: dict[str, Any]) -> dict[str, Any]:
         raise LLMUnavailable(
             f"{self.provider_name} provider is architecturally supported but not integrated",
             failure_type="provider_not_integrated",
@@ -381,7 +390,7 @@ class TransparentFallbackInvestigationProvider(StructuredInvestigationProvider):
     def __init__(
         self,
         primary: StructuredInvestigationProvider,
-        fallback: Optional[StructuredInvestigationProvider] = None,
+        fallback: StructuredInvestigationProvider | None = None,
     ):
         self.primary = primary
         self.fallback = fallback or OfflineStructuredProvider()
@@ -389,12 +398,12 @@ class TransparentFallbackInvestigationProvider(StructuredInvestigationProvider):
         self.model_name = primary.model_name
         self.prompt_version = primary.prompt_version
         self._circuit_open = False
-        self._circuit_failure_type: Optional[str] = None
-        self._circuit_failure_trace: Optional[Dict[str, Any]] = None
+        self._circuit_failure_type: str | None = None
+        self._circuit_failure_trace: dict[str, Any] | None = None
         self._primary_calls = 0
         self._primary_call_limit = max(0, int(os.getenv("AUDITRA_EXTERNAL_LLM_CASE_LIMIT", "12")))
 
-    def propose(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def propose(self, context: dict[str, Any]) -> dict[str, Any]:
         if self._primary_call_limit and self._primary_calls >= self._primary_call_limit:
             proposal = self.fallback.propose(context)
             proposal["fallback_reason"] = "provider_budget_exhausted"
@@ -505,11 +514,11 @@ class MockStructuredInvestigationProvider(StructuredInvestigationProvider):
     model_name = "mock-investigation-planner"
     prompt_version = "investigation-plan-v2"
 
-    def __init__(self, plan: Optional[InvestigationPlan] = None, error: Optional[Exception] = None):
+    def __init__(self, plan: InvestigationPlan | None = None, error: Exception | None = None):
         self.plan = plan
         self.error = error
 
-    def propose(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def propose(self, context: dict[str, Any]) -> dict[str, Any]:
         if self.error:
             raise self.error
         plan = self.plan or InvestigationPlan(
@@ -555,12 +564,11 @@ class MockStructuredInvestigationProvider(StructuredInvestigationProvider):
 
 __all__ = [
     "AllowedToolName",
-    "HypothesisLabel",
-    "InvestigationPlan",
     "GeminiInvestigationProvider",
     "GroqInvestigationProvider",
     "HuggingFaceInvestigationProvider",
-    "OpenRouterInvestigationProvider",
+    "HypothesisLabel",
+    "InvestigationPlan",
     "LLMProvider",
     "LLMProviderConfig",
     "MockProvider",
@@ -569,10 +577,11 @@ __all__ = [
     "OfflineStructuredProvider",
     "OpenAIInvestigationProvider",
     "OpenAIProvider",
+    "OpenRouterInvestigationProvider",
     "ProviderUsage",
     "StructuredInvestigationProvider",
-    "TransparentFallbackInvestigationProvider",
     "ToolPlanStep",
+    "TransparentFallbackInvestigationProvider",
     "UnsupportedConfiguredInvestigationProvider",
     "runtime_investigation_provider",
 ]

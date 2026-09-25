@@ -4,9 +4,10 @@ import json
 import re
 import time
 import uuid
+from collections.abc import Callable
 from datetime import timedelta
 from decimal import Decimal
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from .models import (
     AgentToolCall,
@@ -36,9 +37,9 @@ class DatasetIndex:
         self.merchants_by_id = {merchant.merchant_id: merchant for merchant in self.dataset.merchants}
         self.orders_by_id = {order.order_id: order for order in self.dataset.orders}
         self.payments_by_id = {payment.payment_id: payment for payment in self.dataset.payments}
-        self.settlements_by_payment: Dict[str, List[Settlement]] = {}
-        self.refunds_by_payment: Dict[str, List[Refund]] = {}
-        self.fee_rules_by_merchant: Dict[str, List[FeeRule]] = {}
+        self.settlements_by_payment: dict[str, list[Settlement]] = {}
+        self.refunds_by_payment: dict[str, list[Refund]] = {}
+        self.fee_rules_by_merchant: dict[str, list[FeeRule]] = {}
 
         for settlement in self.dataset.settlements:
             self.settlements_by_payment.setdefault(settlement.payment_id, []).append(settlement)
@@ -47,7 +48,7 @@ class DatasetIndex:
         for rule in self.dataset.fee_rules:
             self.fee_rules_by_merchant.setdefault(rule.merchant_id, []).append(rule)
 
-        self.payments_by_composite: Dict[tuple, List[Payment]] = {}
+        self.payments_by_composite: dict[tuple, list[Payment]] = {}
         for payment in self.dataset.payments:
             key = (
                 payment.merchant_id,
@@ -100,9 +101,9 @@ class InvestigationTools:
         self.max_calls = max_calls
         self.tool_timeout_ms = tool_timeout_ms
         self.max_result_bytes = max_result_bytes
-        self.calls: List[AgentToolCall] = []
+        self.calls: list[AgentToolCall] = []
 
-    def _record(self, tool_name: str, inputs: Dict[str, Any], func: Callable[[], Any], output_mapper: Callable[[Any], Dict[str, Any]]) -> Any:
+    def _record(self, tool_name: str, inputs: dict[str, Any], func: Callable[[], Any], output_mapper: Callable[[Any], dict[str, Any]]) -> Any:
         if tool_name not in self.allowlist:
             raise ValueError(f"tool is not allowlisted: {tool_name}")
         if len(self.calls) >= self.max_calls:
@@ -113,7 +114,7 @@ class InvestigationTools:
         started_perf = time.perf_counter()
         success = True
         error_type = None
-        original_error: Optional[Exception] = None
+        original_error: Exception | None = None
         result_size = 0
         try:
             self._validate_inputs(tool_name, inputs)
@@ -156,7 +157,7 @@ class InvestigationTools:
             raise RuntimeError(output["error"])
         return result
 
-    def _validate_inputs(self, tool_name: str, inputs: Dict[str, Any]) -> None:
+    def _validate_inputs(self, tool_name: str, inputs: dict[str, Any]) -> None:
         self._validate_value("tool_name", tool_name, depth=0)
         self._validate_value("inputs", inputs, depth=0)
 
@@ -195,7 +196,7 @@ class InvestigationTools:
             return
         raise ToolValidationError(f"{key} has unsupported type {type(value).__name__}")
 
-    def _summarize_output(self, output: Dict[str, Any]) -> tuple[Dict[str, Any], int]:
+    def _summarize_output(self, output: dict[str, Any]) -> tuple[dict[str, Any], int]:
         encoded = json.dumps(output, default=str, sort_keys=True)
         size = len(encoded.encode("utf-8"))
         if size <= self.max_result_bytes:
@@ -203,7 +204,7 @@ class InvestigationTools:
         budget = max(80, self.max_result_bytes - 120)
         return {"truncated": True, "result_size_bytes": size, "summary": encoded[:budget]}, size
 
-    def find_payment(self, payment_id: str) -> Optional[Payment]:
+    def find_payment(self, payment_id: str) -> Payment | None:
         return self._record(
             "find_payment",
             {"payment_id": payment_id},
@@ -211,7 +212,7 @@ class InvestigationTools:
             lambda payment: {"found": payment is not None, "payment_id": getattr(payment, "payment_id", None)},
         )
 
-    def find_order(self, order_id: Optional[str]) -> Optional[Order]:
+    def find_order(self, order_id: str | None) -> Order | None:
         return self._record(
             "find_order",
             {"order_id": order_id},
@@ -219,7 +220,7 @@ class InvestigationTools:
             lambda order: {"found": order is not None, "order_id": getattr(order, "order_id", None)},
         )
 
-    def find_merchant(self, merchant_id: str) -> Optional[Merchant]:
+    def find_merchant(self, merchant_id: str) -> Merchant | None:
         return self._record(
             "find_merchant",
             {"merchant_id": merchant_id},
@@ -232,7 +233,7 @@ class InvestigationTools:
             },
         )
 
-    def find_settlement(self, payment_id: str) -> List[Settlement]:
+    def find_settlement(self, payment_id: str) -> list[Settlement]:
         return self._record(
             "find_settlement",
             {"payment_id": payment_id},
@@ -240,7 +241,7 @@ class InvestigationTools:
             lambda settlements: {"count": len(settlements), "settlement_ids": [item.settlement_id for item in settlements]},
         )
 
-    def find_refunds(self, payment_id: str) -> List[Refund]:
+    def find_refunds(self, payment_id: str) -> list[Refund]:
         return self._record(
             "find_refunds",
             {"payment_id": payment_id},
@@ -248,7 +249,7 @@ class InvestigationTools:
             lambda refunds: {"count": len(refunds), "refund_ids": [item.refund_id for item in refunds]},
         )
 
-    def find_fee_rules(self, merchant_id: str, payment: Payment) -> List[FeeRule]:
+    def find_fee_rules(self, merchant_id: str, payment: Payment) -> list[FeeRule]:
         return self._record(
             "find_fee_rules",
             {"merchant_id": merchant_id, "captured_at": payment.captured_at.isoformat()},
@@ -256,8 +257,8 @@ class InvestigationTools:
             lambda rules: {"count": len(rules), "fee_rule_ids": [item.fee_rule_id for item in rules]},
         )
 
-    def get_transaction_history(self, payment_id: str) -> Dict[str, Any]:
-        def compute() -> Dict[str, Any]:
+    def get_transaction_history(self, payment_id: str) -> dict[str, Any]:
+        def compute() -> dict[str, Any]:
             payment = self.index.payments_by_id[payment_id]
             return {
                 "payment_id": payment.payment_id,
@@ -273,8 +274,8 @@ class InvestigationTools:
             lambda history: history,
         )
 
-    def compare_amounts(self, actual: Decimal, expected: Decimal, tolerance: Decimal) -> Dict[str, Any]:
-        def compare() -> Dict[str, Any]:
+    def compare_amounts(self, actual: Decimal, expected: Decimal, tolerance: Decimal) -> dict[str, Any]:
+        def compare() -> dict[str, Any]:
             difference = money(actual - expected)
             return {
                 "actual": str(money(actual)),
@@ -291,8 +292,8 @@ class InvestigationTools:
             lambda result: result,
         )
 
-    def check_temporal_relationship(self, payment: Payment, settlements: List[Settlement], cycle_days: int, tolerance_days: int = 1) -> Dict[str, Any]:
-        def check() -> Dict[str, Any]:
+    def check_temporal_relationship(self, payment: Payment, settlements: list[Settlement], cycle_days: int, tolerance_days: int = 1) -> dict[str, Any]:
+        def check() -> dict[str, Any]:
             if not settlements:
                 return {"valid": False, "reason": "no settlement"}
             latest_allowed = payment.captured_at + timedelta(days=cycle_days + tolerance_days)
@@ -316,8 +317,8 @@ class InvestigationTools:
             lambda result: result,
         )
 
-    def find_related_records(self, payment: Payment) -> Dict[str, Any]:
-        def related() -> Dict[str, Any]:
+    def find_related_records(self, payment: Payment) -> dict[str, Any]:
+        def related() -> dict[str, Any]:
             key = (payment.merchant_id, payment.order_id, payment.customer_id, payment.currency, str(payment.amount))
             duplicates = self.index.payments_by_composite.get(key, [])
             return {
@@ -333,8 +334,8 @@ class InvestigationTools:
             lambda result: result,
         )
 
-    def find_related_transactions(self, payment: Payment, window_minutes: int = 10) -> Dict[str, Any]:
-        def related() -> Dict[str, Any]:
+    def find_related_transactions(self, payment: Payment, window_minutes: int = 10) -> dict[str, Any]:
+        def related() -> dict[str, Any]:
             start = payment.captured_at - timedelta(minutes=window_minutes)
             end = payment.captured_at + timedelta(minutes=window_minutes)
             same_order = []
@@ -370,8 +371,8 @@ class InvestigationTools:
             lambda result: result,
         )
 
-    def check_fee_applicability(self, fee_rule: Optional[FeeRule], payment: Payment) -> Dict[str, Any]:
-        def check() -> Dict[str, Any]:
+    def check_fee_applicability(self, fee_rule: FeeRule | None, payment: Payment) -> dict[str, Any]:
+        def check() -> dict[str, Any]:
             if fee_rule is None:
                 return {"applicable": False, "reason": "fee rule missing"}
             applies_at = fee_rule.applies_at(payment.captured_at)
@@ -394,8 +395,8 @@ class InvestigationTools:
             lambda result: result,
         )
 
-    def check_duplicate(self, payment: Payment) -> Dict[str, Any]:
-        def check() -> Dict[str, Any]:
+    def check_duplicate(self, payment: Payment) -> dict[str, Any]:
+        def check() -> dict[str, Any]:
             key = (payment.merchant_id, payment.order_id, payment.customer_id, payment.currency, str(payment.amount))
             duplicates = self.index.payments_by_composite.get(key, [])
             duplicate_ids = [item.payment_id for item in duplicates if item.payment_id != payment.payment_id]
@@ -414,8 +415,8 @@ class InvestigationTools:
             lambda result: result,
         )
 
-    def get_graph_neighborhood(self, payment_id: str) -> Dict[str, Any]:
-        def neighborhood() -> Dict[str, Any]:
+    def get_graph_neighborhood(self, payment_id: str) -> dict[str, Any]:
+        def neighborhood() -> dict[str, Any]:
             payment = self.index.payments_by_id[payment_id]
             settlements = self.index.settlements_by_payment.get(payment_id, [])
             refunds = self.index.refunds_by_payment.get(payment_id, [])
@@ -450,8 +451,8 @@ class InvestigationTools:
             lambda result: result,
         )
 
-    def get_evidence(self, entity_type: str, entity_id: str) -> Dict[str, Any]:
-        def evidence() -> Dict[str, Any]:
+    def get_evidence(self, entity_type: str, entity_id: str) -> dict[str, Any]:
+        def evidence() -> dict[str, Any]:
             normalized = entity_type.strip().upper()
             if normalized not in self.evidence_entity_types:
                 raise ToolValidationError(f"entity_type is not evidence-allowlisted: {entity_type}")
@@ -481,8 +482,8 @@ class InvestigationTools:
             return any(item.fee_rule_id == entity_id for items in self.index.fee_rules_by_merchant.values() for item in items)
         return False
 
-    def create_hypothesis(self, label: str, evidence_ids: List[str]) -> Dict[str, Any]:
-        def create() -> Dict[str, Any]:
+    def create_hypothesis(self, label: str, evidence_ids: list[str]) -> dict[str, Any]:
+        def create() -> dict[str, Any]:
             return {
                 "hypothesis_id": f"HYP_{uuid.uuid4().hex[:10]}",
                 "label": label,
@@ -497,8 +498,8 @@ class InvestigationTools:
             lambda result: result,
         )
 
-    def verify_hypothesis(self, hypothesis_id: str, checks: List[Dict[str, Any]]) -> Dict[str, Any]:
-        def verify() -> Dict[str, Any]:
+    def verify_hypothesis(self, hypothesis_id: str, checks: list[dict[str, Any]]) -> dict[str, Any]:
+        def verify() -> dict[str, Any]:
             failed = [item for item in checks if not bool(item.get("passed"))]
             return {
                 "hypothesis_id": hypothesis_id,
@@ -514,8 +515,8 @@ class InvestigationTools:
             lambda result: result,
         )
 
-    def create_reconciliation_case(self, payment_id: str) -> Dict[str, Any]:
-        def create() -> Dict[str, Any]:
+    def create_reconciliation_case(self, payment_id: str) -> dict[str, Any]:
+        def create() -> dict[str, Any]:
             return {"case_id": self.case_id, "payment_id": payment_id, "created": True}
 
         return self._record(
@@ -525,7 +526,7 @@ class InvestigationTools:
             lambda result: result,
         )
 
-    def request_human_review(self, reason: str) -> Dict[str, Any]:
+    def request_human_review(self, reason: str) -> dict[str, Any]:
         started = now_utc()
         output = {"requested": True, "reason": reason}
         result_size = len(json.dumps(output, default=str, sort_keys=True).encode("utf-8"))

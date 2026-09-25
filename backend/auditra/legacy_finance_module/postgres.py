@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class PostgresRepository:
-    def __init__(self, database_url: Optional[str] = None):
+    def __init__(self, database_url: str | None = None):
         self.database_url = database_url or os.getenv("AUDITRA_DATABASE_URL")
         if not self.database_url:
             raise RuntimeError("AUDITRA_DATABASE_URL is not configured")
@@ -16,7 +16,7 @@ class PostgresRepository:
             raise RuntimeError("psycopg is required for PostgreSQL persistence") from exc
         self.psycopg = psycopg
 
-    def upsert_world(self, world_id: str, dataset_id: str, payload: Dict[str, Any]) -> None:
+    def upsert_world(self, world_id: str, dataset_id: str, payload: dict[str, Any]) -> None:
         self._execute(
             """
             insert into worlds (world_id, dataset_id, payload)
@@ -26,7 +26,7 @@ class PostgresRepository:
             (world_id, dataset_id, json.dumps(payload)),
         )
 
-    def upsert_dataset(self, dataset_id: str, payload: Dict[str, Any]) -> None:
+    def upsert_dataset(self, dataset_id: str, payload: dict[str, Any]) -> None:
         self._execute(
             """
             insert into datasets (dataset_id, payload)
@@ -36,7 +36,7 @@ class PostgresRepository:
             (dataset_id, json.dumps(payload)),
         )
 
-    def replace_ground_truth(self, dataset_id: str, ground_truth: Dict[str, Any]) -> None:
+    def replace_ground_truth(self, dataset_id: str, ground_truth: dict[str, Any]) -> None:
         with self.psycopg.connect(self.database_url) as conn:
             with conn.cursor() as cur:
                 cur.execute("delete from ground_truth_cases where dataset_id = %s", (dataset_id,))
@@ -56,7 +56,7 @@ class PostgresRepository:
                     )
             conn.commit()
 
-    def upsert_controller_run(self, run_id: str, dataset_id: str, payload: Dict[str, Any]) -> None:
+    def upsert_controller_run(self, run_id: str, dataset_id: str, payload: dict[str, Any]) -> None:
         self._execute(
             """
             insert into controller_runs (run_id, dataset_id, payload)
@@ -66,7 +66,7 @@ class PostgresRepository:
             (run_id, dataset_id, json.dumps(payload)),
         )
 
-    def upsert_evaluation_run(self, evaluation_run_id: str, controller_run_id: str, dataset_id: str, payload: Dict[str, Any]) -> None:
+    def upsert_evaluation_run(self, evaluation_run_id: str, controller_run_id: str, dataset_id: str, payload: dict[str, Any]) -> None:
         self._execute(
             """
             insert into evaluation_runs (evaluation_run_id, controller_run_id, dataset_id, payload)
@@ -76,7 +76,7 @@ class PostgresRepository:
             (evaluation_run_id, controller_run_id, dataset_id, json.dumps(payload)),
         )
 
-    def insert_human_review(self, case_id: str, payload: Dict[str, Any]) -> None:
+    def insert_human_review(self, case_id: str, payload: dict[str, Any]) -> None:
         self._execute(
             "insert into human_reviews (case_id, payload) values (%s, %s::jsonb)",
             (case_id, json.dumps(payload)),
@@ -89,7 +89,7 @@ class PostgresRepository:
             conn.commit()
 
 
-def optional_postgres_repository() -> Optional[PostgresRepository]:
+def optional_postgres_repository() -> PostgresRepository | None:
     if not os.getenv("AUDITRA_DATABASE_URL"):
         return None
     return PostgresRepository()

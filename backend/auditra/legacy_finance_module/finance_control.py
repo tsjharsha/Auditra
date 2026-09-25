@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import List
 
-from .models import CashPosition, ControllerAlert, ControllerRun, ReconciliationCase, ReconciliationStatus, money
-
+from .models import (
+    CashPosition,
+    ControllerAlert,
+    ControllerRun,
+    ReconciliationCase,
+    ReconciliationStatus,
+    money,
+)
 
 CLOSED_STATUSES = {
     ReconciliationStatus.MATCHED.value,
@@ -53,7 +58,7 @@ def cash_position(run: ControllerRun) -> CashPosition:
     )
 
 
-def controller_alerts(run: ControllerRun, limit: int = 4) -> List[ControllerAlert]:
+def controller_alerts(run: ControllerRun, limit: int = 4) -> list[ControllerAlert]:
     """Return the highest-priority current-run exceptions without consulting hidden truth."""
     open_cases = [case for case in run.cases if str(case.status) not in CLOSED_STATUSES]
     alerts = [_alert_from_case(case) for case in open_cases]

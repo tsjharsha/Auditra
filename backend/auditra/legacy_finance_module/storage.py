@@ -1,11 +1,20 @@
 from __future__ import annotations
 
 from threading import RLock
-from typing import Dict, List, Optional
 
 from .evaluator import IndependentEvaluator
-from .financial_world import AdapterIngestionResult, FinancialWorldBuildResult, FinancialWorldService, FinancialWorldSpec
-from .models import ControllerRun, DatasetBundle, EvaluationRun, ReviewRequest, ScenarioRequest
+from .financial_world import (
+    AdapterIngestionResult,
+    FinancialWorldBuildResult,
+    FinancialWorldService,
+    FinancialWorldSpec,
+)
+from .models import (
+    ControllerRun,
+    DatasetBundle,
+    EvaluationRun,
+    ScenarioRequest,
+)
 from .postgres import optional_postgres_repository
 from .reconciliation import ReconciliationEngine
 from .runtime import controller_execution_metadata
@@ -18,17 +27,17 @@ class AuditraStore:
         self.world_service = FinancialWorldService()
         self.controller = ReconciliationEngine()
         self.evaluator = IndependentEvaluator()
-        self.worlds: Dict[str, FinancialWorldBuildResult] = {}
-        self.datasets: Dict[str, DatasetBundle] = {}
-        self.controller_runs: Dict[str, ControllerRun] = {}
-        self.evaluation_runs: Dict[str, EvaluationRun] = {}
-        self.review_events: List[Dict[str, object]] = []
+        self.worlds: dict[str, FinancialWorldBuildResult] = {}
+        self.datasets: dict[str, DatasetBundle] = {}
+        self.controller_runs: dict[str, ControllerRun] = {}
+        self.evaluation_runs: dict[str, EvaluationRun] = {}
+        self.review_events: list[dict[str, object]] = []
         self._lock = RLock()
         self.postgres = optional_postgres_repository()
-        self.latest_world_id: Optional[str] = None
-        self.latest_dataset_id: Optional[str] = None
-        self.latest_run_id: Optional[str] = None
-        self.latest_evaluation_id: Optional[str] = None
+        self.latest_world_id: str | None = None
+        self.latest_dataset_id: str | None = None
+        self.latest_run_id: str | None = None
+        self.latest_evaluation_id: str | None = None
 
     def create_dataset(self, request: ScenarioRequest) -> DatasetBundle:
         with self._lock:
@@ -50,13 +59,13 @@ class AuditraStore:
             self._store_world_result(result)
             return result
 
-    def preview_world_from_prompt(self, prompt: str, seed: int = 42) -> Dict[str, object]:
+    def preview_world_from_prompt(self, prompt: str, seed: int = 42) -> dict[str, object]:
         spec, steps = self.world_service.understand(prompt, seed=seed)
         preview = self.world_service.preview(spec)
         preview["understanding_steps"] = steps
         return preview
 
-    def ingest_source(self, adapter: str, payload: Dict[str, object], seed: int = 42) -> AdapterIngestionResult:
+    def ingest_source(self, adapter: str, payload: dict[str, object], seed: int = 42) -> AdapterIngestionResult:
         with self._lock:
             result = self.world_service.ingest(adapter, payload, seed=seed)
             if result.dataset:
@@ -65,7 +74,7 @@ class AuditraStore:
                 self.latest_dataset_id = result.dataset.dataset_id
             return result
 
-    def list_worlds(self) -> List[FinancialWorldBuildResult]:
+    def list_worlds(self) -> list[FinancialWorldBuildResult]:
         with self._lock:
             return sorted(self.worlds.values(), key=lambda item: item.spec.start_at, reverse=True)
 
@@ -96,7 +105,7 @@ class AuditraStore:
                 result.model_dump(mode="json", exclude={"dataset"}),
             )
 
-    def list_datasets(self) -> List[DatasetBundle]:
+    def list_datasets(self) -> list[DatasetBundle]:
         with self._lock:
             return sorted(self.datasets.values(), key=lambda item: item.generated_at, reverse=True)
 
@@ -122,7 +131,7 @@ class AuditraStore:
                 raise KeyError(f"controller run not found: {run_id}")
             return self.controller_runs[run_id]
 
-    def run_evaluation(self, dataset_id: str, controller_run_id: Optional[str] = None) -> EvaluationRun:
+    def run_evaluation(self, dataset_id: str, controller_run_id: str | None = None) -> EvaluationRun:
         with self._lock:
             dataset = self.get_dataset(dataset_id)
             if controller_run_id:
@@ -144,9 +153,9 @@ class AuditraStore:
     def compare_controllers(
         self,
         dataset_id: str,
-        ai_run: Optional[ControllerRun] = None,
-        ai_evaluation: Optional[EvaluationRun] = None,
-    ) -> Dict[str, object]:
+        ai_run: ControllerRun | None = None,
+        ai_evaluation: EvaluationRun | None = None,
+    ) -> dict[str, object]:
         with self._lock:
             dataset = self.get_dataset(dataset_id)
             rows = []
@@ -174,7 +183,7 @@ class AuditraStore:
             self.latest_evaluation_id = rows[-1]["evaluation_run_id"]  # type: ignore[index]
             return {"dataset_id": dataset_id, "comparison": rows}
 
-    def record_review(self, event: Dict[str, object]) -> Dict[str, object]:
+    def record_review(self, event: dict[str, object]) -> dict[str, object]:
         with self._lock:
             self.review_events.append(event)
             if self.postgres:

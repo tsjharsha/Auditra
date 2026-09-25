@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Optional
+from typing import Any
 
 from .models import (
     AIInvestigationResult,
@@ -11,20 +11,20 @@ from .models import (
     GraphNode,
     Order,
     Payment,
-    Refund,
     ReconciliationStatus,
+    Refund,
     Settlement,
 )
 
 
 def build_evidence_items(
     payment: Payment,
-    order: Optional[Order],
-    settlements: List[Settlement],
-    refunds: List[Refund],
-    fee_rule: Optional[FeeRule],
-) -> List[EvidenceItem]:
-    evidence: List[EvidenceItem] = [
+    order: Order | None,
+    settlements: list[Settlement],
+    refunds: list[Refund],
+    fee_rule: FeeRule | None,
+) -> list[EvidenceItem]:
+    evidence: list[EvidenceItem] = [
         EvidenceItem(
             evidence_id=f"EVD_PAYMENT_{payment.payment_id}",
             entity_type="payment",
@@ -83,16 +83,16 @@ def build_evidence_items(
 
 def build_graph(
     payment: Payment,
-    order: Optional[Order],
-    settlements: List[Settlement],
-    refunds: List[Refund],
-    fee_rule: Optional[FeeRule],
-    case_id: Optional[str] = None,
-    status: Optional[ReconciliationStatus | str] = None,
-    evidence_items: Optional[List[EvidenceItem]] = None,
-    supporting_evidence: Optional[List[str]] = None,
-    contradicting_evidence: Optional[List[str]] = None,
-    ai_investigation: Optional[AIInvestigationResult] = None,
+    order: Order | None,
+    settlements: list[Settlement],
+    refunds: list[Refund],
+    fee_rule: FeeRule | None,
+    case_id: str | None = None,
+    status: ReconciliationStatus | str | None = None,
+    evidence_items: list[EvidenceItem] | None = None,
+    supporting_evidence: list[str] | None = None,
+    contradicting_evidence: list[str] | None = None,
+    ai_investigation: AIInvestigationResult | None = None,
     risk_score: float = 0.0,
 ) -> EvidenceGraph:
     def edge(
@@ -101,10 +101,10 @@ def build_graph(
         target: str,
         relationship: str,
         confidence: float,
-        evidence_id: Optional[str] = None,
+        evidence_id: str | None = None,
         record_source: str = "auditra",
-        timestamp: Optional[str] = None,
-        extra: Optional[dict[str, Any]] = None,
+        timestamp: str | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> GraphEdge:
         data = {"record_source": record_source}
         if timestamp:
@@ -122,7 +122,7 @@ def build_graph(
         )
 
     transaction_node_id = f"TRANSACTION:{payment.payment_id}"
-    nodes: List[GraphNode] = [
+    nodes: list[GraphNode] = [
         GraphNode(
             id=transaction_node_id,
             type="Transaction",
@@ -150,7 +150,7 @@ def build_graph(
             data={"customer_id": payment.customer_id},
         ),
     ]
-    edges: List[GraphEdge] = [
+    edges: list[GraphEdge] = [
         edge(
             f"EDGE_TRANSACTION_PAYMENT_{payment.payment_id}",
             transaction_node_id,

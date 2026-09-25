@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from decimal import Decimal, ROUND_HALF_UP
+from datetime import UTC, datetime
+from decimal import ROUND_HALF_UP, Decimal
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-
 
 MONEY_QUANT = Decimal("0.01")
 
@@ -21,7 +20,7 @@ def money(value: Any) -> Decimal:
 
 
 def now_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class AuditraModel(BaseModel):
@@ -81,7 +80,7 @@ class SourceRecord(AuditraModel):
     source: str
     source_record_id: str
     ingested_at: datetime = Field(default_factory=now_utc)
-    original: Dict[str, Any] = Field(default_factory=dict)
+    original: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("ingested_at")
     @classmethod
@@ -105,8 +104,8 @@ class Order(SourceRecord):
     amount: Decimal
     currency: str = "INR"
     created_at: datetime
-    invoice_id: Optional[str] = None
-    reference_id: Optional[str] = None
+    invoice_id: str | None = None
+    reference_id: str | None = None
 
     @field_validator("amount")
     @classmethod
@@ -123,14 +122,14 @@ class Order(SourceRecord):
 
 class Payment(SourceRecord):
     payment_id: str
-    order_id: Optional[str]
+    order_id: str | None
     merchant_id: str
     customer_id: str
     amount: Decimal
     currency: str = "INR"
     captured_at: datetime
     payment_method: str = "upi"
-    reference_id: Optional[str] = None
+    reference_id: str | None = None
 
     @field_validator("amount")
     @classmethod
@@ -200,7 +199,7 @@ class FeeRule(SourceRecord):
     fixed_fee: Decimal = Decimal("3.00")
     gst_bps: int = 1800
     active_from: datetime
-    active_to: Optional[datetime] = None
+    active_to: datetime | None = None
 
     @field_validator("fixed_fee")
     @classmethod
@@ -219,7 +218,7 @@ class FeeRule(SourceRecord):
 
     @field_validator("active_from", "active_to")
     @classmethod
-    def require_active_tz(cls, value: Optional[datetime]) -> Optional[datetime]:
+    def require_active_tz(cls, value: datetime | None) -> datetime | None:
         if value is None:
             return value
         if value.tzinfo is None or value.utcoffset() is None:
@@ -247,15 +246,15 @@ class EvidenceItem(AuditraModel):
     entity_id: str
     source: str
     summary: str
-    payload: Dict[str, Any] = Field(default_factory=dict)
+    payload: dict[str, Any] = Field(default_factory=dict)
 
 
 class GraphNode(AuditraModel):
     id: str
     type: str
     label: str
-    evidence_id: Optional[str] = None
-    data: Dict[str, Any] = Field(default_factory=dict)
+    evidence_id: str | None = None
+    data: dict[str, Any] = Field(default_factory=dict)
 
 
 class GraphEdge(AuditraModel):
@@ -264,14 +263,14 @@ class GraphEdge(AuditraModel):
     target: str
     relationship: str
     confidence: float
-    evidence_id: Optional[str] = None
-    data: Dict[str, Any] = Field(default_factory=dict)
+    evidence_id: str | None = None
+    data: dict[str, Any] = Field(default_factory=dict)
 
 
 class EvidenceGraph(AuditraModel):
     transaction_id: str
-    nodes: List[GraphNode] = Field(default_factory=list)
-    edges: List[GraphEdge] = Field(default_factory=list)
+    nodes: list[GraphNode] = Field(default_factory=list)
+    edges: list[GraphEdge] = Field(default_factory=list)
 
 
 class AuditEvent(AuditraModel):
@@ -281,8 +280,8 @@ class AuditEvent(AuditraModel):
     action: str
     entity: str
     entity_id: str
-    inputs_ref: Dict[str, Any] = Field(default_factory=dict)
-    output_ref: Dict[str, Any] = Field(default_factory=dict)
+    inputs_ref: dict[str, Any] = Field(default_factory=dict)
+    output_ref: dict[str, Any] = Field(default_factory=dict)
     reason: str = ""
     correlation_id: str
 
@@ -292,36 +291,36 @@ class AgentToolCall(AuditraModel):
     run_id: str
     case_id: str
     tool_name: str
-    input: Dict[str, Any]
-    output: Dict[str, Any]
+    input: dict[str, Any]
+    output: dict[str, Any]
     started_at: datetime
     finished_at: datetime
     success: bool = True
     duration_ms: float = 0.0
     result_size_bytes: int = 0
-    error_type: Optional[str] = None
+    error_type: str | None = None
 
 
 class VerificationResult(AuditraModel):
     decision_status: ReconciliationStatus
     passed: bool
-    challenges: List[str] = Field(default_factory=list)
-    checks: List[Dict[str, Any]] = Field(default_factory=list)
+    challenges: list[str] = Field(default_factory=list)
+    checks: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class InvariantResult(AuditraModel):
     rule_id: str
     status: InvariantStatus
-    expected: Optional[Decimal] = None
-    actual: Optional[Decimal] = None
-    difference: Optional[Decimal] = None
-    evidence_ids: List[str] = Field(default_factory=list)
+    expected: Decimal | None = None
+    actual: Decimal | None = None
+    difference: Decimal | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
     reason: str = ""
     severity: str = "info"
 
     @field_validator("expected", "actual", "difference")
     @classmethod
-    def quantize_invariant_money(cls, value: Optional[Decimal]) -> Optional[Decimal]:
+    def quantize_invariant_money(cls, value: Decimal | None) -> Decimal | None:
         if value is None:
             return value
         return money(value)
@@ -332,17 +331,17 @@ class InvestigationHypothesis(AuditraModel):
     label: str
     status: HypothesisStatus = HypothesisStatus.INCONCLUSIVE
     confidence: float = 0.0
-    supporting_evidence_ids: List[str] = Field(default_factory=list)
-    contradicting_evidence_ids: List[str] = Field(default_factory=list)
-    tool_call_ids: List[str] = Field(default_factory=list)
-    verification_checks: List[Dict[str, Any]] = Field(default_factory=list)
+    supporting_evidence_ids: list[str] = Field(default_factory=list)
+    contradicting_evidence_ids: list[str] = Field(default_factory=list)
+    tool_call_ids: list[str] = Field(default_factory=list)
+    verification_checks: list[dict[str, Any]] = Field(default_factory=list)
     rationale: str = ""
 
 
 class AIInvestigationResult(AuditraModel):
     investigation_id: str
     payment_id: str
-    case_id: Optional[str] = None
+    case_id: str | None = None
     objective: str = ""
     provider: str = "offline_structured"
     model: str = "auditra-hypothesis-agent-v1"
@@ -352,37 +351,37 @@ class AIInvestigationResult(AuditraModel):
     finished_at: datetime
     duration_ms: float
     llm_calls: int = 0
-    input_tokens: Optional[int] = None
-    output_tokens: Optional[int] = None
-    total_tokens: Optional[int] = None
-    estimated_cost_usd: Optional[Decimal] = Decimal("0.00")
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+    estimated_cost_usd: Decimal | None = Decimal("0.00")
     ai_unavailable: bool = False
-    provider_error: Optional[str] = None
-    fallback_reason: Optional[str] = None
-    response_id: Optional[str] = None
+    provider_error: str | None = None
+    fallback_reason: str | None = None
+    response_id: str | None = None
     provider_attempts: int = 0
     provider_latency_ms: float = 0.0
-    provider_trace: List[Dict[str, Any]] = Field(default_factory=list)
-    available_tools: List[str] = Field(default_factory=list)
-    verification_requirements: List[str] = Field(default_factory=list)
+    provider_trace: list[dict[str, Any]] = Field(default_factory=list)
+    available_tools: list[str] = Field(default_factory=list)
+    verification_requirements: list[str] = Field(default_factory=list)
     max_tool_calls: int = 0
     max_llm_calls: int = 1
-    hypotheses: List[InvestigationHypothesis] = Field(default_factory=list)
-    selected_hypothesis_id: Optional[str] = None
+    hypotheses: list[InvestigationHypothesis] = Field(default_factory=list)
+    selected_hypothesis_id: str | None = None
     recommendation: ReconciliationStatus
     rationale: str = ""
-    self_challenge: List[str] = Field(default_factory=list)
-    supporting_evidence_ids: List[str] = Field(default_factory=list)
-    contradicting_evidence_ids: List[str] = Field(default_factory=list)
-    confidence_factors: Dict[str, float] = Field(default_factory=dict)
-    negative_factors: Dict[str, float] = Field(default_factory=dict)
-    verification_summary: Dict[str, Any] = Field(default_factory=dict)
-    escalation_reason: Optional[str] = None
+    self_challenge: list[str] = Field(default_factory=list)
+    supporting_evidence_ids: list[str] = Field(default_factory=list)
+    contradicting_evidence_ids: list[str] = Field(default_factory=list)
+    confidence_factors: dict[str, float] = Field(default_factory=dict)
+    negative_factors: dict[str, float] = Field(default_factory=dict)
+    verification_summary: dict[str, Any] = Field(default_factory=dict)
+    escalation_reason: str | None = None
     tool_call_count: int = 0
 
     @field_validator("estimated_cost_usd")
     @classmethod
-    def quantize_ai_cost(cls, value: Optional[Decimal]) -> Optional[Decimal]:
+    def quantize_ai_cost(cls, value: Decimal | None) -> Decimal | None:
         if value is None:
             return None
         return money(value)
@@ -395,26 +394,26 @@ class ControllerDecision(AuditraModel):
     confidence_score: float
     confidence_band: ConfidenceBand
     financial_impact: Decimal
-    expected_settlement: Optional[Decimal] = None
-    actual_settlement: Optional[Decimal] = None
-    expected_fee: Optional[Decimal] = None
-    expected_gst: Optional[Decimal] = None
+    expected_settlement: Decimal | None = None
+    actual_settlement: Decimal | None = None
+    expected_fee: Decimal | None = None
+    expected_gst: Decimal | None = None
     refund_total: Decimal = Decimal("0.00")
-    difference: Optional[Decimal] = None
-    reason_codes: List[str] = Field(default_factory=list)
-    evidence_ids: List[str] = Field(default_factory=list)
-    supporting_evidence: List[str] = Field(default_factory=list)
-    contradicting_evidence: List[str] = Field(default_factory=list)
-    confidence_factors: Dict[str, float] = Field(default_factory=dict)
+    difference: Decimal | None = None
+    reason_codes: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    supporting_evidence: list[str] = Field(default_factory=list)
+    contradicting_evidence: list[str] = Field(default_factory=list)
+    confidence_factors: dict[str, float] = Field(default_factory=dict)
     risk_score: float = 0.0
-    risk_factors: List[str] = Field(default_factory=list)
-    invariants: List[InvariantResult] = Field(default_factory=list)
-    ai_investigation: Optional[AIInvestigationResult] = None
-    verification: Optional[VerificationResult] = None
+    risk_factors: list[str] = Field(default_factory=list)
+    invariants: list[InvariantResult] = Field(default_factory=list)
+    ai_investigation: AIInvestigationResult | None = None
+    verification: VerificationResult | None = None
 
     @field_validator("financial_impact", "expected_settlement", "actual_settlement", "expected_fee", "expected_gst", "refund_total", "difference")
     @classmethod
-    def quantize_optional_money(cls, value: Optional[Decimal]) -> Optional[Decimal]:
+    def quantize_optional_money(cls, value: Decimal | None) -> Decimal | None:
         if value is None:
             return value
         return money(value)
@@ -424,18 +423,18 @@ class ReconciliationCase(AuditraModel):
     case_id: str
     run_id: str
     payment_id: str
-    order_id: Optional[str] = None
+    order_id: str | None = None
     merchant_id: str
     status: ReconciliationStatus
     decision: ControllerDecision
     graph: EvidenceGraph
-    evidence: List[EvidenceItem] = Field(default_factory=list)
-    tool_calls: List[AgentToolCall] = Field(default_factory=list)
-    invariants: List[InvariantResult] = Field(default_factory=list)
-    ai_investigation: Optional[AIInvestigationResult] = None
+    evidence: list[EvidenceItem] = Field(default_factory=list)
+    tool_calls: list[AgentToolCall] = Field(default_factory=list)
+    invariants: list[InvariantResult] = Field(default_factory=list)
+    ai_investigation: AIInvestigationResult | None = None
     risk_score: float = 0.0
-    risk_factors: List[str] = Field(default_factory=list)
-    investigation_timeline: List[str] = Field(default_factory=list)
+    risk_factors: list[str] = Field(default_factory=list)
+    investigation_timeline: list[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=now_utc)
 
 
@@ -458,13 +457,13 @@ class DatasetBundle(AuditraModel):
     seed: int
     requested_records: int
     generated_at: datetime = Field(default_factory=now_utc)
-    merchants: List[Merchant]
-    orders: List[Order]
-    payments: List[Payment]
-    settlements: List[Settlement]
-    refunds: List[Refund]
-    fee_rules: List[FeeRule]
-    ground_truth: Dict[str, GroundTruthCase] = Field(default_factory=dict)
+    merchants: list[Merchant]
+    orders: list[Order]
+    payments: list[Payment]
+    settlements: list[Settlement]
+    refunds: list[Refund]
+    fee_rules: list[FeeRule]
+    ground_truth: dict[str, GroundTruthCase] = Field(default_factory=dict)
 
 
 class ScenarioRequest(AuditraModel):
@@ -526,8 +525,8 @@ class ControllerAlert(AuditraModel):
     status: ReconciliationStatus
     financial_exposure: Decimal = Decimal("0.00")
     risk_score: float = 0.0
-    case_id: Optional[str] = None
-    payment_id: Optional[str] = None
+    case_id: str | None = None
+    payment_id: str | None = None
     verification_state: str = "NOT_APPLICABLE"
     source: str = "controller_run"
 
@@ -542,7 +541,7 @@ class FailureRecord(AuditraModel):
     expected: ReconciliationStatus
     predicted: ReconciliationStatus
     root_cause: str
-    evidence_available: List[str] = Field(default_factory=list)
+    evidence_available: list[str] = Field(default_factory=list)
     failure_category: str
     financial_impact: Decimal = Decimal("0.00")
 
@@ -577,9 +576,9 @@ class EvaluationMetrics(AuditraModel):
     financial_amount_correctly_reconciled: Decimal
     financial_amount_incorrectly_classified: Decimal
     financial_impact_of_errors: Decimal
-    confusion_matrix: Dict[str, Dict[str, int]] = Field(default_factory=dict)
-    class_metrics: Dict[str, Dict[str, float]] = Field(default_factory=dict)
-    failure_taxonomy: Dict[str, int] = Field(default_factory=dict)
+    confusion_matrix: dict[str, dict[str, int]] = Field(default_factory=dict)
+    class_metrics: dict[str, dict[str, float]] = Field(default_factory=dict)
+    failure_taxonomy: dict[str, int] = Field(default_factory=dict)
 
     @field_validator(
         "financial_amount_correctly_reconciled",
@@ -599,8 +598,8 @@ class ControllerRun(AuditraModel):
     finished_at: datetime
     duration_ms: float
     metrics: RunMetrics
-    cases: List[ReconciliationCase]
-    audit_events: List[AuditEvent] = Field(default_factory=list)
+    cases: list[ReconciliationCase]
+    audit_events: list[AuditEvent] = Field(default_factory=list)
 
 
 class EvaluationRun(AuditraModel):
@@ -609,7 +608,7 @@ class EvaluationRun(AuditraModel):
     dataset_id: str
     created_at: datetime = Field(default_factory=now_utc)
     metrics: EvaluationMetrics
-    failures: List[FailureRecord] = Field(default_factory=list)
+    failures: list[FailureRecord] = Field(default_factory=list)
 
 
 class ReviewRequest(AuditraModel):
