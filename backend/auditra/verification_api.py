@@ -5,6 +5,7 @@ import importlib
 import logging
 import hashlib
 import shutil
+import difflib
 from decimal import Decimal, ROUND_HALF_EVEN
 from pathlib import Path
 from typing import AsyncGenerator, Dict, Any, List
@@ -121,7 +122,7 @@ class FraudDetector:
     def is_fraudulent(self, amount_str: str) -> bool:
         try:
             amt = Decimal(amount_str)
-            return bool(amt > 10000)
+            return bool(amt > 5000) # INTENTIONAL FLAW FOR ROLLBACK DEMO
         except:
             return True
 """
@@ -225,7 +226,15 @@ def _aegis_generator():
             yield _sse("node_state", {"node": node["id"], "state": "PATCHING"})
             patched_code = ask_llm_for_patch(node["id"], original_code, failure_info)
             
-            yield _sse("node_state", {"node": node["id"], "state": "VALIDATING", "patch_code": patched_code})
+            diff_lines = list(difflib.unified_diff(
+                original_code.splitlines(keepends=True),
+                patched_code.splitlines(keepends=True),
+                fromfile='untrusted_source.py',
+                tofile='proposed_patch.py'
+            ))
+            diff_str = "".join(diff_lines)
+            
+            yield _sse("node_state", {"node": node["id"], "state": "VALIDATING", "patch_code": patched_code, "patch_diff": diff_str})
             try:
                 ASTValidator.validate(patched_code)
             except Exception as e:
