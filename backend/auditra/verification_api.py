@@ -78,12 +78,12 @@ class _Oracles:
         return {"fraudulent": bool(amt > 10000)}
 
 def _sse(event: str, data: Any) -> str:
-    return f"event: {event}\\ndata: {json.dumps(data, default=str)}\\n\\n"
+    return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
 
 def get_patch_code_fallback(node: str) -> str:
     if node == "tax_router":
         return """class TaxRouter:
-    \\"\\"\\"IBM Bob 2.0 Patched Code\\"\\"\\"
+    \"\"\"IBM Bob 2.0 Patched Code\"\"\"
     def get_tax_rate(self, state_code: str) -> str:
         rates = {"CA": "0.0825", "NY": "0.08875", "TX": "0.0625"}
         return rates.get(state_code, "0.05")
@@ -91,7 +91,7 @@ def get_patch_code_fallback(node: str) -> str:
     elif node == "billing_engine":
         return """from decimal import Decimal, ROUND_HALF_EVEN
 class BillingEngine:
-    \\"\\"\\"IBM Bob 2.0 Patched Code\\"\\"\\"
+    \"\"\"IBM Bob 2.0 Patched Code\"\"\"
     def __init__(self):
         self.rate = Decimal("0.03")
         self.gst = Decimal("0.18")
@@ -108,7 +108,7 @@ class BillingEngine:
 """
     elif node == "ledger_sync":
         return """class LedgerSync:
-    \\"\\"\\"IBM Bob 2.0 Patched Code\\"\\"\\"
+    \"\"\"IBM Bob 2.0 Patched Code\"\"\"
     def process_refund(self, amount_str: str) -> dict:
         amt = float(amount_str)
         if amt < 0:
@@ -118,7 +118,7 @@ class BillingEngine:
     elif node == "fraud_detector":
         return """from decimal import Decimal
 class FraudDetector:
-    \\"\\"\\"IBM Bob 2.0 Patched Code\\"\\"\\"
+    \"\"\"IBM Bob 2.0 Patched Code\"\"\"
     def is_fraudulent(self, amount_str: str) -> bool:
         try:
             amt = Decimal(amount_str)
