@@ -1,46 +1,76 @@
-# AUDITRA
-## The Zero-Trust Verification Fabric for AI-Generated Code
+# 🛡️ Auditra: Zero-Trust Verification Fabric
 
-Built for **Gateway AI Buildathon 2026, Track 04: AI Finance Controller**.
+> *"Writing code is no longer the bottleneck. Trust is."*
 
-> **"Everyone else built an AI to write code. We built the system that makes it safe to deploy."**
+Welcome to **Auditra (The Aegis Protocol)**. Built for the **IBM Bob 2.0 Hackathon**.
 
-Enterprises don't have a code generation problem; they have a trust problem. If IBM Bob 2.0 writes a payment routing algorithm that hallucinates a floating-point rounding error, the bank loses $50 million and the C-suite goes to jail.
+Auditra is not an "AI code reviewer" or a "documentation generator." It is an **Adversarial Verification Sandbox** designed to prove that AI-generated code is mathematically flawless before it touches a production system.
 
-Auditra is the adversarial verification sandbox that PROVES the code written by IBM Bob 2.0 is mathematically flawless.
+## 🚨 The $100 Million Problem
+The biggest unsolved problem in enterprise software (Banks, Fintechs, Fortune 500s) is trust. If an AI writes payment routing logic and hallucinates a floating-point rounding error, the bank loses millions of dollars. No enterprise trusts an LLM to write core financial ledgers blindly.
 
-![Auditra War Room](docs/assets/submission_flow.svg)
+## ⚔️ The Solution: The Aegis Protocol
+We built the **Aegis Protocol**: an autonomous immune system for AI-generated code. It acts as a live Pull Request (PR) defense grid against hallucinating or malicious AI agents. 
+
+When bad code enters the system, Auditra intercepts it, runs adversarial synthetic scenarios, detects mathematical drift using SHA-256 cryptographic hashing, prompts an LLM to author a patch, and hot-reloads the server on the fly. 
+
+### The 4-Node Microservice Gauntlet
+The demo simulates an enterprise banking cluster with 4 critical microservices. Each node is injected with a different class of AI hallucination:
+1. **Tax Router:** Basic logic hallucination (hardcoded flat tax rate instead of state-based parsing).
+2. **Billing Engine:** Floating-point precision drift (Penny-shaving "Office Space" bug).
+3. **Ledger Sync:** Unauthorized negative-refund exploits (Missing bounds checks).
+4. **Fraud Detector:** Scientific-notation string parsing bypasses (`1e9` injection).
 
 ---
 
-### How it Works: The Particle Accelerator for Code
+## 🚀 Running the Aegis Grid
 
-1. **The Target**: IBM Bob 2.0 generates a microservice (e.g., `billing_engine.py`).
-2. **The Matrix**: Auditra loads the AI-generated code and violently bombards it with a "Peak Black Friday" load of synthetic adversarial transactions (micro-pennies, floating-point boundaries, massive whales).
-3. **The Oracle**: Every output is verified against a Cryptographic Deterministic Oracle that uses pure Banker's Rounding and issues a SHA-256 state hash.
-4. **The Autonomous Loop**: If the execution hash and Oracle hash drift by a single byte (e.g., a 0.001 cent fractional rounding leak), the loop halts, extracts the failure fingerprint, and forces IBM Bob 2.0 to autonomously patch the code.
-5. **The Certificate**: The loop repeats until the code survives up to 10,000 adversarial scenarios and earns the Cryptographic Oracle Seal of Approval.
-
-### The Float-Drift Bug (The "Office Space" Hack)
-
-In our live demo, IBM Bob 2.0 optimizes the billing engine by using standard `float` math instead of strict `Decimal` precision. This causes a fractional penny drift that is invisible on single tests but lethal at scale.
-
-Auditra's fuzzer explicitly hunts for floats like `.045` or `.505` to trigger the rounding divergence, catching the bug and forcing the AI to patch it using `ROUND_HALF_EVEN`.
-
-### Running the Live War Room
-
+### 1. Backend Setup (FastAPI)
+Navigate to the root directory and activate your virtual environment:
 ```bash
-# Terminal 1: Start the Verification Matrix backend
-python -m uvicorn backend.auditra.api:app --host 127.0.0.1 --port 8002
+# Windows
+.\.venv\Scripts\Activate.ps1
 
-# Terminal 2: Launch the War Room Interface
-cd frontend
-npm install
-VITE_AUDITRA_API_BASE="http://127.0.0.1:8002" npm run dev
+# Install requirements (including Groq for Live LLM mode)
+pip install -r requirements.txt groq python-dotenv
+
+# Run the Uvicorn server (HOT RELOAD IS REQUIRED for the demo)
+python -m uvicorn backend.auditra.api:app --host 127.0.0.1 --port 8002 --reload
 ```
 
-Open `http://127.0.0.1:5174` and click **Launch Matrix**.
+### 2. Frontend Setup (React/Vite)
+Navigate to the frontend directory:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://127.0.0.1:5174` in your browser.
 
 ---
 
-### We Don't Trust AI. We Measure It.
+## 🎬 How to Perform the Live Demo
+1. Click **Reset Grid** (This automatically injects the 4 critical vulnerabilities into the 4 microservices on disk).
+2. Click **Launch Grid**.
+3. Watch the system autonomously cycle through the 4 nodes. It will detect the drift, display the cryptographic mismatch, prompt the LLM, write the patch directly to the Python AST, hot-reload the server, and mathematically seal the node to Green.
+
+---
+
+## 🧠 Dual-Mode LLM Engine (Mock vs Live)
+
+Auditra features a **Hybrid Engine** for stage presentations:
+*   **Demo Mode (Default):** Runs lightning-fast, pre-calculated patches. Used for flawless stage presentations without relying on conference Wi-Fi or unpredictable LLM lag.
+*   **Live AI Mode (Groq LLaMA-3):** If a judge wants to see the real engine at work, simply add your Groq API key.
+
+**To enable Live AI Mode:**
+Create a `.env` file in the root directory:
+```env
+GROQ_API_KEY="gsk_your_real_key_goes_here"
+```
+Auditra will automatically detect the key, ping the Groq API with the cryptographic failure fingerprint, parse the LLaMA-3 response, and apply the real LLM-generated AST patch to the codebase.
+
+---
+
+### Built for the IBM Bob 2.0 / Gateway AI Buildathon
+*Breaking reality. Securing the enterprise.*
