@@ -1,11 +1,12 @@
 from decimal import Decimal, InvalidOperation
 
-
 class FraudDetector:
-    """IBM Bob 2.0 Patched Code"""
-    def is_fraudulent(self, amount_str: str) -> bool:
+    """Intentionally Vulnerable Code for Demo"""
+    def is_fraudulent(self, amount_str: str) -> dict:
         try:
             amt = Decimal(amount_str)
-            return bool(amt > 10000)
+            # VULNERABILITY: Incorrect threshold (5000 instead of 10000)
+            return {"fraudulent": bool(amt > 5000)}
         except (ValueError, InvalidOperation):
-            return True
+            # VULNERABILITY: Fails open instead of failing closed
+            return {"fraudulent": False}

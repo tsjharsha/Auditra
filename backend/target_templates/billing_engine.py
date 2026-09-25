@@ -1,18 +1,19 @@
-from decimal import ROUND_HALF_EVEN, Decimal
-
-
 class BillingEngine:
-    """IBM Bob 2.0 Patched Code"""
+    """Intentionally Vulnerable Code for Demo"""
     def __init__(self):
-        self.rate = Decimal("0.03")
-        self.gst = Decimal("0.18")
+        self.rate = 0.03
+        self.gst = 0.18
+        
     def calculate(self, amount_str: str) -> dict:
-        amt = Decimal(amount_str)
-        fee = (amt * self.rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_EVEN)
-        tax = (fee * self.gst).quantize(Decimal("0.01"), rounding=ROUND_HALF_EVEN)
+        # VULNERABILITY: Using float arithmetic instead of Decimal
+        amt = float(amount_str)
+        fee = amt * self.rate
+        tax = fee * self.gst
+        settlement = amt - fee - tax
+        
         return {
-            "amount": str(amt.quantize(Decimal("0.01"))),
-            "fee": str(fee),
-            "gst": str(tax),
-            "settlement": str(amt - fee - tax)
+            "amount": f"{amt:.2f}",
+            "fee": f"{fee:.2f}",
+            "gst": f"{tax:.2f}",
+            "settlement": f"{settlement:.2f}"
         }
