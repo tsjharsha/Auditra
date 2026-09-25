@@ -1,9 +1,9 @@
+import os
 import json
 import time
 import importlib
 import importlib.util
 import sys
-import random
 import logging
 import hashlib
 from decimal import Decimal, ROUND_HALF_EVEN
@@ -12,6 +12,16 @@ from typing import AsyncGenerator, Dict, Any, List
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
+from dotenv import load_dotenv
+
+load_dotenv()
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+
+try:
+    from groq import Groq
+    groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+except ImportError:
+    groq_client = None
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +87,7 @@ def _load_module(name: str, path: str):
 def _sse(event: str, data: Any) -> str:
     return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
 
-def get_patch_code(node: str) -> str:
+def get_patch_code_fallback(node: str) -> str:
     if node == "tax_router":
         return """class TaxRouter:
     \"\"\"IBM Bob 2.0 Patched Code\"\"\"
@@ -125,8 +135,42 @@ class FraudDetector:
 """
     return ""
 
+def ask_groq_for_patch(node: str, buggy_code: str, failure_info: dict) -> str:
+    if not groq_client:
+        time.sleep(1.0)
+        return get_patch_code_fallback(node)
+        
+    try:
+        prompt = f"""You are IBM Bob 2.0, an elite AI coding assistant.
+The following Python class failed cryptographic verification in the Zero-Trust Fabric.
+Fix the code. Return ONLY the raw python code. Do not wrap in markdown or backticks.
+
+Buggy Code:
+{buggy_code}
+
+Cryptographic Variance Detected:
+{json.dumps(failure_info, indent=2)}
+"""
+        chat_completion = groq_client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama3-8b-8192",
+            temperature=0,
+            max_tokens=500
+        )
+        content = chat_completion.choices[0].message.content.strip()
+        # Clean up markdown if the LLM hallucinated it anyway
+        if content.startswith("```"):
+            lines = content.split("\\n")
+            if lines[0].startswith("```"): lines = lines[1:]
+            if lines[-1].startswith("```"): lines = lines[:-1]
+            content = "\\n".join(lines).strip()
+        return content
+    except Exception as e:
+        logger.error(f"Groq failed: {e}")
+        return get_patch_code_fallback(node)
+
 def _aegis_generator():
-    yield _sse("aegis_start", {"message": "AEGIS PROTOCOL ACTIVATED"})
+    yield _sse("aegis_start", {"message": f"AEGIS PROTOCOL ACTIVATED. LLM Mode: {'LIVE (Groq)' if groq_client else 'Mock/Demo'}"})
     time.sleep(1.0)
     
     nodes = [
@@ -179,9 +223,14 @@ def _aegis_generator():
             yield _sse("variance_detected", failure_info)
             time.sleep(2.0)
             yield _sse("prompting_ai", {"node": node["id"]})
-            time.sleep(1.0)
             
-            patched_code = get_patch_code(node["id"])
+            # Fetch current buggy code to send to LLM
+            with open(TARGETS[node["id"]], "r", encoding="utf-8") as f:
+                buggy_code = f.read()
+            
+            # CALL REAL AI (OR FALLBACK)
+            patched_code = ask_groq_for_patch(node["id"], buggy_code, failure_info)
+            
             with open(TARGETS[node["id"]], "w", encoding="utf-8") as f:
                 f.write(patched_code)
                 
