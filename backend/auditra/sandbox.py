@@ -1,100 +1,87 @@
-import logging
-import importlib.util
-import sys
-import random
-from typing import List, Dict, Any
+import ast
+import json
+import subprocess
+import tempfile
+import os
 from pathlib import Path
-from .oracle import DeterministicOracle
+from typing import Tuple, Dict, Any
 
-logger = logging.getLogger(__name__)
+class SecurityViolation(Exception):
+    pass
 
-class VerificationSandbox:
-    """
-    The Particle Accelerator Matrix. 
-    Violently attacks AI-generated code with adversarial scenarios.
-    """
-    def __init__(self, target_service_path: str):
-        self.target_service_path = target_service_path
-        self.oracle = DeterministicOracle()
-        self.target_module = self._load_target_module()
-        self.billing_engine_class = getattr(self.target_module, 'BillingEngine', None)
-        
-        if not self.billing_engine_class:
-            raise ValueError("Could not find BillingEngine class in target service.")
-
-    def _load_target_module(self):
-        path = Path(self.target_service_path)
-        spec = importlib.util.spec_from_file_location("target_service", str(path))
-        module = importlib.util.module_from_spec(spec)
-        sys.modules["target_service"] = module
-        spec.loader.exec_module(module)
-        return module
-
-    def generate_adversarial_scenarios(self, count: int = 1000) -> List[Dict[str, Any]]:
-        """
-        Adversarial Fuzzing: targets floating-point boundaries, micro-pennies, and massive whales.
-        """
-        scenarios = []
-        for i in range(count):
-            is_intl = random.choice([True, False])
-            roll = random.random()
+class ASTValidator:
+    DANGEROUS_CALLS = {'eval', 'exec', 'open'}
+    DANGEROUS_IMPORTS = {'os', 'subprocess', 'sys', 'socket', 'pathlib'}
+    
+    @classmethod
+    def validate(cls, code: str):
+        try:
+            tree = ast.parse(code)
+        except SyntaxError as e:
+            raise SecurityViolation(f"Syntax Error: {e}")
             
-            if roll < 0.2:
-                # The Float-Killer: Numbers ending in precisely .X05 or .X049999 to trigger rounding drift
-                base = random.randint(10, 5000)
-                amount = f"{base}.{random.choice(['505', '045', '995'])}" 
-            elif roll < 0.3:
-                # Micro-pennies
-                amount = str(round(random.uniform(0.01, 0.99), 3))
-            elif roll < 0.4:
-                # Whales
-                amount = str(round(random.uniform(1000000.0, 9999999.99), 2))
-            else:
-                amount = str(round(random.uniform(10.0, 5000.0), 2))
-                
-            scenarios.append({
-                "tx_id": f"tx_fuzz_{i:06d}",
-                "amount_str": amount,
-                "is_international": is_intl
-            })
-        return scenarios
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.split('.')[0] in cls.DANGEROUS_IMPORTS:
+                        raise SecurityViolation(f"Dangerous import detected: {alias.name}")
+            elif isinstance(node, ast.ImportFrom):
+                if node.module and node.module.split('.')[0] in cls.DANGEROUS_IMPORTS:
+                    raise SecurityViolation(f"Dangerous import detected: {node.module}")
+            elif isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name):
+                    if node.func.id in cls.DANGEROUS_CALLS:
+                        raise SecurityViolation(f"Dangerous function call detected: {node.func.id}")
+                        
+        return True
 
-    def run_matrix(self, scenarios: List[Dict[str, Any]]) -> Dict[str, Any]:
-        logger.info(f"Initiating Particle Accelerator Matrix with {len(scenarios)} scenarios...")
-        engine = self.billing_engine_class()
-        
-        passed_count = 0
-        for scenario in scenarios:
-            try:
-                target_result = engine.calculate_settlement(scenario["amount_str"], scenario["is_international"])
-                oracle_result = self.oracle.calculate_expected_settlement(scenario["amount_str"], scenario["is_international"])
-                verification = self.oracle.verify_target_output(target_result, oracle_result)
+class SandboxRunner:
+    @staticmethod
+    def execute(module_path: str, class_name: str, method_name: str, kwargs: dict, timeout: int = 2) -> Tuple[bool, Dict[str, Any]]:
+        mod_path = Path(module_path)
+        runner_code = f"""
+import json
+import sys
+import traceback
+sys.path.insert(0, r"{mod_path.parent}")
+try:
+    from {mod_path.stem} import {class_name}
+    engine = {class_name}()
+    result = engine.{method_name}(**{json.dumps(kwargs)})
+    if not isinstance(result, dict):
+        result = {{"result": result}}
+    print(json.dumps({{"status": "success", "data": result}}))
+except Exception as e:
+    print(json.dumps({{"status": "error", "error": str(e), "traceback": traceback.format_exc()}}))
+"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write(runner_code)
+            temp_path = f.name
+            
+        try:
+            result = subprocess.run(
+                ["python", temp_path],
+                capture_output=True,
+                text=True,
+                timeout=timeout
+            )
+            out = result.stdout.strip()
+            
+            # The script output might have other print statements, grab the last line
+            if out:
+                last_line = out.split('\\n')[-1]
+                data = json.loads(last_line)
+                if data.get("status") == "success":
+                    return True, data.get("data", {})
+                else:
+                    return False, {"error": data.get("error"), "traceback": data.get("traceback")}
+            else:
+                return False, {"error": "No output from sandbox", "stderr": result.stderr}
                 
-                if not verification["verified"]:
-                    logger.warning(f"Matrix caught variance on {scenario['tx_id']}")
-                    return {
-                        "status": "FAILED",
-                        "failed_scenario": scenario,
-                        "target_output": target_result,
-                        "expected_output": oracle_result,
-                        "variances": verification["variances"],
-                        "target_hash": verification["target_hash"],
-                        "oracle_hash": oracle_result["_oracle_hash"],
-                        "passed_count": passed_count
-                    }
-                
-                passed_count += 1
-            except Exception as e:
-                logger.error(f"Target code threw exception: {e}")
-                return {
-                    "status": "CRASHED",
-                    "failed_scenario": scenario,
-                    "error": str(e),
-                    "passed_count": passed_count
-                }
-                
-        return {
-            "status": "VERIFIED",
-            "passed_count": passed_count,
-            "certificate": "CRYPTOGRAPHIC_ORACLE_SEAL_OF_APPROVAL"
-        }
+        except subprocess.TimeoutExpired:
+            return False, {"error": f"Execution timed out after {timeout} seconds"}
+        except Exception as e:
+            return False, {"error": f"Sandbox execution failed: {str(e)}"}
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)

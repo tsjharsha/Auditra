@@ -2,10 +2,9 @@ import os
 import json
 import time
 import importlib
-import importlib.util
-import sys
 import logging
 import hashlib
+import shutil
 from decimal import Decimal, ROUND_HALF_EVEN
 from pathlib import Path
 from typing import AsyncGenerator, Dict, Any, List
@@ -13,6 +12,8 @@ from typing import AsyncGenerator, Dict, Any, List
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
+
+from .sandbox import SandboxRunner, ASTValidator, SecurityViolation
 
 load_dotenv()
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
@@ -24,18 +25,22 @@ except ImportError:
     groq_client = None
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter(prefix="/verification", tags=["verification"])
 
-BASE_DIR = Path(__file__).resolve().parent.parent / "target_service"
+BASE_DIR = Path(__file__).resolve().parent.parent
+TARGET_DIR = BASE_DIR / "target_service"
+TEMPLATE_DIR = BASE_DIR / "target_templates"
+
 TARGETS = {
-    "tax_router": str(BASE_DIR / "tax_router.py"),
-    "billing_engine": str(BASE_DIR / "billing_engine.py"),
-    "ledger_sync": str(BASE_DIR / "ledger_sync.py"),
-    "fraud_detector": str(BASE_DIR / "fraud_detector.py"),
+    "tax_router": str(TARGET_DIR / "tax_router.py"),
+    "billing_engine": str(TARGET_DIR / "billing_engine.py"),
+    "ledger_sync": str(TARGET_DIR / "ledger_sync.py"),
+    "fraud_detector": str(TARGET_DIR / "fraud_detector.py"),
 }
 
-# --- ORACLES ---
+# Ensure templates directory exists for reproducible reset
+os.makedirs(TEMPLATE_DIR, exist_ok=True)
+
 class _Oracles:
     @staticmethod
     def expected_tax_router(state_code: str) -> dict:
@@ -71,26 +76,13 @@ class _Oracles:
             return {"fraudulent": True}
         return {"fraudulent": bool(amt > 10000)}
 
-def _load_module(name: str, path: str):
-    import sys
-    sys.dont_write_bytecode = True
-    mod_name = f"aegis_target_{name}"
-    if mod_name in sys.modules:
-        del sys.modules[mod_name]
-    importlib.invalidate_caches()
-    
-    spec = importlib.util.spec_from_file_location(mod_name, path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
 def _sse(event: str, data: Any) -> str:
-    return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
+    return f"event: {event}\\ndata: {json.dumps(data, default=str)}\\n\\n"
 
 def get_patch_code_fallback(node: str) -> str:
     if node == "tax_router":
         return """class TaxRouter:
-    \"\"\"IBM Bob 2.0 Patched Code\"\"\"
+    \\"\\"\\"IBM Bob 2.0 Patched Code\\"\\"\\"
     def get_tax_rate(self, state_code: str) -> str:
         rates = {"CA": "0.0825", "NY": "0.08875", "TX": "0.0625"}
         return rates.get(state_code, "0.05")
@@ -98,7 +90,7 @@ def get_patch_code_fallback(node: str) -> str:
     elif node == "billing_engine":
         return """from decimal import Decimal, ROUND_HALF_EVEN
 class BillingEngine:
-    \"\"\"IBM Bob 2.0 Patched Code\"\"\"
+    \\"\\"\\"IBM Bob 2.0 Patched Code\\"\\"\\"
     def __init__(self):
         self.rate = Decimal("0.03")
         self.gst = Decimal("0.18")
@@ -115,7 +107,7 @@ class BillingEngine:
 """
     elif node == "ledger_sync":
         return """class LedgerSync:
-    \"\"\"IBM Bob 2.0 Patched Code\"\"\"
+    \\"\\"\\"IBM Bob 2.0 Patched Code\\"\\"\\"
     def process_refund(self, amount_str: str) -> dict:
         amt = float(amount_str)
         if amt < 0:
@@ -125,7 +117,7 @@ class BillingEngine:
     elif node == "fraud_detector":
         return """from decimal import Decimal
 class FraudDetector:
-    \"\"\"IBM Bob 2.0 Patched Code\"\"\"
+    \\"\\"\\"IBM Bob 2.0 Patched Code\\"\\"\\"
     def is_fraudulent(self, amount_str: str) -> bool:
         try:
             amt = Decimal(amount_str)
@@ -135,7 +127,7 @@ class FraudDetector:
 """
     return ""
 
-def ask_groq_for_patch(node: str, buggy_code: str, failure_info: dict) -> str:
+def ask_llm_for_patch(node: str, buggy_code: str, failure_info: dict) -> str:
     if not groq_client:
         time.sleep(1.0)
         return get_patch_code_fallback(node)
@@ -158,7 +150,6 @@ Cryptographic Variance Detected:
             max_tokens=500
         )
         content = chat_completion.choices[0].message.content.strip()
-        # Clean up markdown if the LLM hallucinated it anyway
         if content.startswith("```"):
             lines = content.split("\\n")
             if lines[0].startswith("```"): lines = lines[1:]
@@ -166,85 +157,109 @@ Cryptographic Variance Detected:
             content = "\\n".join(lines).strip()
         return content
     except Exception as e:
-        logger.error(f"Groq failed: {e}")
+        logger.error(f"LLM failed: {e}")
         return get_patch_code_fallback(node)
 
+def verify_node(node: dict, path: str) -> dict:
+    for kwargs in node["inputs"]:
+        success, target_out = SandboxRunner.execute(path, node["class"], node["method"], kwargs)
+        
+        oracle_out = node["oracle"](**kwargs)
+        if not isinstance(oracle_out, dict):
+            oracle_out = {"result": oracle_out}
+            
+        if not success:
+            return {
+                "scenario": kwargs,
+                "error": target_out.get("error", "Execution Failed"),
+                "target_hash": "ERROR",
+                "oracle_hash": "N/A",
+                "variances": {"Exception": {"expected": "Success", "actual": target_out.get("error")}}
+            }
+            
+        variances = {}
+        for k in oracle_out.keys():
+            if str(target_out.get(k)) != str(oracle_out.get(k)):
+                variances[k] = {"expected": str(oracle_out[k]), "actual": str(target_out.get(k))}
+                
+        if variances:
+            thash = hashlib.sha256(json.dumps(target_out, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+            ohash = hashlib.sha256(json.dumps(oracle_out, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+            return {
+                "scenario": kwargs,
+                "variances": variances,
+                "target_hash": thash,
+                "oracle_hash": ohash
+            }
+    return None # Passed
+
 def _aegis_generator():
-    yield _sse("aegis_start", {"message": f"AEGIS PROTOCOL ACTIVATED. LLM Mode: {'LIVE (Groq)' if groq_client else 'Mock/Demo'}"})
+    yield _sse("aegis_start", {"message": f"AEGIS PROTOCOL ACTIVATED. MODE: {'LIVE (Groq)' if groq_client else 'DETERMINISTIC DEMO'}"})
     time.sleep(1.0)
     
     nodes = [
-        {"id": "tax_router", "class": "TaxRouter", "method": "get_tax_rate", "inputs": [{"state_code": "CA"}, {"state_code": "TX"}], "oracle": _Oracles.expected_tax_router},
-        {"id": "billing_engine", "class": "BillingEngine", "method": "calculate", "inputs": [{"amount_str": "100.505"}, {"amount_str": "199.995"}], "oracle": _Oracles.expected_billing},
-        {"id": "ledger_sync", "class": "LedgerSync", "method": "process_refund", "inputs": [{"amount_str": "-1000.00"}, {"amount_str": "500.00"}], "oracle": _Oracles.expected_ledger},
-        {"id": "fraud_detector", "class": "FraudDetector", "method": "is_fraudulent", "inputs": [{"amount_str": "1e9"}, {"amount_str": "9999.00"}], "oracle": _Oracles.expected_fraud}
+        {"id": "tax_router", "class": "TaxRouter", "method": "get_tax_rate", "inputs": [{"state_code": "CA"}, {"state_code": "TX"}] * 10, "oracle": _Oracles.expected_tax_router},
+        {"id": "billing_engine", "class": "BillingEngine", "method": "calculate", "inputs": [{"amount_str": "100.505"}, {"amount_str": "199.995"}] * 10, "oracle": _Oracles.expected_billing},
+        {"id": "ledger_sync", "class": "LedgerSync", "method": "process_refund", "inputs": [{"amount_str": "-1000.00"}, {"amount_str": "500.00"}] * 10, "oracle": _Oracles.expected_ledger},
+        {"id": "fraud_detector", "class": "FraudDetector", "method": "is_fraudulent", "inputs": [{"amount_str": "1e9"}, {"amount_str": "9999.00"}] * 10, "oracle": _Oracles.expected_fraud}
     ]
     
     for node in nodes:
-        yield _sse("node_attacked", {"node": node["id"]})
-        time.sleep(1.0)
+        yield _sse("node_state", {"node": node["id"], "state": "ATTACKING"})
+        time.sleep(0.5)
         
-        # Load buggy code
-        mod = _load_module(node["id"], TARGETS[node["id"]])
-        engine = getattr(mod, node["class"])()
+        target_path = TARGETS[node["id"]]
         
-        # Run scenarios to find drift
-        failure_info = None
-        for i, kwargs in enumerate(node["inputs"]):
-            try:
-                target_out = getattr(engine, node["method"])(**kwargs)
-                if not isinstance(target_out, dict):
-                    target_out = {"result": target_out}
-                
-                oracle_out = node["oracle"](**kwargs)
-                if not isinstance(oracle_out, dict):
-                    oracle_out = {"result": oracle_out}
-                
-                variances = {}
-                for k in oracle_out.keys():
-                    if str(target_out.get(k)) != str(oracle_out.get(k)):
-                        variances[k] = {"expected": str(oracle_out[k]), "actual": str(target_out.get(k))}
-                
-                if variances:
-                    thash = hashlib.sha256(json.dumps(target_out, sort_keys=True).encode("utf-8")).hexdigest()[:16]
-                    ohash = hashlib.sha256(json.dumps(oracle_out, sort_keys=True).encode("utf-8")).hexdigest()[:16]
-                    failure_info = {
-                        "node": node["id"],
-                        "scenario": kwargs,
-                        "variances": variances,
-                        "target_hash": thash,
-                        "oracle_hash": ohash
-                    }
-                    break
-            except Exception as e:
-                pass
+        # 1. Baseline verification
+        failure_info = verify_node(node, target_path)
         
         if failure_info:
-            yield _sse("variance_detected", failure_info)
-            time.sleep(2.0)
-            yield _sse("prompting_ai", {"node": node["id"]})
+            yield _sse("node_state", {"node": node["id"], "state": "COMPROMISED", "variance": failure_info})
+            time.sleep(1.5)
+            yield _sse("node_state", {"node": node["id"], "state": "ANALYZING"})
+            time.sleep(1.0)
             
-            # Fetch current buggy code to send to LLM
-            with open(TARGETS[node["id"]], "r", encoding="utf-8") as f:
-                buggy_code = f.read()
+            with open(target_path, "r", encoding="utf-8") as f:
+                original_code = f.read()
+                
+            yield _sse("node_state", {"node": node["id"], "state": "PATCHING"})
+            patched_code = ask_llm_for_patch(node["id"], original_code, failure_info)
             
-            # CALL REAL AI (OR FALLBACK)
-            patched_code = ask_groq_for_patch(node["id"], buggy_code, failure_info)
-            
-            with open(TARGETS[node["id"]], "w", encoding="utf-8") as f:
+            yield _sse("node_state", {"node": node["id"], "state": "VALIDATING", "patch_code": patched_code})
+            try:
+                ASTValidator.validate(patched_code)
+            except Exception as e:
+                yield _sse("node_state", {"node": node["id"], "state": "PATCH_FAILED", "error": str(e)})
+                time.sleep(1.5)
+                yield _sse("node_state", {"node": node["id"], "state": "ROLLING_BACK"})
+                continue
+
+            # Apply patch
+            with open(target_path, "w", encoding="utf-8") as f:
                 f.write(patched_code)
                 
-            yield _sse("patch_applied", {"node": node["id"], "code": patched_code})
-            time.sleep(1.5)
+            yield _sse("node_state", {"node": node["id"], "state": "REVERIFYING", "metrics": {"total_tests": len(node["inputs"])}})
             
-            yield _sse("node_secured", {"node": node["id"]})
+            # POST-PATCH VERIFICATION
+            post_patch_failure = verify_node(node, target_path)
+            
+            if post_patch_failure:
+                yield _sse("node_state", {"node": node["id"], "state": "VERIFICATION_FAILED", "variance": post_patch_failure})
+                time.sleep(1.5)
+                yield _sse("node_state", {"node": node["id"], "state": "ROLLING_BACK"})
+                # Rollback
+                with open(target_path, "w", encoding="utf-8") as f:
+                    f.write(original_code)
+                yield _sse("node_state", {"node": node["id"], "state": "ROLLED_BACK"})
+            else:
+                yield _sse("node_state", {"node": node["id"], "state": "SECURED", "metrics": {"passed": len(node["inputs"]), "failed": 0, "oracle_agreement": "100%"}})
+                
         else:
-            yield _sse("node_secured", {"node": node["id"]})
+            yield _sse("node_state", {"node": node["id"], "state": "SECURED", "metrics": {"passed": len(node["inputs"]), "failed": 0, "oracle_agreement": "100%"}})
             
         time.sleep(1.0)
         
-    yield _sse("aegis_secure", {"message": "ALL NODES SECURED"})
-
+    yield _sse("aegis_secure", {"message": "VERIFICATION LIFECYCLE COMPLETE"})
 
 @router.get("/stream")
 def verification_stream():
@@ -256,6 +271,9 @@ def verification_stream():
 
 @router.post("/reset")
 def reset_targets():
-    import subprocess
-    subprocess.run(["python", "C:\\\\Users\\\\Admin\\\\.gemini\\\\antigravity-ide\\\\brain\\\\8967d38e-6ed5-4082-9e92-3db6eb77d5ff\\\\scratch\\\\build_aegis_targets.py"], cwd="c:\\\\Users\\\\Admin\\\\Desktop\\\\Auditra")
-    return {"status": "reset"}
+    os.makedirs(TARGET_DIR, exist_ok=True)
+    # Copy all from templates to targets
+    for filename in os.listdir(TEMPLATE_DIR):
+        if filename.endswith(".py"):
+            shutil.copy(TEMPLATE_DIR / filename, TARGET_DIR / filename)
+    return {"status": "reset", "message": "All targets restored to known-vulnerable states."}

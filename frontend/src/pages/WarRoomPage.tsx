@@ -1,9 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Activity, Shield, Terminal, Zap, ShieldAlert, Cpu, Database, Server, RefreshCw, Code2 } from "lucide-react";
+import { Activity, Shield, Terminal, Zap, ShieldAlert, Cpu, Database, Server, RefreshCw, Code2, AlertTriangle, CheckCircle } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_AUDITRA_API_BASE ?? "http://127.0.0.1:8002";
 
-type NodeStatus = "IDLE" | "ATTACKED" | "COMPROMISED" | "PATCHING" | "SECURE";
+type NodeStatus = 
+  | "IDLE" 
+  | "ATTACKING" 
+  | "COMPROMISED" 
+  | "ANALYZING" 
+  | "PATCHING" 
+  | "VALIDATING" 
+  | "REVERIFYING" 
+  | "SECURED" 
+  | "PATCH_FAILED" 
+  | "VERIFICATION_FAILED" 
+  | "ROLLING_BACK" 
+  | "ROLLED_BACK";
 
 interface NodeState {
   id: string;
@@ -11,17 +23,20 @@ interface NodeState {
   status: NodeStatus;
   icon: any;
   variance?: any;
+  error?: string;
+  metrics?: { passed?: number; failed?: number; total_tests?: number; oracle_agreement?: string };
 }
 
 interface LogEntry {
   id: number;
   timestamp: string;
-  type: "info" | "error" | "success" | "ai";
+  type: "info" | "error" | "success" | "ai" | "warning";
   message: string;
 }
 
 export function WarRoomPage() {
   const [phase, setPhase] = useState<"idle" | "running" | "verified">("idle");
+  const [mode, setMode] = useState<string>("STANDBY");
   const [nodes, setNodes] = useState<Record<string, NodeState>>({
     tax_router: { id: "tax_router", name: "Tax Router", status: "IDLE", icon: Server },
     billing_engine: { id: "billing_engine", name: "Billing Engine", status: "IDLE", icon: Database },
@@ -30,7 +45,7 @@ export function WarRoomPage() {
   });
   
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [activeCode, setActiveCode] = useState<string>("SYSTEM STANDBY...");
+  const [activeCode, setActiveCode] = useState<string>("WAITING FOR AST PATCH...");
   
   const logRef = useRef<HTMLDivElement>(null);
   const logIdRef = useRef(0);
@@ -57,13 +72,17 @@ export function WarRoomPage() {
   const resetGrid = async () => {
     await fetch(`${API_BASE}/verification/reset`, { method: "POST" });
     setPhase("idle");
+    setMode("STANDBY");
     setLogs([]);
     setActiveCode("SYSTEM STANDBY...");
     setNodes(prev => {
       const next = { ...prev };
-      Object.keys(next).forEach(k => { next[k].status = "IDLE"; next[k].variance = undefined; });
+      Object.keys(next).forEach(k => { 
+        next[k] = { ...next[k], status: "IDLE", variance: undefined, error: undefined, metrics: undefined };
+      });
       return next;
     });
+    addLog("info", "All nodes restored to known-vulnerable states from templates.");
   };
 
   const startAegis = () => {
@@ -74,7 +93,7 @@ export function WarRoomPage() {
     
     setNodes(prev => {
       const next = { ...prev };
-      Object.keys(next).forEach(k => { next[k].status = "IDLE"; next[k].variance = undefined; });
+      Object.keys(next).forEach(k => { next[k] = { ...next[k], status: "IDLE", variance: undefined, error: undefined, metrics: undefined }; });
       return next;
     });
 
@@ -83,47 +102,62 @@ export function WarRoomPage() {
 
     es.addEventListener("aegis_start", (e) => {
       const d = JSON.parse(e.data);
+      setMode(d.message.includes("LIVE") ? "LIVE AI (GROQ LLAMA-3)" : "DETERMINISTIC DEMO");
       addLog("info", d.message);
     });
 
-    es.addEventListener("node_attacked", (e) => {
+    es.addEventListener("node_state", (e) => {
       const d = JSON.parse(e.data);
-      updateNode(d.node, "ATTACKED");
-      addLog("info", `[${d.node.toUpperCase()}] INCOMING PULL REQUEST DETECTED...`);
-    });
-
-    es.addEventListener("variance_detected", (e) => {
-      const d = JSON.parse(e.data);
-      updateNode(d.node, "COMPROMISED", { variance: d });
-      addLog("error", `[${d.node.toUpperCase()}] CRYPTOGRAPHIC DRIFT DETECTED IN AST.`);
-      Object.keys(d.variances).forEach(k => {
-        addLog("error", `  ${k} -> EXPECTED: ${d.variances[k].expected} | ACTUAL: ${d.variances[k].actual}`);
-      });
-      addLog("error", `  ORACLE HASH: ${d.oracle_hash}`);
-      addLog("error", `  TARGET HASH: ${d.target_hash}`);
-    });
-
-    es.addEventListener("prompting_ai", (e) => {
-      const d = JSON.parse(e.data);
-      updateNode(d.node, "PATCHING");
-      addLog("ai", `[${d.node.toUpperCase()}] REQUESTING IBM BOB 2.0 ZERO-TRUST PATCH...`);
-    });
-
-    es.addEventListener("patch_applied", (e) => {
-      const d = JSON.parse(e.data);
-      setActiveCode(d.code);
-      addLog("success", `[${d.node.toUpperCase()}] PATCH APPLIED TO DISK. HOT-RELOADING NODE...`);
-    });
-
-    es.addEventListener("node_secured", (e) => {
-      const d = JSON.parse(e.data);
-      updateNode(d.node, "SECURE");
-      addLog("success", `[${d.node.toUpperCase()}] MATHEMATICAL VERIFICATION COMPLETE. NODE SECURED.`);
+      updateNode(d.node, d.state, d);
+      
+      const nodeName = d.node.toUpperCase();
+      
+      switch (d.state) {
+        case "ATTACKING":
+          addLog("info", `[${nodeName}] Running adversarial testing sandbox...`);
+          break;
+        case "COMPROMISED":
+          addLog("error", `[${nodeName}] ORACLE MISMATCH DETECTED. Node compromised.`);
+          if (d.variance?.variances) {
+             Object.keys(d.variance.variances).forEach(k => {
+                addLog("error", `  ${k} -> expected: ${d.variance.variances[k].expected} | actual: ${d.variance.variances[k].actual}`);
+             });
+          }
+          break;
+        case "ANALYZING":
+          addLog("ai", `[${nodeName}] Extracting failure fingerprint...`);
+          break;
+        case "PATCHING":
+          addLog("ai", `[${nodeName}] Requesting repair proposal from IBM Bob 2.0 / LLM...`);
+          break;
+        case "VALIDATING":
+          if (d.patch_code) setActiveCode(d.patch_code);
+          addLog("warning", `[${nodeName}] Patch received. Running AST syntax and security validation...`);
+          break;
+        case "REVERIFYING":
+          addLog("info", `[${nodeName}] Patch safely applied to sandbox. Post-patch adversarial re-verification running (${d.metrics?.total_tests || 20} tests)...`);
+          break;
+        case "SECURED":
+          addLog("success", `[${nodeName}] POST-PATCH VERIFICATION PASSED. Tests: ${d.metrics?.passed}/${d.metrics?.passed} | Oracle: ${d.metrics?.oracle_agreement}. Node is SECURE.`);
+          break;
+        case "VERIFICATION_FAILED":
+          addLog("error", `[${nodeName}] POST-PATCH VERIFICATION FAILED. The AI repair did not satisfy the Oracle.`);
+          break;
+        case "PATCH_FAILED":
+          addLog("error", `[${nodeName}] SECURITY EXCEPTION: LLM generated invalid or dangerous AST: ${d.error}`);
+          break;
+        case "ROLLING_BACK":
+          addLog("warning", `[${nodeName}] Patch rejected. Initiating secure rollback to last known state...`);
+          break;
+        case "ROLLED_BACK":
+          addLog("error", `[${nodeName}] ROLLBACK COMPLETE. Node remains isolated.`);
+          break;
+      }
     });
 
     es.addEventListener("aegis_secure", (e) => {
       setPhase("verified");
-      addLog("success", "=== ALL NODES SECURED. AEGIS GRID IS ONLINE. ===");
+      addLog("success", "=== VERIFICATION LIFECYCLE COMPLETE ===");
       es.close();
     });
 
@@ -132,74 +166,94 @@ export function WarRoomPage() {
     };
   };
 
+  const getStatusColor = (status: NodeStatus) => {
+    if (["IDLE"].includes(status)) return "#334155";
+    if (["ATTACKING", "ANALYZING"].includes(status)) return "#38bdf8";
+    if (["PATCHING", "VALIDATING", "REVERIFYING"].includes(status)) return "#a855f7";
+    if (["COMPROMISED", "VERIFICATION_FAILED", "PATCH_FAILED", "ROLLING_BACK", "ROLLED_BACK"].includes(status)) return "#ef4444";
+    if (["SECURED"].includes(status)) return "#4ade80";
+    return "#334155";
+  };
+
   return (
     <div className="warroom-container">
       {/* ─── Top Status Bar ─── */}
       <div className="warroom-status-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <Shield className="h-5 w-5 text-indigo-400" />
-          <span style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '1.125rem' }}>AEGIS PROTOCOL</span>
+          <span style={{ fontWeight: 800, letterSpacing: '0.1em', fontSize: '1.125rem' }}>AUDITRA: AEGIS PROTOCOL</span>
+          <span style={{ marginLeft: '1rem', padding: '0.25rem 0.75rem', background: 'rgba(255,255,255,0.1)', borderRadius: '999px', fontSize: '0.75rem' }}>
+            MODE: {mode}
+          </span>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button className="warroom-btn warroom-btn-reset" onClick={resetGrid} disabled={phase === "running"}>
-            <RefreshCw className="h-4 w-4" /> Reset
+            <RefreshCw className="h-4 w-4" /> Reset Environment
           </button>
           <button className="warroom-btn warroom-btn-launch" onClick={startAegis} disabled={phase === "running"}>
-            <Zap className="h-4 w-4" /> Launch Grid
+            <Zap className="h-4 w-4" /> Launch Verification Grid
           </button>
         </div>
       </div>
 
       {/* ─── 4 Blocks (Nodes) ─── */}
       <div className="aegis-node-grid">
-        {Object.values(nodes).map(node => (
-          <div key={node.id} className={`aegis-node node-status-${node.status}`}>
-            <div className="aegis-node-header">
-              <node.icon className="h-5 w-5" />
-              <span>{node.name}</span>
-              <div className="aegis-node-badge">{node.status}</div>
+        {Object.values(nodes).map(node => {
+          const color = getStatusColor(node.status);
+          return (
+            <div key={node.id} className="aegis-node" style={{ borderColor: color, boxShadow: node.status !== 'IDLE' ? `0 0 10px ${color}33` : 'none' }}>
+              <div className="aegis-node-header">
+                <node.icon className="h-5 w-5" style={{ color }} />
+                <span>{node.name}</span>
+                <div className="aegis-node-badge" style={{ color }}>{node.status}</div>
+              </div>
+              <div className="aegis-node-body">
+                {node.status === "COMPROMISED" && node.variance && (
+                  <div className="aegis-alert" style={{ color: '#ef4444' }}>
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>ORACLE MISMATCH DETECTED</span>
+                  </div>
+                )}
+                {["PATCHING", "VALIDATING", "REVERIFYING"].includes(node.status) && (
+                  <div className="aegis-alert" style={{ color: '#a855f7' }}>
+                    <Cpu className="h-3 w-3 animate-pulse" />
+                    <span>{node.status === 'VALIDATING' ? 'AST VALIDATION...' : node.status === 'REVERIFYING' ? 'POST-PATCH SANDBOX EXECUTION...' : 'AI PROPOSING REPAIR...'}</span>
+                  </div>
+                )}
+                {node.status === "SECURED" && (
+                  <div className="aegis-alert" style={{ color: '#4ade80' }}>
+                    <Shield className="h-3 w-3" />
+                    <span>VERIFICATION PASSED</span>
+                  </div>
+                )}
+                {["ROLLED_BACK"].includes(node.status) && (
+                  <div className="aegis-alert" style={{ color: '#ef4444' }}>
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>PATCH REJECTED. ROLLED BACK.</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="aegis-node-body">
-              {node.status === "COMPROMISED" && node.variance && (
-                <div className="aegis-alert text-red-400">
-                  <span>DRIFT: {node.variance.target_hash}</span>
-                </div>
-              )}
-              {node.status === "PATCHING" && (
-                <div className="aegis-alert text-purple-400">
-                  <Cpu className="h-3 w-3 animate-pulse" />
-                  <span>GENERATING AST PATCH...</span>
-                </div>
-              )}
-              {node.status === "SECURE" && (
-                <div className="aegis-alert text-green-400">
-                  <Shield className="h-3 w-3" />
-                  <span>CRYPTOGRAPHICALLY SEALED</span>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ─── 2 Editors ─── */}
       <div className="warroom-layout">
-        {/* Editor 1: AST Patch Viewer */}
         <div className="warroom-pane">
           <div className="warroom-pane-header">
             <Code2 className="h-4 w-4" />
-            <span>AST Patch Viewer</span>
+            <span>Untrusted AI Patch Proposal</span>
           </div>
           <pre className="warroom-code-viewer">
             <code>{activeCode}</code>
           </pre>
         </div>
 
-        {/* Editor 2: Console */}
         <div className="warroom-pane">
           <div className="warroom-pane-header">
             <Terminal className="h-4 w-4" />
-            <span>System STDOUT</span>
+            <span>Verification Engine STDOUT</span>
           </div>
           <div className="warroom-console-logs" ref={logRef}>
             {logs.map(entry => (
