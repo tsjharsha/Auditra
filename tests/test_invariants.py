@@ -22,16 +22,78 @@ def malicious(user_input):
     with pytest.raises(SecurityViolation):
         ASTValidator.validate(malicious_code)
 
+import os
+import tempfile
+
+from backend.auditra.sandbox import SandboxRunner
+
+
 def test_sandbox_execution_timeout():
-    # A module with an infinite loop
     timeout_code = """
+import time
 class TimeoutTest:
     def loop_forever(self):
         while True:
-            pass
+            time.sleep(0.1)
 """
-    # Just testing the concept - the sandbox runner handles timeouts
-    # In a real test, we would write this to a temp file and execute it.
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(timeout_code)
+        temp_path = f.name
+        
+    try:
+        success, data = SandboxRunner.execute(temp_path, "TimeoutTest", "loop_forever", {}, timeout=1)
+        assert success is False
+        assert "timed out" in data["error"]
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+def test_sandbox_excessive_output():
+    output_code = """
+class OutputTest:
+    def spam(self):
+        for _ in range(100000):
+            print("SPAM" * 100)
+        return {"done": True}
+"""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(output_code)
+        temp_path = f.name
+        
+    try:
+        success, data = SandboxRunner.execute(temp_path, "OutputTest", "spam", {}, timeout=3)
+        assert success is False
+        assert "Output size limit exceeded" in data["error"]
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+def test_sandbox_restricted_environment():
+    env_code = """
+import os
+class EnvTest:
+    def check_env(self):
+        # The sandbox should strip non-essential env vars
+        # We'll return the os.environ dictionary (converted to a standard dict)
+        return dict(os.environ)
+"""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(env_code)
+        temp_path = f.name
+        
+    # Set a dummy secret in the parent process
+    os.environ["SUPER_SECRET_KEY"] = "12345"
+    try:
+        success, data = SandboxRunner.execute(temp_path, "EnvTest", "check_env", {}, timeout=2)
+        assert success is True
+        # Verify the secret is NOT in the sandbox environment
+        assert "SUPER_SECRET_KEY" not in data
+        # Verify PATH is still there (since it's allowed)
+        assert "PATH" in data or "Path" in data
+    finally:
+        del os.environ["SUPER_SECRET_KEY"]
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 def test_patch_applied_is_not_secure():
     # A test that verifies that even if a patch parses correctly (no syntax errors),
@@ -48,8 +110,6 @@ class TaxRouter:
     # 2. But Execution/Verification would fail because expected oracle is 0.0825 for CA.
     # This proves PATCH_APPLIED != SECURE.
 
-import os
-import tempfile
 from unittest.mock import patch
 
 from backend.auditra.verification_api import (

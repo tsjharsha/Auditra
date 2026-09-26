@@ -37,14 +37,24 @@ class ASTValidator:
         return True
 
 class SandboxRunner:
+    MAX_OUTPUT_SIZE = 1024 * 1024  # 1MB output limit
+
     @staticmethod
     def execute(module_path: str, class_name: str, method_name: str, kwargs: dict, timeout: int = 2) -> tuple[bool, dict[str, Any]]:
         mod_path = Path(module_path)
-        runner_code = f"""
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_dir_path = Path(temp_dir)
+            
+            # Copy target module into the temporary workspace
+            temp_mod_path = temp_dir_path / mod_path.name
+            with open(mod_path, 'r', encoding='utf-8') as src, open(temp_mod_path, 'w', encoding='utf-8') as dst:
+                dst.write(src.read())
+            
+            runner_code = f"""
 import json
 import sys
 import traceback
-sys.path.insert(0, r"{mod_path.parent}")
 try:
     from {mod_path.stem} import {class_name}
     engine = {class_name}()
@@ -55,34 +65,54 @@ try:
 except Exception as e:
     print(json.dumps({{"status": "error", "error": str(e), "traceback": traceback.format_exc()}}))
 """
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-            f.write(runner_code)
-            temp_path = f.name
-            
-        try:
-            result = subprocess.run(
-                ["python", temp_path],
-                capture_output=True,
-                text=True,
-                timeout=timeout
-            )
-            out = result.stdout.strip()
-            
-            # The script output might have other print statements, grab the last line
-            if out:
-                last_line = out.split('\\n')[-1]
-                data = json.loads(last_line)
-                if data.get("status") == "success":
-                    return True, data.get("data", {})
-                else:
-                    return False, {"error": data.get("error"), "traceback": data.get("traceback")}
-            else:
-                return False, {"error": "No output from sandbox", "stderr": result.stderr}
+            runner_path = temp_dir_path / "runner.py"
+            with open(runner_path, 'w', encoding='utf-8') as f:
+                f.write(runner_code)
                 
-        except subprocess.TimeoutExpired:
-            return False, {"error": f"Execution timed out after {timeout} seconds"}
-        except Exception as e:
-            return False, {"error": f"Sandbox execution failed: {e!s}"}
-        finally:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
+            # Restrict environment variables (only allow basic OS essentials)
+            allowed_env_keys = {'PATH', 'SYSTEMROOT', 'SYSTEMDRIVE', 'TEMP', 'TMP', 'COMSPEC', 'USERPROFILE', 'HOME'}
+            restricted_env = {k: v for k, v in os.environ.items() if k.upper() in allowed_env_keys}
+            
+            try:
+                # Use a temporary file to capture output to enforce the size limit without memory exhaustion
+                out_file_path = temp_dir_path / "out.log"
+                with open(out_file_path, "w+", encoding="utf-8") as out_file:
+                    process = subprocess.Popen(
+                        ["python", str(runner_path)],
+                        stdout=out_file,
+                        stderr=subprocess.STDOUT,
+                        cwd=str(temp_dir_path),
+                        env=restricted_env,
+                        text=True
+                    )
+                    
+                    try:
+                        process.wait(timeout=timeout)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait()
+                        return False, {"error": f"Execution timed out after {timeout} seconds"}
+                        
+                    # Check output size and contents
+                    out_file.seek(0, os.SEEK_END)
+                    if out_file.tell() > SandboxRunner.MAX_OUTPUT_SIZE:
+                        return False, {"error": "Output size limit exceeded"}
+                    
+                    out_file.seek(0)
+                    out = out_file.read().strip()
+                
+                if out:
+                    last_line = out.split('\n')[-1]
+                    try:
+                        data = json.loads(last_line)
+                        if data.get("status") == "success":
+                            return True, data.get("data", {})
+                        else:
+                            return False, {"error": data.get("error"), "traceback": data.get("traceback")}
+                    except json.JSONDecodeError:
+                        return False, {"error": "Invalid output from sandbox", "output": out[:1000]}
+                else:
+                    return False, {"error": "No output from sandbox"}
+                    
+            except Exception as e:
+                return False, {"error": f"Sandbox execution failed: {e!s}"}
