@@ -55,6 +55,17 @@ class SandboxRunner:
 import json
 import sys
 import traceback
+
+# Attempt to apply OS-level resource limits if supported (Linux/macOS)
+try:
+    import resource
+    # Limit virtual memory to 200MB
+    resource.setrlimit(resource.RLIMIT_AS, (200 * 1024 * 1024, 200 * 1024 * 1024))
+    # Limit CPU time to {timeout} seconds
+    resource.setrlimit(resource.RLIMIT_CPU, ({timeout}, {timeout}))
+except ImportError:
+    pass # Resource module not available on Windows
+
 try:
     from {mod_path.stem} import {class_name}
     engine = {class_name}()
