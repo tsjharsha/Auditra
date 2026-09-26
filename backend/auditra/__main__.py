@@ -6,7 +6,12 @@ from pathlib import Path
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from backend.auditra.verification_api import TARGETS, VERIFICATION_NODES, verify_node, run_mutation_suite
+from backend.auditra.verification_api import (
+    TARGETS,
+    VERIFICATION_NODES,
+    run_mutation_suite,
+    verify_node,
+)
 
 
 def run_verify(json_output=False):

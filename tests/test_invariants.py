@@ -1,6 +1,9 @@
 import json
+
 import pytest
-from backend.auditra.sandbox import SandboxRunner, ASTValidator, SecurityViolation
+
+from backend.auditra.sandbox import ASTValidator, SecurityViolation
+
 
 def test_ast_validation_rejects_dangerous_imports():
     malicious_code = """
@@ -29,7 +32,6 @@ class TimeoutTest:
 """
     # Just testing the concept - the sandbox runner handles timeouts
     # In a real test, we would write this to a temp file and execute it.
-    pass
 
 def test_patch_applied_is_not_secure():
     # A test that verifies that even if a patch parses correctly (no syntax errors),
@@ -45,12 +47,16 @@ class TaxRouter:
     
     # 2. But Execution/Verification would fail because expected oracle is 0.0825 for CA.
     # This proves PATCH_APPLIED != SECURE.
-    pass
 
-import tempfile
 import os
-from backend.auditra.verification_api import _aegis_generator, TARGET_DIR, VERIFICATION_NODES, get_patch_code_fallback
+import tempfile
 from unittest.mock import patch
+
+from backend.auditra.verification_api import (
+    VERIFICATION_NODES,
+    _aegis_generator,
+)
+
 
 def test_ast_validation_failure_emits_rejected_and_does_not_rollback():
     # We will mock the target directory and the LLM response.

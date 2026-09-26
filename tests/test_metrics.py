@@ -3,8 +3,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from backend.auditra.verification_api import VERIFICATION_NODES, verify_node, TARGETS
 import json
+
+from backend.auditra.verification_api import TARGETS, VERIFICATION_NODES, verify_node
+
 
 def test_metrics_match_unique_scenarios():
     node = VERIFICATION_NODES[0]
