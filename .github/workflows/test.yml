@@ -32,14 +32,30 @@ jobs:
         pip install pytest pytest-asyncio anyio
         python -m pytest -v tests/
         
-    - name: Demonstrate Verification Gate (Demo Mode)
+    - name: Test Verification Gate (Vulnerable Targets)
       run: |
-        # In this demo repo, the targets are intentionally vulnerable.
-        # This demonstrates that Auditra successfully catches the defects and exits with >0
+        # Ensure targets are the vulnerable templates
+        cp backend/target_templates/*.py backend/target_service/
+        
+        echo "Testing vulnerable targets - we expect verification to FAIL"
         if python -m backend.auditra verify --json; then
-          echo "Expected verification to fail on vulnerable targets, but it succeeded!"
+          echo "FAIL: Verification incorrectly passed vulnerable targets!"
           exit 1
         else
-          echo "Verification successfully caught the vulnerable targets and exited non-zero."
+          echo "PASS: Verification successfully caught vulnerable targets."
           exit 0
         fi
+
+    - name: Apply Secure Patches (Simulate Deployment)
+      run: |
+        python -c "
+        from backend.auditra.verification_api import get_patch_code_fallback, TARGETS
+        for node_id, path in TARGETS.items():
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(get_patch_code_fallback(node_id))
+        "
+
+    - name: Test Verification Gate (Secure Targets)
+      run: |
+        echo "Testing secure targets - we expect verification to PASS"
+        python -m backend.auditra verify --json
