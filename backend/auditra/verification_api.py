@@ -85,9 +85,9 @@ def get_patch_code_fallback(node: str) -> str:
     if node == "tax_router":
         return """class TaxRouter:
     \"\"\"IBM Bob 2.0 Patched Code\"\"\"
-    def get_tax_rate(self, state_code: str) -> str:
+    def get_tax_rate(self, state_code: str) -> dict:
         rates = {"CA": "0.0825", "NY": "0.08875", "TX": "0.0625"}
-        return rates.get(state_code, "0.05")
+        return {"rate": rates.get(state_code, "0.05")}
 """
     elif node == "billing_engine":
         return """from decimal import Decimal, ROUND_HALF_EVEN
@@ -108,24 +108,25 @@ class BillingEngine:
         }
 """
     elif node == "ledger_sync":
-        return """class LedgerSync:
+        return """from decimal import Decimal
+class LedgerSync:
     \"\"\"IBM Bob 2.0 Patched Code\"\"\"
     def process_refund(self, amount_str: str) -> dict:
-        amt = float(amount_str)
+        amt = Decimal(amount_str)
         if amt < 0:
             return {"status": "REJECTED", "refund_amount": "0.00", "ledger_impact": "0.00"}
         return {"status": "PROCESSED", "refund_amount": str(amt), "ledger_impact": str(-amt)}
 """
     elif node == "fraud_detector":
-        return """from decimal import Decimal
+        return """from decimal import Decimal, InvalidOperation
 class FraudDetector:
     \"\"\"IBM Bob 2.0 Patched Code\"\"\"
-    def is_fraudulent(self, amount_str: str) -> bool:
+    def is_fraudulent(self, amount_str: str) -> dict:
         try:
             amt = Decimal(amount_str)
-            return bool(amt > 5000) # INTENTIONAL FLAW FOR ROLLBACK DEMO
-        except:
-            return True
+            return {"fraudulent": bool(amt > 10000)}
+        except (ValueError, InvalidOperation):
+            return {"fraudulent": True}
 """
     return ""
 
@@ -290,7 +291,8 @@ def _aegis_generator():
     Path(mutated_path).unlink(missing_ok=True)
     # --- END MUTATION TESTING ---
     
-    all_secured = True
+    failed_nodes = []
+    
     for node in VERIFICATION_NODES:
         yield _sse("node_state", {"node": node["id"], "state": "ATTACKING"})
         time.sleep(0.5)
@@ -329,7 +331,7 @@ def _aegis_generator():
                 ASTValidator.validate(patched_code)
             except Exception as e:
                 yield _sse("node_state", {"node": node["id"], "state": "PATCH_FAILED", "error": str(e)})
-                all_secured = False
+                failed_nodes.append({"id": node["id"], "reason": "AST Validation Failed", "error": str(e)})
                 time.sleep(1.5)
                 yield _sse("node_state", {"node": node["id"], "state": "ROLLING_BACK"})
                 continue
@@ -347,7 +349,7 @@ def _aegis_generator():
                 metrics = post_patch_failure.get("metrics", {})
                 rejection_reason = f"The generated patch executed successfully, but its behavior did not match the independent oracle for {metrics.get('failed', 0)}/{metrics.get('total', 0)} adversarial scenarios. The patch was therefore rejected."
                 yield _sse("node_state", {"node": node["id"], "state": "VERIFICATION_FAILED", "variance": post_patch_failure, "metrics": metrics, "rejection_reason": rejection_reason})
-                all_secured = False
+                failed_nodes.append({"id": node["id"], "reason": "Post-patch verification failed", "metrics": metrics})
                 time.sleep(1.5)
                 yield _sse("node_state", {"node": node["id"], "state": "ROLLING_BACK"})
                 # Rollback
@@ -362,7 +364,7 @@ def _aegis_generator():
             
         time.sleep(1.0)
         
-    if all_secured:
+    if not failed_nodes:
         yield _sse("aegis_secure", {
             "message": "VERIFICATION LIFECYCLE COMPLETE: ALL NODES SECURED",
             "overall_success": True,
@@ -370,9 +372,10 @@ def _aegis_generator():
         })
     else:
         yield _sse("aegis_blocked", {
-            "message": "VERIFICATION LIFECYCLE COMPLETE: ONE OR MORE NODES FAILED OR ROLLED BACK",
+            "message": f"VERIFICATION LIFECYCLE COMPLETE: {len(failed_nodes)} NODE(S) FAILED OR ROLLED BACK",
             "overall_success": False,
-            "release_status": "BLOCKED"
+            "release_status": "BLOCKED",
+            "failed_nodes": failed_nodes
         })
 
 @router.get("/stream")
