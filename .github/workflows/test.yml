@@ -48,12 +48,7 @@ jobs:
 
     - name: Apply Secure Patches (Simulate Deployment)
       run: |
-        python -c "
-from backend.auditra.verification_api import get_patch_code_fallback, TARGETS
-for node_id, path in TARGETS.items():
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write(get_patch_code_fallback(node_id))
-"
+        python -c "from backend.auditra.verification_api import get_patch_code_fallback, TARGETS; [open(path, 'w', encoding='utf-8').write(get_patch_code_fallback(node_id)) for node_id, path in TARGETS.items()]"
 
     - name: Test Verification Gate (Secure Targets)
       run: |
