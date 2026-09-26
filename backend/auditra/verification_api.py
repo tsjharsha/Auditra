@@ -271,24 +271,48 @@ def _aegis_generator():
     time.sleep(1.0)
     
     # --- MUTATION TESTING PHASE ---
-    yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATING", "message": "Injecting deliberate defect into FraudDetector (10000 -> 5000) to verify Oracle sensitivity..."})
-    time.sleep(1.0)
-    fraud_target = TARGETS["fraud_detector"]
-    with open(fraud_target, "r", encoding="utf-8") as f:
-        fraud_code = f.read()
-    mutated_code = fraud_code.replace("10000", "5000")
-    mutated_path = fraud_target + ".mut"
-    with open(mutated_path, "w", encoding="utf-8") as f:
-        f.write(mutated_code)
-    
-    fraud_node = next(n for n in VERIFICATION_NODES if n["id"] == "fraud_detector")
-    mutation_failure = verify_node(fraud_node, mutated_path)
-    if mutation_failure:
-        yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_DETECTED", "message": "Oracle successfully caught the behavioral defect!"})
-    else:
-        yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_FAILED", "message": "Oracle failed to detect the defect!"})
-    time.sleep(1.0)
-    Path(mutated_path).unlink(missing_ok=True)
+    mutations = [
+        {
+            "name": "Tax Router wrong/missing rate",
+            "node_id": "tax_router",
+            "code": "class TaxRouter:\n    def get_tax_rate(self, state_code: str) -> dict:\n        rates = {'CA': '0.0825', 'TX': '0.0625'}\n        return {'rate': rates.get(state_code, '0.00')}\n"
+        },
+        {
+            "name": "Billing Engine float/rounding regression",
+            "node_id": "billing_engine",
+            "code": "class BillingEngine:\n    def __init__(self):\n        self.rate = 0.03\n        self.gst = 0.18\n    def calculate(self, amount_str: str) -> dict:\n        amt = float(amount_str)\n        fee = amt * self.rate\n        tax = fee * self.gst\n        settlement = amt - fee - tax\n        return {\n            'amount': f'{amt:.2f}',\n            'fee': f'{fee:.2f}',\n            'gst': f'{tax:.2f}',\n            'settlement': f'{settlement:.2f}'\n        }\n"
+        },
+        {
+            "name": "Ledger Sync negative-refund acceptance",
+            "node_id": "ledger_sync",
+            "code": "from decimal import Decimal\nclass LedgerSync:\n    def process_refund(self, amount_str: str) -> dict:\n        amt = Decimal(amount_str)\n        return {\n            'status': 'PROCESSED',\n            'refund_amount': str(amt),\n            'ledger_impact': str(-amt)\n        }\n"
+        },
+        {
+            "name": "Fraud Detector incorrect threshold",
+            "node_id": "fraud_detector",
+            "code": "from decimal import Decimal, InvalidOperation\nclass FraudDetector:\n    def is_fraudulent(self, amount_str: str) -> dict:\n        try:\n            amt = Decimal(amount_str)\n            return {'fraudulent': bool(amt > 5000)}\n        except (ValueError, InvalidOperation):\n            return {'fraudulent': False}\n"
+        }
+    ]
+
+    for mut in mutations:
+        yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATING", "message": f"Injecting {mut['name']} into {mut['node_id']} to verify Oracle sensitivity..."})
+        time.sleep(0.5)
+        
+        node = next(n for n in VERIFICATION_NODES if n["id"] == mut["node_id"])
+        mut_path = str(TARGET_DIR / f"{mut['node_id']}_mut.py")
+        
+        with open(mut_path, "w", encoding="utf-8") as f:
+            f.write(mut["code"])
+            
+        mutation_failure = verify_node(node, mut_path)
+        
+        if mutation_failure:
+            yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_DETECTED", "message": f"Oracle successfully caught {mut['name']}!"})
+        else:
+            yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_FAILED", "message": f"Oracle FAILED to detect {mut['name']}!"})
+            
+        Path(mut_path).unlink(missing_ok=True)
+        time.sleep(0.5)
     # --- END MUTATION TESTING ---
     
     failed_nodes = []
