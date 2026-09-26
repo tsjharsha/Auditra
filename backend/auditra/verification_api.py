@@ -167,6 +167,7 @@ def verify_node(node: dict, path: str) -> dict:
     total = 0
     passed = 0
     failures = []
+    scenarios_results = []
     
     unique_inputs = []
     seen = set()
@@ -185,12 +186,19 @@ def verify_node(node: dict, path: str) -> dict:
             oracle_out = {"result": oracle_out}
             
         if not success:
-            failures.append({
+            variance_info = {"Exception": {"expected": "Success", "actual": target_out.get("error")}}
+            failure_dict = {
                 "scenario": kwargs,
                 "error": target_out.get("error", "Execution Failed"),
                 "target_hash": "ERROR",
                 "oracle_hash": "N/A",
-                "variances": {"Exception": {"expected": "Success", "actual": target_out.get("error")}}
+                "variances": variance_info
+            }
+            failures.append(failure_dict)
+            scenarios_results.append({
+                "scenario": kwargs,
+                "status": "FAIL",
+                "variance": variance_info
             })
             continue
             
@@ -202,14 +210,25 @@ def verify_node(node: dict, path: str) -> dict:
         if variances:
             thash = hashlib.sha256(json.dumps(target_out, sort_keys=True).encode("utf-8")).hexdigest()[:16]
             ohash = hashlib.sha256(json.dumps(oracle_out, sort_keys=True).encode("utf-8")).hexdigest()[:16]
-            failures.append({
+            failure_dict = {
                 "scenario": kwargs,
                 "variances": variances,
                 "target_hash": thash,
                 "oracle_hash": ohash
+            }
+            failures.append(failure_dict)
+            scenarios_results.append({
+                "scenario": kwargs,
+                "status": "FAIL",
+                "variance": variances
             })
         else:
             passed += 1
+            scenarios_results.append({
+                "scenario": kwargs,
+                "status": "PASS",
+                "variance": None
+            })
 
     metrics = {
         "total": total,
@@ -221,6 +240,7 @@ def verify_node(node: dict, path: str) -> dict:
     return {
         "status": "failed" if failures else "verified",
         "metrics": metrics,
+        "scenarios": scenarios_results,
         "failures": failures,
         "first_failure": failures[0] if failures else None
     }
@@ -408,8 +428,7 @@ def _aegis_generator():
         info = verify_node(node, target_path)
         
         if info["status"] == "failed":
-            first_failure = info["first_failure"]
-            yield _sse("node_state", {"node": node["id"], "state": "COMPROMISED", "variance": first_failure})
+            yield _sse("node_state", {"node": node["id"], "state": "COMPROMISED", "report": info})
             time.sleep(1.5)
             yield _sse("node_state", {"node": node["id"], "state": "ANALYZING"})
             time.sleep(1.0)
@@ -418,7 +437,7 @@ def _aegis_generator():
                 original_code = f.read()
                 
             yield _sse("node_state", {"node": node["id"], "state": "PATCHING"})
-            patched_code = ask_llm_for_patch(node["id"], original_code, first_failure)
+            patched_code = ask_llm_for_patch(node["id"], original_code, info)
             
             diff_lines = list(difflib.unified_diff(
                 original_code.splitlines(keepends=True),
@@ -446,7 +465,7 @@ def _aegis_generator():
             with open(target_path, "w", encoding="utf-8") as f:
                 f.write(patched_code)
                 
-            yield _sse("node_state", {"node": node["id"], "state": "REVERIFYING", "metrics": {"total_tests": info["metrics"]["total"]}})
+            yield _sse("node_state", {"node": node["id"], "state": "REVERIFYING", "metrics": info["metrics"]})
             
             # POST-PATCH VERIFICATION
             post_patch_info = verify_node(node, target_path)
@@ -454,7 +473,7 @@ def _aegis_generator():
             if post_patch_info["status"] == "failed":
                 metrics = post_patch_info["metrics"]
                 rejection_reason = f"The generated patch executed successfully, but its behavior did not match the independent oracle for {metrics.get('failed', 0)}/{metrics.get('total', 0)} adversarial scenarios. The patch was therefore rejected."
-                yield _sse("node_state", {"node": node["id"], "state": "VERIFICATION_FAILED", "variance": post_patch_info["first_failure"], "metrics": metrics, "rejection_reason": rejection_reason})
+                yield _sse("node_state", {"node": node["id"], "state": "VERIFICATION_FAILED", "report": post_patch_info, "metrics": metrics, "rejection_reason": rejection_reason})
                 failed_nodes.append({"id": node["id"], "reason": "Post-patch verification failed", "metrics": metrics})
                 time.sleep(1.5)
                 yield _sse("node_state", {"node": node["id"], "state": "ROLLING_BACK"})

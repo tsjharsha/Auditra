@@ -25,13 +25,15 @@ def run_verify(json_output=False):
             results[node_id] = {
                 "status": "failed",
                 "variance": info["first_failure"],
-                "metrics": info["metrics"]
+                "metrics": info["metrics"],
+                "scenarios": info["scenarios"]
             }
             total_failed += 1
         else:
             results[node_id] = {
                 "status": "verified",
-                "metrics": info["metrics"]
+                "metrics": info["metrics"],
+                "scenarios": info["scenarios"]
             }
             total_passed += 1
 
@@ -61,13 +63,32 @@ def run_verify(json_output=False):
         print("===========================")
         for node_id, res in results.items():
             metrics = res["metrics"]
-            agr = metrics["oracle_agreement"]
-            if res["status"] == "verified":
-                print(f"[{node_id}] [PASS] VERIFIED (Oracle Agreement: {agr})")
-            else:
-                print(f"[{node_id}] [FAIL] FAILED (Oracle Agreement: {agr})")
-                print(f"   Variance: {res['variance']['variances']}")
-        print("---------------------------")
+            
+            print(f"[{node_id}]")
+            print(f"TOTAL       {metrics['total']}")
+            print(f"PASSED      {metrics['passed']}")
+            print(f"FAILED      {metrics['failed']}")
+            print(f"AGREEMENT   {metrics['oracle_agreement']}\n")
+            print("SCENARIOS")
+            
+            # Print individual scenarios
+            if "scenarios" in res:
+                for idx, scen in enumerate(res["scenarios"], 1):
+                    scen_status = scen["status"]
+                    if scen_status == "PASS":
+                        print(f"{idx:02d} PASS")
+                    else:
+                        var_str = []
+                        for k, v in scen["variance"].items():
+                            var_str.append(f"{k}: expected {v['expected']} / actual {v['actual']}")
+                        msg = f"{idx:02d} FAIL → " + ", ".join(var_str)
+                        try:
+                            print(msg)
+                        except UnicodeEncodeError:
+                            print(msg.replace('→', '->'))
+            
+            print("---------------------------")
+            
         print(f"Mutation Score: {mutation_score} ({mut_detected}/{mut_total} detected)")
         print("---------------------------")
         if total_failed == 0:
