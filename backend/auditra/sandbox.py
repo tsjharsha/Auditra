@@ -37,6 +37,14 @@ class ASTValidator:
         return True
 
 class SandboxRunner:
+    """
+    Best-effort local execution boundary for the hackathon demo.
+    NOT a production-grade VM or container sandbox. 
+    Limitations:
+    - Network isolation relies on Python-level socket monkeypatching and environment stripping.
+    - Resource limits are only strictly enforced on Linux/macOS via the `resource` module.
+    - C-extensions and subprocesses could potentially bypass these boundaries.
+    """
     MAX_OUTPUT_SIZE = 1024 * 1024  # 1MB output limit
 
     @staticmethod
@@ -55,6 +63,18 @@ class SandboxRunner:
 import json
 import sys
 import traceback
+import socket
+
+# Practical cross-platform network restriction (monkeypatch)
+_orig_socket = socket.socket
+class _DisabledSocket(_orig_socket):
+    def connect(self, *args, **kwargs):
+        raise PermissionError("Network access is disabled in the sandbox.")
+    def send(self, *args, **kwargs):
+        raise PermissionError("Network access is disabled in the sandbox.")
+    def sendall(self, *args, **kwargs):
+        raise PermissionError("Network access is disabled in the sandbox.")
+socket.socket = _DisabledSocket
 
 # Attempt to apply OS-level resource limits if supported (Linux/macOS)
 try:
@@ -63,6 +83,9 @@ try:
     resource.setrlimit(resource.RLIMIT_AS, (200 * 1024 * 1024, 200 * 1024 * 1024))
     # Limit CPU time to {timeout} seconds
     resource.setrlimit(resource.RLIMIT_CPU, ({timeout}, {timeout}))
+    # Limit process count (thread/process spawning)
+    if hasattr(resource, 'RLIMIT_NPROC'):
+        resource.setrlimit(resource.RLIMIT_NPROC, (1, 1))
 except ImportError:
     pass # Resource module not available on Windows
 

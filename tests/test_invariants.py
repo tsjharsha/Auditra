@@ -210,3 +210,54 @@ def test_verification_failure_emits_rollback_and_restores():
             rd_idx = states.index("ROLLED_BACK")
             
             assert pa_idx < vf_idx < rb_idx < rd_idx
+
+def test_sandbox_network_restriction():
+    network_code = """
+import urllib.request
+class NetworkTest:
+    def try_network(self):
+        try:
+            # Try to open a network connection
+            urllib.request.urlopen("http://example.com", timeout=1)
+            return {"connected": True}
+        except Exception as e:
+            return {"connected": False, "error": str(e)}
+"""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(network_code)
+        temp_path = f.name
+        
+    try:
+        success, data = SandboxRunner.execute(temp_path, "NetworkTest", "try_network", {}, timeout=2)
+        assert success is True
+        assert data["connected"] is False
+        assert "disabled in the sandbox" in data["error"]
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+def test_sandbox_normal_execution_and_cleanup():
+    normal_code = """
+import os
+class NormalTest:
+    def add(self, a, b):
+        return {"sum": a + b, "cwd": os.getcwd()}
+"""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(normal_code)
+        temp_path = f.name
+        
+    try:
+        success, data = SandboxRunner.execute(temp_path, "NormalTest", "add", {"a": 5, "b": 10}, timeout=2)
+        assert success is True
+        assert data["sum"] == 15
+        
+        # Verify it ran in a temporary directory
+        cwd = data["cwd"]
+        assert "tmp" in cwd.lower() or "temp" in cwd.lower()
+        
+        # The temporary directory should be deleted automatically after SandboxRunner.execute finishes
+        assert not os.path.exists(cwd)
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
