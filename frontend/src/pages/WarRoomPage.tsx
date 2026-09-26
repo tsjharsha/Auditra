@@ -178,14 +178,14 @@ export function WarRoomPage() {
     es.addEventListener("aegis_secure", (e) => {
       const d = JSON.parse(e.data);
       setPhase("verified");
-      addLog("success", `=== ${d.message} ===`);
+      addLog("success", `=== ${d.message} | RELEASE STATUS: ${d.release_status} ===`);
       es.close();
     });
 
-    es.addEventListener("aegis_failed", (e) => {
+    es.addEventListener("aegis_blocked", (e) => {
       const d = JSON.parse(e.data);
       setPhase("failed");
-      addLog("error", `=== ${d.message} ===`);
+      addLog("error", `=== ${d.message} | RELEASE STATUS: ${d.release_status} ===`);
       es.close();
     });
 

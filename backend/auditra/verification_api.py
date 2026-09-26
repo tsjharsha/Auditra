@@ -315,9 +315,17 @@ def _aegis_generator():
         time.sleep(1.0)
         
     if all_secured:
-        yield _sse("aegis_secure", {"message": "VERIFICATION LIFECYCLE COMPLETE: ALL NODES SECURED"})
+        yield _sse("aegis_secure", {
+            "message": "VERIFICATION LIFECYCLE COMPLETE: ALL NODES SECURED",
+            "overall_success": True,
+            "release_status": "APPROVED"
+        })
     else:
-        yield _sse("aegis_failed", {"message": "VERIFICATION LIFECYCLE COMPLETE: ONE OR MORE NODES FAILED OR ROLLED BACK"})
+        yield _sse("aegis_blocked", {
+            "message": "VERIFICATION LIFECYCLE COMPLETE: ONE OR MORE NODES FAILED OR ROLLED BACK",
+            "overall_success": False,
+            "release_status": "BLOCKED"
+        })
 
 @router.get("/stream")
 def verification_stream():

@@ -1,6 +1,5 @@
 class TaxRouter:
-    """Intentionally Vulnerable Code for Demo"""
+    """IBM Bob 2.0 Patched Code"""
     def get_tax_rate(self, state_code: str) -> dict:
-        # VULNERABILITY: Missing NY, default is 0.00 instead of 0.05
-        rates = {"CA": "0.0825", "TX": "0.0625"}
-        return {"rate": rates.get(state_code, "0.00")}
+        rates = {"CA": "0.0825", "NY": "0.08875", "TX": "0.0625"}
+        return {"rate": rates.get(state_code, "0.05")}
