@@ -196,9 +196,12 @@ def verify_node(node: dict, path: str) -> dict:
             }
             failures.append(failure_dict)
             scenarios_results.append({
-                "scenario": kwargs,
+                "input": kwargs,
                 "status": "FAIL",
-                "variance": variance_info
+                "expected": oracle_out,
+                "actual": target_out,
+                "variance": variance_info,
+                "error": target_out.get("error", "Execution Failed")
             })
             continue
             
@@ -218,15 +221,19 @@ def verify_node(node: dict, path: str) -> dict:
             }
             failures.append(failure_dict)
             scenarios_results.append({
-                "scenario": kwargs,
+                "input": kwargs,
                 "status": "FAIL",
+                "expected": oracle_out,
+                "actual": target_out,
                 "variance": variances
             })
         else:
             passed += 1
             scenarios_results.append({
-                "scenario": kwargs,
+                "input": kwargs,
                 "status": "PASS",
+                "expected": oracle_out,
+                "actual": target_out,
                 "variance": None
             })
 
@@ -465,7 +472,7 @@ def _aegis_generator():
             with open(target_path, "w", encoding="utf-8") as f:
                 f.write(patched_code)
                 
-            yield _sse("node_state", {"node": node["id"], "state": "REVERIFYING", "metrics": info["metrics"]})
+            yield _sse("node_state", {"node": node["id"], "state": "REVERIFYING", "total_tests": len(node["inputs"])})
             
             # POST-PATCH VERIFICATION
             post_patch_info = verify_node(node, target_path)
