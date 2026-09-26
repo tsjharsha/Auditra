@@ -210,10 +210,58 @@ def verify_node(node: dict, path: str) -> dict:
     return None
 
 VERIFICATION_NODES = [
-    {"id": "tax_router", "class": "TaxRouter", "method": "get_tax_rate", "inputs": [{"state_code": "CA"}, {"state_code": "NY"}, {"state_code": "TX"}, {"state_code": "unknown"}, {"state_code": ""}, {"state_code": "ca"}, {"state_code": " 123 "}] * 5, "oracle": _Oracles.expected_tax_router},
-    {"id": "billing_engine", "class": "BillingEngine", "method": "calculate", "inputs": [{"amount_str": "0"}, {"amount_str": "0.01"}, {"amount_str": "99.99"}, {"amount_str": "100.00"}, {"amount_str": "999.99"}, {"amount_str": "1000000000.00"}, {"amount_str": "100.12345"}] * 5, "oracle": _Oracles.expected_billing},
-    {"id": "ledger_sync", "class": "LedgerSync", "method": "process_refund", "inputs": [{"amount_str": "500.00"}, {"amount_str": "0.00"}, {"amount_str": "-100.00"}, {"amount_str": "9999999.99"}] * 9, "oracle": _Oracles.expected_ledger},
-    {"id": "fraud_detector", "class": "FraudDetector", "method": "is_fraudulent", "inputs": [{"amount_str": "9999.00"}, {"amount_str": "10000.00"}, {"amount_str": "10000.01"}, {"amount_str": "1e9"}, {"amount_str": "invalid"}, {"amount_str": "-50.00"}] * 6, "oracle": _Oracles.expected_fraud}
+    {
+        "id": "tax_router", 
+        "class": "TaxRouter", 
+        "method": "get_tax_rate", 
+        "inputs": [
+            {"state_code": "CA"}, {"state_code": "NY"}, {"state_code": "TX"}, 
+            {"state_code": "ca"}, {"state_code": "NY "}, {"state_code": " NY"}, 
+            {"state_code": ""}, {"state_code": "unknown"}, {"state_code": "123"}, 
+            {"state_code": "!@#$"}, {"state_code": "A" * 100}, {"state_code": "\nCA"}
+        ], 
+        "oracle": _Oracles.expected_tax_router
+    },
+    {
+        "id": "billing_engine", 
+        "class": "BillingEngine", 
+        "method": "calculate", 
+        "inputs": [
+            {"amount_str": "100.00"}, {"amount_str": "50.50"}, {"amount_str": "99.99"}, 
+            {"amount_str": "0.01"}, {"amount_str": "100.125"}, {"amount_str": "100.12345"}, 
+            {"amount_str": "0"}, {"amount_str": "0.00"}, {"amount_str": "-100.00"}, 
+            {"amount_str": "-0.01"}, {"amount_str": "9999999999.99"}, {"amount_str": "1e5"}, 
+            {"amount_str": "1E-5"}, {"amount_str": "-1e-5"}, {"amount_str": "NaN"}
+        ], 
+        "oracle": _Oracles.expected_billing
+    },
+    {
+        "id": "ledger_sync", 
+        "class": "LedgerSync", 
+        "method": "process_refund", 
+        "inputs": [
+            {"amount_str": "100.00"}, {"amount_str": "500.00"}, {"amount_str": "0.00"}, 
+            {"amount_str": "0"}, {"amount_str": "0.01"}, {"amount_str": "-0.01"}, 
+            {"amount_str": "-100.00"}, {"amount_str": "-999999999.99"}, {"amount_str": "999999999.99"}, 
+            {"amount_str": "1e10"}, {"amount_str": "-1e10"}, {"amount_str": "1e-5"}, 
+            {"amount_str": "-1e-5"}, {"amount_str": "Infinity"}, {"amount_str": "-Infinity"}
+        ], 
+        "oracle": _Oracles.expected_ledger
+    },
+    {
+        "id": "fraud_detector", 
+        "class": "FraudDetector", 
+        "method": "is_fraudulent", 
+        "inputs": [
+            {"amount_str": "5000.00"}, {"amount_str": "10000.00"}, {"amount_str": "10000.01"}, 
+            {"amount_str": "9999.99"}, {"amount_str": "15000.00"}, {"amount_str": "0.00"}, 
+            {"amount_str": "0"}, {"amount_str": "-0.01"}, {"amount_str": "-10000.00"}, 
+            {"amount_str": "1e9"}, {"amount_str": "invalid"}, {"amount_str": ""}, 
+            {"amount_str": " "}, {"amount_str": "1,000,000.00"}, {"amount_str": "Infinity"}, 
+            {"amount_str": "10000.00\n"}
+        ], 
+        "oracle": _Oracles.expected_fraud
+    }
 ]
 
 def _aegis_generator():
