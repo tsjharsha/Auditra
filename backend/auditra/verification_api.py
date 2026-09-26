@@ -271,48 +271,88 @@ def _aegis_generator():
     time.sleep(1.0)
     
     # --- MUTATION TESTING PHASE ---
-    mutations = [
+    mutation_specs = [
         {
-            "name": "Tax Router wrong/missing rate",
+            "name": "Tax wrong-rate mutation",
             "node_id": "tax_router",
-            "code": "class TaxRouter:\n    def get_tax_rate(self, state_code: str) -> dict:\n        rates = {'CA': '0.0825', 'TX': '0.0625'}\n        return {'rate': rates.get(state_code, '0.00')}\n"
+            "search": '"0.0825"',
+            "replace": '"0.0900"'
         },
         {
-            "name": "Billing Engine float/rounding regression",
+            "name": "Tax missing-state mutation",
+            "node_id": "tax_router",
+            "search": '"NY": "0.08875", ',
+            "replace": ''
+        },
+        {
+            "name": "Billing float mutation",
             "node_id": "billing_engine",
-            "code": "class BillingEngine:\n    def __init__(self):\n        self.rate = 0.03\n        self.gst = 0.18\n    def calculate(self, amount_str: str) -> dict:\n        amt = float(amount_str)\n        fee = amt * self.rate\n        tax = fee * self.gst\n        settlement = amt - fee - tax\n        return {\n            'amount': f'{amt:.2f}',\n            'fee': f'{fee:.2f}',\n            'gst': f'{tax:.2f}',\n            'settlement': f'{settlement:.2f}'\n        }\n"
+            "search": 'amt = Decimal(amount_str)\n        fee = (amt * self.rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_EVEN)\n        tax = (fee * self.gst).quantize(Decimal("0.01"), rounding=ROUND_HALF_EVEN)\n        return {\n            "amount": str(amt.quantize(Decimal("0.01"))),\n            "fee": str(fee),\n            "gst": str(tax),\n            "settlement": str(amt - fee - tax)\n        }',
+            "replace": 'amt = float(amount_str)\n        fee = round(amt * float(self.rate), 2)\n        tax = round(fee * float(self.gst), 2)\n        return {"amount": f"{amt:.2f}", "fee": f"{fee:.2f}", "gst": f"{tax:.2f}", "settlement": f"{(amt - fee - tax):.2f}"}'
         },
         {
-            "name": "Ledger Sync negative-refund acceptance",
+            "name": "Billing rounding mutation",
+            "node_id": "billing_engine",
+            "search": "ROUND_HALF_EVEN",
+            "replace": "ROUND_UP"
+        },
+        {
+            "name": "Ledger validation mutation",
             "node_id": "ledger_sync",
-            "code": "from decimal import Decimal\nclass LedgerSync:\n    def process_refund(self, amount_str: str) -> dict:\n        amt = Decimal(amount_str)\n        return {\n            'status': 'PROCESSED',\n            'refund_amount': str(amt),\n            'ledger_impact': str(-amt)\n        }\n"
+            "search": 'if amt < 0:\n            return {"status": "REJECTED", "refund_amount": "0.00", "ledger_impact": "0.00"}\n        ',
+            "replace": ''
         },
         {
-            "name": "Fraud Detector incorrect threshold",
+            "name": "Fraud threshold mutation",
             "node_id": "fraud_detector",
-            "code": "from decimal import Decimal, InvalidOperation\nclass FraudDetector:\n    def is_fraudulent(self, amount_str: str) -> dict:\n        try:\n            amt = Decimal(amount_str)\n            return {'fraudulent': bool(amt > 5000)}\n        except (ValueError, InvalidOperation):\n            return {'fraudulent': False}\n"
+            "search": '10000',
+            "replace": '5000'
         }
     ]
 
-    for mut in mutations:
-        yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATING", "message": f"Injecting {mut['name']} into {mut['node_id']} to verify Oracle sensitivity..."})
-        time.sleep(0.5)
+    print("\nMUTATION TESTS\n", flush=True)
+    detected_count = 0
+
+    for spec in mutation_specs:
+        yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATING", "message": f"Injecting {spec['name']} into {spec['node_id']} to verify Oracle sensitivity..."})
         
-        node = next(n for n in VERIFICATION_NODES if n["id"] == mut["node_id"])
-        mut_path = str(TARGET_DIR / f"{mut['node_id']}_mut.py")
+        base_code = get_patch_code_fallback(spec["node_id"])
+        mutated_code = base_code.replace(spec["search"], spec["replace"])
         
-        with open(mut_path, "w", encoding="utf-8") as f:
-            f.write(mut["code"])
-            
-        mutation_failure = verify_node(node, mut_path)
-        
-        if mutation_failure:
-            yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_DETECTED", "message": f"Oracle successfully caught {mut['name']}!"})
+        if mutated_code == base_code:
+            status_text = "FAILED TO MUTATE"
+            detected = False
+            yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_FAILED", "message": f"Engine failed to mutate {spec['name']}! Source code unchanged."})
         else:
-            yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_FAILED", "message": f"Oracle FAILED to detect {mut['name']}!"})
+            node = next(n for n in VERIFICATION_NODES if n["id"] == spec["node_id"])
+            mut_path = str(TARGET_DIR / f"{spec['node_id']}_mut.py")
             
-        Path(mut_path).unlink(missing_ok=True)
+            with open(mut_path, "w", encoding="utf-8") as f:
+                f.write(mutated_code)
+                
+            mutation_failure = verify_node(node, mut_path)
+            
+            if mutation_failure:
+                detected = True
+                detected_count += 1
+                status_text = "DETECTED"
+                yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_DETECTED", "message": f"Oracle successfully caught {spec['name']}!"})
+            else:
+                detected = False
+                status_text = "MISSED"
+                yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_FAILED", "message": f"Oracle FAILED to detect {spec['name']}!"})
+                
+            Path(mut_path).unlink(missing_ok=True)
+        try:
+            print(f"{'✓' if detected else '✗'} {spec['name']:<28} {status_text}", flush=True)
+        except UnicodeEncodeError:
+            print(f"{'[PASS]' if detected else '[FAIL]'} {spec['name']:<28} {status_text}", flush=True)
         time.sleep(0.5)
+
+    score = int((detected_count / len(mutation_specs)) * 100) if mutation_specs else 0
+    print(f"\n{detected_count} / {len(mutation_specs)} mutations detected", flush=True)
+    print(f"Mutation Score: {score}%\n", flush=True)
+    
     # --- END MUTATION TESTING ---
     
     failed_nodes = []
