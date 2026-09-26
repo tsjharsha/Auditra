@@ -462,10 +462,9 @@ def _aegis_generator():
             try:
                 ASTValidator.validate(patched_code)
             except Exception as e:
-                yield _sse("node_state", {"node": node["id"], "state": "PATCH_FAILED", "error": str(e)})
+                yield _sse("node_state", {"node": node["id"], "state": "PATCH_REJECTED", "error": str(e)})
                 failed_nodes.append({"id": node["id"], "reason": "AST Validation Failed", "error": str(e)})
                 time.sleep(1.5)
-                yield _sse("node_state", {"node": node["id"], "state": "ROLLING_BACK"})
                 continue
 
             # Apply patch
