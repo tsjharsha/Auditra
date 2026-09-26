@@ -36,5 +36,10 @@ jobs:
       run: |
         # In this demo repo, the targets are intentionally vulnerable.
         # This demonstrates that Auditra successfully catches the defects and exits with >0
-        # We append || true so the CI stays green for the hackathon presentation.
-        python -m backend.auditra verify --json || true
+        if python -m backend.auditra verify --json; then
+          echo "Expected verification to fail on vulnerable targets, but it succeeded!"
+          exit 1
+        else
+          echo "Verification successfully caught the vulnerable targets and exited non-zero."
+          exit 0
+        fi

@@ -41,6 +41,7 @@ def run_verify(json_output=False):
             "failed": total_failed,
             "results": results
         }, indent=2))
+        sys.exit(0 if total_failed == 0 else 1)
     else:
         print("Auditra Verification Engine")
         print("===========================")
