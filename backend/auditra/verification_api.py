@@ -361,27 +361,29 @@ def run_mutation_suite():
             continue
             
         node = next(n for n in VERIFICATION_NODES if n["id"] == spec["node_id"])
-        mut_path = str(TARGET_DIR / f"{spec['node_id']}_mut.py")
+        mut_id = str(uuid.uuid4())[:8]
+        mut_path = str(TARGET_DIR / f"{spec['node_id']}_mut_{mut_id}.py")
         
-        with open(mut_path, "w", encoding="utf-8") as f:
-            f.write(mutated_code)
+        try:
+            with open(mut_path, "w", encoding="utf-8") as f:
+                f.write(mutated_code)
+                
+            mutation_info = verify_node(node, mut_path)
             
-        mutation_info = verify_node(node, mut_path)
-        
-        if mutation_info["status"] == "failed":
-            results.append({
-                "spec": spec,
-                "detected": True,
-                "status_text": "DETECTED"
-            })
-        else:
-            results.append({
-                "spec": spec,
-                "detected": False,
-                "status_text": "MISSED"
-            })
-            
-        Path(mut_path).unlink(missing_ok=True)
+            if mutation_info["status"] == "failed":
+                results.append({
+                    "spec": spec,
+                    "detected": True,
+                    "status_text": "DETECTED"
+                })
+            else:
+                results.append({
+                    "spec": spec,
+                    "detected": False,
+                    "status_text": "MISSED"
+                })
+        finally:
+            Path(mut_path).unlink(missing_ok=True)
         
     return results
 

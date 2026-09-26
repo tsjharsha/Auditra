@@ -10,3 +10,6 @@ node_modules/
 dist/
 .DS_Store
 backend/target_service/
+.bob/artifacts/
+scratch/
+action_log.txt

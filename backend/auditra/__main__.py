@@ -103,6 +103,68 @@ def run_verify(json_output=False):
             print(f"STATUS: VERIFICATION FAILED ({total_failed} nodes compromised)")
             sys.exit(1)
 
+def run_verify_target(node_id, json_output=False):
+    target_path = TARGETS.get(node_id)
+    if not target_path:
+        if json_output:
+            print(json.dumps({"error": f"Unknown target ID: {node_id}"}))
+        else:
+            print(f"Error: Unknown target ID '{node_id}'. Valid targets are: {', '.join(TARGETS.keys())}")
+        sys.exit(1)
+        
+    node = next((n for n in VERIFICATION_NODES if n["id"] == node_id), None)
+    if not node:
+        if json_output:
+            print(json.dumps({"error": f"Node configuration for '{node_id}' not found."}))
+        else:
+            print(f"Error: Node configuration for '{node_id}' not found.")
+        sys.exit(1)
+
+    info = verify_node(node, target_path)
+    
+    if json_output:
+        print(json.dumps({
+            "status": info["status"],
+            "node_id": node_id,
+            "metrics": info["metrics"],
+            "scenarios": info.get("scenarios", []),
+            "variance": info.get("first_failure")
+        }, indent=2))
+        sys.exit(0 if info["status"] == "verified" else 1)
+    else:
+        metrics = info["metrics"]
+        print("Auditra Verification Engine (Single Target)")
+        print("=========================================")
+        print(f"[{node_id}]")
+        print(f"TOTAL       {metrics['total']}")
+        print(f"PASSED      {metrics['passed']}")
+        print(f"FAILED      {metrics['failed']}")
+        print(f"AGREEMENT   {metrics['oracle_agreement']}\n")
+        print("SCENARIOS")
+        
+        if "scenarios" in info:
+            for idx, scen in enumerate(info["scenarios"], 1):
+                scen_status = scen["status"]
+                if scen_status == "PASS":
+                    print(f"{idx:02d} PASS")
+                else:
+                    var_str = []
+                    for k, v in scen["variance"].items():
+                        var_str.append(f"{k}: expected {v['expected']} / actual {v['actual']}")
+                    msg = f"{idx:02d} FAIL → " + ", ".join(var_str)
+                    try:
+                        print(msg)
+                    except UnicodeEncodeError:
+                        print(msg.replace('→', '->'))
+        
+        print("---------------------------")
+        if info["status"] == "verified":
+            print(f"STATUS: VERIFIED ({node_id})")
+            sys.exit(0)
+        else:
+            print(f"STATUS: VERIFICATION FAILED ({node_id})")
+            sys.exit(1)
+
 def main():
     parser = argparse.ArgumentParser(description="Auditra CLI")
     subparsers = parser.add_subparsers(dest="command")
@@ -110,10 +172,16 @@ def main():
     verify_parser = subparsers.add_parser("verify", help="Run independent oracle verification against all targets")
     verify_parser.add_argument("--json", action="store_true", help="Output JSON for CI integration")
     
+    verify_target_parser = subparsers.add_parser("verify-target", help="Run independent oracle verification against a single target")
+    verify_target_parser.add_argument("node_id", help="The target node ID to verify")
+    verify_target_parser.add_argument("--json", action="store_true", help="Output JSON for CI integration")
+    
     args = parser.parse_args()
     
     if args.command == "verify":
         run_verify(args.json)
+    elif args.command == "verify-target":
+        run_verify_target(args.node_id, args.json)
     else:
         parser.print_help()
         sys.exit(1)

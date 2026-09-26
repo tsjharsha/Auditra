@@ -16,8 +16,8 @@ Auditra is an adversarial verification engine that acts as a production gate for
 The current AI-assisted development workflow looks like this:
 `AI -> Developer Review -> Tests -> Debugging -> Regression -> Merge`
 
-Auditra compresses this into:
-`AI -> Auditra adversarial verification -> AI repair -> Automated reverification -> Production Gate`
+Auditra compresses this into the AEGIS lifecycle:
+`RESET → BASELINE VERIFY → AI PATCH → AST/SANDBOX VALIDATION → APPLY → POST-PATCH VERIFY → ROLLBACK/SECURE`
 
 ## 3. What makes it different?
 Most "AI Code Review" tools are purely probabilistic—they use an AI to review an AI. Auditra enforces an explicit **Trust Boundary**. The AI reasoning is isolated from the deterministic verification. **The AI can recommend, but the Oracle decides.**
@@ -29,13 +29,26 @@ Auditra generates test inputs across four categories:
 * **Adversarial cases**
 * **Regression cases**
 
-It runs these inputs through both the AI-patched code (in a strict Sandbox) and a hidden, known-good Oracle. If the outputs diverge, the code is compromised.
+It runs these inputs through both the AI-patched code (in a lightweight local execution sandbox) and a hidden, known-good Oracle. If the outputs diverge, the code is compromised.
+
+### Guarding the Guards (Mutation Testing)
+Auditra dynamically injects known mutations into target implementations and verifies that the independent Oracle successfully catches them. The current suite contains 6 mutations, and the demonstrated suite achieves 100% detection.
 
 ## 5. What happens when AI is wrong?
-The patch is immediately rejected. A live diff is generated, the failure reason is exposed to the developer (e.g., "Oracle expected X, observed Y"), and a file-level **ROLLBACK** is performed to restore the secure state. The system never ships unsafe code.
+The patch is immediately rejected. Auditra uses two distinct failure paths:
+1. **Pre-application Rejection**: If the proposed patch fails AST/security validation, it emits `PATCH_REJECTED` and the original source is never modified (no rollback needed).
+2. **Post-application Rollback**: If the patch applies but fails the Oracle behavioral verification, it triggers a file-level **ROLLBACK** to restore the previous secure state.
+
+The release gate blocks code that fails Auditra's defined verification and security checks.
 
 ## 6. What does IBM Bob have to do with it?
 Auditra was built entirely using **IBM Bob 2.0** as the primary AI-assisted development environment. IBM Bob iterated on the architecture, wrote the AST Validator, built the React frontend, and implemented the Sandbox. 
+
+Currently, **IBM Bob acts as the AI development/repair agent**:
+* Bob connects to Auditra through the Model Context Protocol (MCP).
+* Auditra exposes `verify_target` and `verify_all` to Bob.
+* Bob can receive deterministic verification feedback on its repairs.
+* **Auditra's independent Oracle remains authoritative.** Bob does not control or implement the oracle.
 
 This creates a powerful meta-story: **The project built with AI is itself protected by an AI verification system.** See [Built with Bob](docs/bob-usage.md) for details.
 
@@ -45,8 +58,14 @@ This creates a powerful meta-story: **The project built with AI is itself protec
 ```bash
 python -m backend.auditra verify --json
 ```
-*Exit code 0: Safe to deploy.*
+*Exit code 0: Safe to deploy. The global verification gate requires all four target services to pass behavioral verification and the mutation suite to achieve the required detection result before the release is approved.*
 *Exit code >0: Block merge/deployment.*
+
+**Local Developer Verification (CLI)**
+```bash
+# Verify a single target during development
+python -m backend.auditra verify-target <node_id>
+```
 
 **Interactive War Room (Frontend Demo)**
 ```bash
@@ -69,8 +88,7 @@ Open `http://localhost:5173`. Click **Reset Environment**, then **Launch Verific
 * Regression coverage: Relies on pre-existing unit tests
 
 **WITH AUDITRA (Automated Zero-Trust)**
-* Scenarios tested: 36 adversarial/boundary scenarios per node
-* Time to verify: ~2.8 seconds
+* Scenarios tested: 12–16 adversarial/boundary scenarios per node (~58 total)
 * Regression coverage: Deterministically proven against independent Oracle
 
 ## 9. What is actually demonstrated?
