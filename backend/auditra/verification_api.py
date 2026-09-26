@@ -168,7 +168,15 @@ def verify_node(node: dict, path: str) -> dict:
     passed = 0
     failures = []
     
+    unique_inputs = []
+    seen = set()
     for kwargs in node["inputs"]:
+        kstr = json.dumps(kwargs, sort_keys=True)
+        if kstr not in seen:
+            seen.add(kstr)
+            unique_inputs.append(kwargs)
+            
+    for kwargs in unique_inputs:
         total += 1
         success, target_out = SandboxRunner.execute(path, node["class"], node["method"], kwargs)
         
@@ -203,12 +211,19 @@ def verify_node(node: dict, path: str) -> dict:
         else:
             passed += 1
 
-    if failures:
-        first = failures[0]
-        first["metrics"] = {"total": total, "passed": passed, "failed": len(failures), "oracle_agreement": f"{(passed/total)*100:.1f}%"}
-        return first
-        
-    return None
+    metrics = {
+        "total": total,
+        "passed": passed,
+        "failed": len(failures),
+        "oracle_agreement": f"{(passed/total)*100:.1f}%" if total > 0 else "0.0%"
+    }
+    
+    return {
+        "status": "failed" if failures else "verified",
+        "metrics": metrics,
+        "failures": failures,
+        "first_failure": failures[0] if failures else None
+    }
 
 VERIFICATION_NODES = [
     {
@@ -265,12 +280,7 @@ VERIFICATION_NODES = [
     }
 ]
 
-def _aegis_generator():
-    audit_id = f"AUDIT-{datetime.now().strftime('%Y-%m%d')}-{str(uuid.uuid4())[:6].upper()}"
-    yield _sse("aegis_start", {"message": f"AEGIS PROTOCOL ACTIVATED. MODE: {'LIVE (Groq)' if groq_client else 'DETERMINISTIC DEMO'}", "audit_id": audit_id})
-    time.sleep(1.0)
-    
-    # --- MUTATION TESTING PHASE ---
+def run_mutation_suite():
     mutation_specs = [
         {
             "name": "Tax wrong-rate mutation",
@@ -310,47 +320,78 @@ def _aegis_generator():
         }
     ]
 
-    print("\nMUTATION TESTS\n", flush=True)
-    detected_count = 0
-
+    results = []
     for spec in mutation_specs:
-        yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATING", "message": f"Injecting {spec['name']} into {spec['node_id']} to verify Oracle sensitivity..."})
-        
         base_code = get_patch_code_fallback(spec["node_id"])
         mutated_code = base_code.replace(spec["search"], spec["replace"])
         
         if mutated_code == base_code:
-            status_text = "FAILED TO MUTATE"
-            detected = False
-            yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_FAILED", "message": f"Engine failed to mutate {spec['name']}! Source code unchanged."})
+            results.append({
+                "spec": spec,
+                "detected": False,
+                "status_text": "FAILED TO MUTATE"
+            })
+            continue
+            
+        node = next(n for n in VERIFICATION_NODES if n["id"] == spec["node_id"])
+        mut_path = str(TARGET_DIR / f"{spec['node_id']}_mut.py")
+        
+        with open(mut_path, "w", encoding="utf-8") as f:
+            f.write(mutated_code)
+            
+        mutation_info = verify_node(node, mut_path)
+        
+        if mutation_info["status"] == "failed":
+            results.append({
+                "spec": spec,
+                "detected": True,
+                "status_text": "DETECTED"
+            })
         else:
-            node = next(n for n in VERIFICATION_NODES if n["id"] == spec["node_id"])
-            mut_path = str(TARGET_DIR / f"{spec['node_id']}_mut.py")
+            results.append({
+                "spec": spec,
+                "detected": False,
+                "status_text": "MISSED"
+            })
             
-            with open(mut_path, "w", encoding="utf-8") as f:
-                f.write(mutated_code)
-                
-            mutation_failure = verify_node(node, mut_path)
+        Path(mut_path).unlink(missing_ok=True)
+        
+    return results
+
+def _aegis_generator():
+    audit_id = f"AUDIT-{datetime.now().strftime('%Y-%m%d')}-{str(uuid.uuid4())[:6].upper()}"
+    yield _sse("aegis_start", {"message": f"AEGIS PROTOCOL ACTIVATED. MODE: {'LIVE (Groq)' if groq_client else 'DETERMINISTIC DEMO'}", "audit_id": audit_id})
+    time.sleep(1.0)
+    
+    # --- MUTATION TESTING PHASE ---
+    print("\nMUTATION TESTS\n", flush=True)
+    detected_count = 0
+    mutation_results = run_mutation_suite()
+
+    for res in mutation_results:
+        spec = res["spec"]
+        detected = res["detected"]
+        status_text = res["status_text"]
+        
+        yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATING", "message": f"Injecting {spec['name']} into {spec['node_id']} to verify Oracle sensitivity..."})
+        
+        if status_text == "FAILED TO MUTATE":
+            yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_FAILED", "message": f"Engine failed to mutate {spec['name']}! Source code unchanged."})
+        elif detected:
+            detected_count += 1
+            yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_DETECTED", "message": f"Oracle successfully caught {spec['name']}!"})
+        else:
+            yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_FAILED", "message": f"Oracle FAILED to detect {spec['name']}!"})
             
-            if mutation_failure:
-                detected = True
-                detected_count += 1
-                status_text = "DETECTED"
-                yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_DETECTED", "message": f"Oracle successfully caught {spec['name']}!"})
-            else:
-                detected = False
-                status_text = "MISSED"
-                yield _sse("node_state", {"node": "mutation_engine", "state": "MUTATION_FAILED", "message": f"Oracle FAILED to detect {spec['name']}!"})
-                
-            Path(mut_path).unlink(missing_ok=True)
         try:
             print(f"{'✓' if detected else '✗'} {spec['name']:<28} {status_text}", flush=True)
         except UnicodeEncodeError:
             print(f"{'[PASS]' if detected else '[FAIL]'} {spec['name']:<28} {status_text}", flush=True)
         time.sleep(0.5)
 
-    score = int((detected_count / len(mutation_specs)) * 100) if mutation_specs else 0
-    print(f"\n{detected_count} / {len(mutation_specs)} mutations detected", flush=True)
+    total_mutations = len(mutation_results)
+    score = int((detected_count / total_mutations) * 100) if total_mutations > 0 else 0
+    print(f"\n{detected_count} / {total_mutations} mutations detected", flush=True)
     print(f"Mutation Score: {score}%\n", flush=True)
     
     # --- END MUTATION TESTING ---
@@ -364,10 +405,11 @@ def _aegis_generator():
         target_path = TARGETS[node["id"]]
         
         # 1. Baseline verification
-        failure_info = verify_node(node, target_path)
+        info = verify_node(node, target_path)
         
-        if failure_info:
-            yield _sse("node_state", {"node": node["id"], "state": "COMPROMISED", "variance": failure_info})
+        if info["status"] == "failed":
+            first_failure = info["first_failure"]
+            yield _sse("node_state", {"node": node["id"], "state": "COMPROMISED", "variance": first_failure})
             time.sleep(1.5)
             yield _sse("node_state", {"node": node["id"], "state": "ANALYZING"})
             time.sleep(1.0)
@@ -376,7 +418,7 @@ def _aegis_generator():
                 original_code = f.read()
                 
             yield _sse("node_state", {"node": node["id"], "state": "PATCHING"})
-            patched_code = ask_llm_for_patch(node["id"], original_code, failure_info)
+            patched_code = ask_llm_for_patch(node["id"], original_code, first_failure)
             
             diff_lines = list(difflib.unified_diff(
                 original_code.splitlines(keepends=True),
@@ -404,15 +446,15 @@ def _aegis_generator():
             with open(target_path, "w", encoding="utf-8") as f:
                 f.write(patched_code)
                 
-            yield _sse("node_state", {"node": node["id"], "state": "REVERIFYING", "metrics": {"total_tests": len(node["inputs"])}})
+            yield _sse("node_state", {"node": node["id"], "state": "REVERIFYING", "metrics": {"total_tests": info["metrics"]["total"]}})
             
             # POST-PATCH VERIFICATION
-            post_patch_failure = verify_node(node, target_path)
+            post_patch_info = verify_node(node, target_path)
             
-            if post_patch_failure:
-                metrics = post_patch_failure.get("metrics", {})
+            if post_patch_info["status"] == "failed":
+                metrics = post_patch_info["metrics"]
                 rejection_reason = f"The generated patch executed successfully, but its behavior did not match the independent oracle for {metrics.get('failed', 0)}/{metrics.get('total', 0)} adversarial scenarios. The patch was therefore rejected."
-                yield _sse("node_state", {"node": node["id"], "state": "VERIFICATION_FAILED", "variance": post_patch_failure, "metrics": metrics, "rejection_reason": rejection_reason})
+                yield _sse("node_state", {"node": node["id"], "state": "VERIFICATION_FAILED", "variance": post_patch_info["first_failure"], "metrics": metrics, "rejection_reason": rejection_reason})
                 failed_nodes.append({"id": node["id"], "reason": "Post-patch verification failed", "metrics": metrics})
                 time.sleep(1.5)
                 yield _sse("node_state", {"node": node["id"], "state": "ROLLING_BACK"})
@@ -421,10 +463,10 @@ def _aegis_generator():
                     f.write(original_code)
                 yield _sse("node_state", {"node": node["id"], "state": "ROLLED_BACK"})
             else:
-                yield _sse("node_state", {"node": node["id"], "state": "SECURED", "metrics": {"passed": len(node["inputs"]), "failed": 0, "oracle_agreement": "100%"}})
+                yield _sse("node_state", {"node": node["id"], "state": "SECURED", "metrics": post_patch_info["metrics"]})
                 
         else:
-            yield _sse("node_state", {"node": node["id"], "state": "SECURED", "metrics": {"passed": len(node["inputs"]), "failed": 0, "oracle_agreement": "100%"}})
+            yield _sse("node_state", {"node": node["id"], "state": "SECURED", "metrics": info["metrics"]})
             
         time.sleep(1.0)
         
