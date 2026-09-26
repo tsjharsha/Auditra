@@ -30,6 +30,8 @@ jobs:
     - name: Run Core Test Suite
       run: |
         pip install pytest pytest-asyncio anyio
+        mkdir -p backend/target_service
+        cp backend/target_templates/*.py backend/target_service/
         PYTHONPATH=. python -m pytest -v tests/
         
     - name: Test Verification Gate (Vulnerable Targets)
