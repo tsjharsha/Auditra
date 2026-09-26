@@ -16,3 +16,6 @@ package-dir = {"" = "backend"}
 
 [tool.setuptools.packages.find]
 where = ["backend"]
+
+[tool.ruff]
+exclude = ["backend/target_service"]
