@@ -132,13 +132,15 @@ def test_verification_failure_emits_rollback_and_restores():
             states = [e["data"]["state"] for e in events if e["event"] == "node_state" and e["data"]["node"] == "fraud_detector" and "state" in e["data"]]
             
             # Verify the exact sequence of rejection
+            assert "PATCH_APPLIED" in states
             assert "VERIFICATION_FAILED" in states
             assert "ROLLING_BACK" in states
             assert "ROLLED_BACK" in states
             
             # Order check
+            pa_idx = states.index("PATCH_APPLIED")
             vf_idx = states.index("VERIFICATION_FAILED")
             rb_idx = states.index("ROLLING_BACK")
             rd_idx = states.index("ROLLED_BACK")
             
-            assert vf_idx < rb_idx < rd_idx
+            assert pa_idx < vf_idx < rb_idx < rd_idx

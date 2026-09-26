@@ -471,6 +471,7 @@ def _aegis_generator():
             with open(target_path, "w", encoding="utf-8") as f:
                 f.write(patched_code)
                 
+            yield _sse("node_state", {"node": node["id"], "state": "PATCH_APPLIED"})
             yield _sse("node_state", {"node": node["id"], "state": "REVERIFYING", "total_tests": len(node["inputs"])})
             
             # POST-PATCH VERIFICATION
