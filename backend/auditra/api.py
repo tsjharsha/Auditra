@@ -3,8 +3,8 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .verification_api import router as verification_router
 from .observability import router as observability_router
+from .verification_api import router as verification_router
 
 app = FastAPI(
     title="Auditra: The Aegis Protocol",

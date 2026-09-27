@@ -2,7 +2,7 @@ import asyncio
 import json
 import time
 from collections import deque
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
@@ -24,7 +24,7 @@ class EventBus:
         self.events = deque(maxlen=maxlen)
         self.listeners = []
 
-    def emit(self, event: Dict[str, Any]):
+    def emit(self, event: dict[str, Any]):
         if "timestamp" not in event:
             event["timestamp"] = time.time()
             
@@ -68,7 +68,7 @@ class EventBus:
 bus = EventBus(maxlen=200)
 
 @router.post("/event")
-async def post_event(event: Dict[str, Any]):
+async def post_event(event: dict[str, Any]):
     """
     Ingest a real-time event from the MCP server or Verification Engine.
     This is an internal unauthenticated endpoint for local processes.
