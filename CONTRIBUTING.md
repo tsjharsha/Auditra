@@ -26,7 +26,7 @@ Familiarize yourself with the core architecture of the repository:
 - `backend/target_templates/`: Contains the target microservices meant for testing/patching.
 - `backend/auditra/`: Core engine for verification, sandbox execution, and mutation testing.
 - `mcp_server/`: Source code exposing the Auditra verification toolset via the Model Context Protocol (MCP).
-- `.bob/mcp.json`: The cross-platform configuration for IBM Bob's MCP integration.
+- `.bob/mcp.json`: The workspace/project-level configuration for IBM Bob's MCP integration.
 - `.github/workflows/test.yml`: The CI pipeline definition.
 - `docs/bob-usage.md`: Documentation for using Auditra alongside IBM Bob.
 

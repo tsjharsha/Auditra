@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .verification_api import router as verification_router
+from .observability import router as observability_router
 
 app = FastAPI(
     title="Auditra: The Aegis Protocol",
@@ -27,6 +28,7 @@ app.add_middleware(
 )
 
 app.include_router(verification_router)
+app.include_router(observability_router)
 
 @app.get("/health")
 def health():

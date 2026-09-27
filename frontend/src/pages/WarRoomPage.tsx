@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Activity, Shield, Terminal, Zap, ShieldAlert, Cpu, Database, Server, RefreshCw, Code2, AlertTriangle, CheckCircle } from "lucide-react";
+import { Activity, Shield, Terminal, Zap, ShieldAlert, Cpu, Database, Server, RefreshCw, Code2, AlertTriangle, CheckCircle, Bot } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_AUDITRA_API_BASE ?? "http://127.0.0.1:8002";
 
@@ -12,7 +12,7 @@ type NodeStatus =
   | "VALIDATING" 
   | "REVERIFYING" 
   | "SECURED" 
-  | "PATCH_FAILED" 
+  | "PATCH_REJECTED" 
   | "VERIFICATION_FAILED" 
   | "ROLLING_BACK" 
   | "ROLLED_BACK";
@@ -34,6 +34,17 @@ interface LogEntry {
   message: string;
 }
 
+interface McpEvent {
+  timestamp: number;
+  source: string;
+  event_type: string;
+  node_id?: string;
+  tool_name?: string;
+  status?: string;
+  message: string;
+  metrics?: any;
+}
+
 export function WarRoomPage() {
   const [phase, setPhase] = useState<"idle" | "running" | "verified" | "failed">("idle");
   const [mode, setMode] = useState<string>("STANDBY");
@@ -52,6 +63,11 @@ export function WarRoomPage() {
   const logIdRef = useRef(0);
   const eventSourceRef = useRef<EventSource | null>(null);
 
+  const [mcpEvents, setMcpEvents] = useState<McpEvent[]>([]);
+  const [mcpStatus, setMcpStatus] = useState<"WAITING" | "CONNECTED" | "ERROR">("WAITING");
+  const mcpEventSourceRef = useRef<EventSource | null>(null);
+  const mcpLogsRef = useRef<HTMLDivElement>(null);
+
   const now = () => new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   const addLog = useCallback((type: LogEntry["type"], message: string) => {
@@ -62,6 +78,31 @@ export function WarRoomPage() {
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [logs]);
+
+  useEffect(() => {
+    if (mcpLogsRef.current) mcpLogsRef.current.scrollTop = mcpLogsRef.current.scrollHeight;
+  }, [mcpEvents]);
+
+  useEffect(() => {
+    const es = new EventSource(`${API_BASE}/observability/stream`);
+    mcpEventSourceRef.current = es;
+    
+    es.onmessage = (e) => {
+      try {
+        const evt: McpEvent = JSON.parse(e.data);
+        setMcpStatus("CONNECTED");
+        setMcpEvents(prev => [...prev, evt].slice(-50));
+      } catch (err) {}
+    };
+    
+    es.onerror = () => {
+      setMcpStatus("ERROR");
+    };
+    
+    return () => {
+      es.close();
+    };
+  }, []);
 
   const updateNode = (id: string, status: NodeStatus, extra: any = {}) => {
     setNodes(prev => {
@@ -142,7 +183,7 @@ export function WarRoomPage() {
           addLog("ai", `[${nodeName}] Extracting failure fingerprint...`);
           break;
         case "PATCHING":
-          addLog("ai", `[${nodeName}] Requesting repair proposal from IBM Bob 2.0 / LLM...`);
+          addLog("ai", `[${nodeName}] Requesting internal AEGIS repair proposal from Groq LLaMA-3...`);
           break;
         case "VALIDATING":
           if (d.patch_code) setActiveCode(d.patch_code);
@@ -152,10 +193,10 @@ export function WarRoomPage() {
           }
           break;
         case "REVERIFYING":
-          addLog("info", `[${nodeName}] Patch safely applied to sandbox. Post-patch adversarial re-verification running (${d.metrics?.total_tests || 20} tests)...`);
+          addLog("info", `[${nodeName}] Patch safely applied to sandbox. Post-patch adversarial re-verification running (${d.total_tests || d.metrics?.total_tests || "all"} tests)...`);
           break;
         case "SECURED":
-          addLog("success", `[${nodeName}] POST-PATCH VERIFICATION PASSED. Tests: ${d.metrics?.passed}/${d.metrics?.passed} | Oracle: ${d.metrics?.oracle_agreement}. Node is SECURE.`);
+          addLog("success", `[${nodeName}] POST-PATCH VERIFICATION PASSED. Tests: ${d.metrics?.passed}/${d.metrics?.total} | Oracle: ${d.metrics?.oracle_agreement}. Node is SECURE.`);
           break;
         case "VERIFICATION_FAILED":
           addLog("error", `[${nodeName}] POST-PATCH VERIFICATION FAILED. Tests: ${d.metrics?.passed || 0}/${d.metrics?.total || 0} passed.`);
@@ -163,7 +204,7 @@ export function WarRoomPage() {
             addLog("error", `  -> WHY REJECTED: ${d.rejection_reason}`);
           }
           break;
-        case "PATCH_FAILED":
+        case "PATCH_REJECTED":
           addLog("error", `[${nodeName}] SECURITY EXCEPTION: LLM generated invalid or dangerous AST: ${d.error}`);
           break;
         case "ROLLING_BACK":
@@ -198,10 +239,13 @@ export function WarRoomPage() {
     if (["IDLE"].includes(status)) return "#334155";
     if (["ATTACKING", "ANALYZING"].includes(status)) return "#38bdf8";
     if (["PATCHING", "VALIDATING", "REVERIFYING"].includes(status)) return "#a855f7";
-    if (["COMPROMISED", "VERIFICATION_FAILED", "PATCH_FAILED", "ROLLING_BACK", "ROLLED_BACK"].includes(status)) return "#ef4444";
+    if (["COMPROMISED", "VERIFICATION_FAILED", "PATCH_REJECTED", "ROLLING_BACK", "ROLLED_BACK"].includes(status)) return "#ef4444";
     if (["SECURED"].includes(status)) return "#4ade80";
     return "#334155";
   };
+
+  const lastToolEvent = [...mcpEvents].reverse().find(e => e.tool_name);
+  const lastResultEvent = [...mcpEvents].reverse().find(e => e.event_type === "TOOL_COMPLETE");
 
   return (
     <div className="warroom-container">
@@ -271,8 +315,8 @@ export function WarRoomPage() {
         })}
       </div>
 
-      {/* ─── 2 Editors ─── */}
-      <div className="warroom-layout">
+      {/* ─── 3 Editors ─── */}
+      <div className="warroom-layout" style={{ gridTemplateColumns: "1fr 1fr 340px" }}>
         <div className="warroom-pane">
           <div className="warroom-pane-header">
             <Code2 className="h-4 w-4" />
@@ -305,6 +349,85 @@ export function WarRoomPage() {
                 <span className="warroom-log-msg">{entry.message}</span>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="warroom-pane" style={{ backgroundColor: "rgba(0,0,0,0.2)" }}>
+          <div className="warroom-pane-header">
+            <Bot className="h-4 w-4" />
+            <span>MCP / IBM Bob Observability</span>
+            {mcpStatus === "ERROR" && (
+              <span style={{ marginLeft: "auto", color: "#ef4444", fontSize: "0.75rem", fontWeight: "bold" }}>OBSERVABILITY OFFLINE</span>
+            )}
+          </div>
+          
+          <div style={{ padding: "1rem", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: "0.75rem", color: "#aaa", fontFamily: "monospace" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+              <span>IBM Bob State:</span>
+              <span style={{ color: mcpStatus === "CONNECTED" ? "#4ade80" : mcpStatus === "ERROR" ? "#ef4444" : "#fbbf24" }}>
+                {mcpStatus === "WAITING" ? "WAITING FOR ACTIVITY" : mcpStatus === "CONNECTED" ? "CONNECTED" : "DISCONNECTED"}
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+              <span>Auditra MCP:</span>
+              <span style={{ color: mcpStatus === "CONNECTED" ? "#4ade80" : "#777" }}>
+                {mcpStatus === "CONNECTED" ? "ONLINE" : "STANDBY"}
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+              <span>Last Tool:</span>
+              <span style={{ color: "white" }}>{lastToolEvent?.tool_name || "None"}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+              <span>Last Node:</span>
+              <span style={{ color: "white" }}>{lastToolEvent?.node_id || "N/A"}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>Last Decision:</span>
+              <span style={{ color: lastResultEvent?.status === "VERIFIED" ? "#4ade80" : lastResultEvent?.status === "FAILED" ? "#ef4444" : "white" }}>
+                 {lastResultEvent?.status || "None"}
+              </span>
+            </div>
+          </div>
+
+          <div className="warroom-console-logs" ref={mcpLogsRef}>
+            {mcpEvents.length === 0 && mcpStatus !== "ERROR" && (
+               <div style={{ color: "#777", textAlign: "center", marginTop: "2rem", fontSize: "0.8rem", fontFamily: "monospace" }}>
+                 WAITING FOR IBM BOB MCP ACTIVITY...
+               </div>
+            )}
+            {mcpEvents.map((evt, i) => {
+               const timeStr = new Date(evt.timestamp * 1000).toLocaleTimeString("en-US", { hour12: false });
+               let header = "AUDITRA → MCP";
+               let color = "#38bdf8";
+               
+               if (evt.event_type === "TOOL_START") {
+                  header = "IBM BOB → MCP";
+                  color = "#a855f7";
+               } else if (evt.event_type === "TOOL_COMPLETE") {
+                  header = "MCP → AUDITRA";
+                  color = evt.status === "VERIFIED" ? "#4ade80" : "#ef4444";
+               } else if (evt.event_type === "TOOL_ERROR") {
+                  header = "MCP → AUDITRA";
+                  color = "#ef4444";
+               }
+               
+               return (
+                 <div key={i} style={{ fontSize: "0.75rem", fontFamily: "monospace", borderLeft: `2px solid ${color}`, paddingLeft: "0.75rem", marginBottom: "1rem" }}>
+                   <div style={{ color: "#777", marginBottom: "0.25rem" }}>{timeStr}</div>
+                   <div style={{ color, fontWeight: "bold", marginBottom: "0.25rem" }}>{header}</div>
+                   <div style={{ color: "white", whiteSpace: "pre-wrap", lineHeight: "1.4" }}>
+                     {evt.event_type === "TOOL_START" && evt.tool_name ? `${evt.tool_name}("${evt.node_id || ''}")\n` : ""}
+                     {evt.message}
+                   </div>
+                   {evt.metrics && (
+                     <div style={{ color: "#aaa", marginTop: "0.25rem" }}>
+                       TESTS: {evt.metrics.passed}/{evt.metrics.total}
+                     </div>
+                   )}
+                 </div>
+               );
+            })}
           </div>
         </div>
       </div>

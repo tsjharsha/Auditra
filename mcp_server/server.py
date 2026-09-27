@@ -12,8 +12,43 @@ Trust boundary: this server is the *integration layer only*.
   oracles, invariants, templates, or the release gate.
 """
 import asyncio
+import json
 import sys
+import threading
+import time
+import urllib.request
+import urllib.error
 from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Telemetry Layer
+# ---------------------------------------------------------------------------
+# Fire-and-forget observability telemetry for the War Room UI.
+# This does NOT affect verification or MCP authority.
+def emit_event(event_type: str, node_id: str = None, tool_name: str = None, status: str = None, message: str = "", metrics: dict = None):
+    def _send():
+        payload = {
+            "timestamp": time.time(),
+            "source": "IBM_BOB",
+            "event_type": event_type,
+            "node_id": node_id,
+            "tool_name": tool_name,
+            "status": status,
+            "message": message,
+            "metrics": metrics
+        }
+        try:
+            req = urllib.request.Request(
+                "http://127.0.0.1:8002/observability/event",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            urllib.request.urlopen(req, timeout=0.5)
+        except Exception:
+            pass  # UI disconnected or not running, ignore telemetry
+
+    threading.Thread(target=_send).start()
+
 
 # Ensure the project root is on sys.path so backend.auditra imports work
 # regardless of where the interpreter is launched from.
@@ -75,10 +110,24 @@ async def verify_target(node_name: str) -> dict:
 
     node = next((n for n in VERIFICATION_NODES if n["id"] == node_name), None)
     if node is None:
+        emit_event(
+            event_type="TOOL_ERROR",
+            tool_name="verify_target",
+            node_id=node_name,
+            status="FAILED",
+            message=f"Node {node_name} not found"
+        )
         return {
             "error": f"Verification node definition missing for '{node_name}'.",
             "release_decision": "BLOCKED",
         }
+
+    emit_event(
+        event_type="TOOL_START",
+        tool_name="verify_target",
+        node_id=node_name,
+        message=f"IBM Bob requesting isolated verification for {node_name}..."
+    )
 
     target_path = TARGETS[node_name]
     # verify_node is synchronous — run it in a thread so we don't block the event loop
@@ -89,6 +138,15 @@ async def verify_target(node_name: str) -> dict:
     metrics = result.get("metrics", {})
     failures = result.get("failures", [])
     verified = result.get("status") == "verified"
+
+    emit_event(
+        event_type="TOOL_COMPLETE",
+        tool_name="verify_target",
+        node_id=node_name,
+        status="VERIFIED" if verified else "FAILED",
+        message=f"Verification complete for {node_name}: {'APPROVED' if verified else 'BLOCKED'}",
+        metrics={"total": metrics.get("total", 0), "passed": metrics.get("passed", 0), "failed": metrics.get("failed", 0)}
+    )
 
     return {
         "node": node_name,
@@ -116,6 +174,12 @@ async def verify_target(node_name: str) -> dict:
     ),
 )
 async def verify_all() -> dict:
+    emit_event(
+        event_type="TOOL_START",
+        tool_name="verify_all",
+        message="IBM Bob requesting full verification suite..."
+    )
+    
     node_results = {}
     all_verified = True
 
@@ -151,6 +215,13 @@ async def verify_all() -> dict:
     detected = sum(1 for r in mutation_results if r["detected"])
     total_mutations = len(mutation_results)
     mutation_score = f"{int((detected / total_mutations) * 100)}%" if total_mutations else "0%"
+
+    emit_event(
+        event_type="TOOL_COMPLETE",
+        tool_name="verify_all",
+        status="VERIFIED" if all_verified else "FAILED",
+        message=f"Full verification complete. Mutation score: {mutation_score}. Release: {'APPROVED' if all_verified else 'BLOCKED'}"
+    )
 
     return {
         "nodes": node_results,

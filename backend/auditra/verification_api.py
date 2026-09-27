@@ -136,7 +136,7 @@ def ask_llm_for_patch(node: str, buggy_code: str, failure_info: dict) -> str:
         return get_patch_code_fallback(node)
         
     try:
-        prompt = f"""You are IBM Bob 2.0, an elite AI coding assistant.
+        prompt = f"""You are AEGIS, an elite AI coding assistant.
 The following Python class failed cryptographic verification in the Zero-Trust Fabric.
 Fix the code. Return ONLY the raw python code. Do not wrap in markdown or backticks.
 

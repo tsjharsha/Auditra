@@ -1,8 +1,10 @@
 {
   "mcpServers": {
     "auditra-verification": {
-      "command": "python",
-      "args": ["${workspaceFolder}/mcp_server/server.py"],
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/mcp_server/server.py"
+      ],
       "env": {
         "PYTHONPATH": "${workspaceFolder}"
       }
