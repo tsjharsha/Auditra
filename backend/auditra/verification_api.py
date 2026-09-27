@@ -308,6 +308,7 @@ VERIFICATION_NODES = [
 ]
 
 def run_mutation_suite():
+    os.makedirs(TARGET_DIR, exist_ok=True)
     mutation_specs = [
         {
             "name": "Tax wrong-rate mutation",
@@ -391,6 +392,9 @@ def _aegis_generator():
     audit_id = f"AUDIT-{datetime.now().strftime('%Y-%m%d')}-{str(uuid.uuid4())[:6].upper()}"
     yield _sse("aegis_start", {"message": f"AEGIS PROTOCOL ACTIVATED. MODE: {'LIVE (Groq)' if groq_client else 'DETERMINISTIC DEMO'}", "audit_id": audit_id})
     time.sleep(1.0)
+    
+    # Ensure targets are initialized and in known-vulnerable state before verification
+    reset_targets()
     
     # --- MUTATION TESTING PHASE ---
     print("\nMUTATION TESTS\n", flush=True)
