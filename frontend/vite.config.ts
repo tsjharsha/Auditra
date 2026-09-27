@@ -8,6 +8,6 @@ export default defineConfig({
     port: 5173,
   },
   preview: {
-    allowedHosts: ["auditrafontend-production.up.railway.app"],
+    allowedHosts: ["auditrafrontend-production.up.railway.app"],
   },
 });
